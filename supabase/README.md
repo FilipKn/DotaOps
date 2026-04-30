@@ -11,13 +11,17 @@ This folder contains Supabase project configuration for DotaOps.
 The schema covers:
 
 - user profiles and roles
+- linked external accounts such as Steam, OpenDota, Discord, and email identities
 - teams and team members
+- team invitations and active roster history
 - tournaments and team registrations
-- matches, brackets, results, and `dota_match_id`
+- tournament staff, group-stage structures, roster snapshots, and check-in metadata
+- match series, bracket slot sources, individual Dota games/maps, results, and `dota_match_id`
 - OpenDota import state: `queued`, `processing`, `ready`, `error`
-- heroes and per-player match rows
-- materialized analytics views for players, teams, and heroes
-- RLS policies for public reads and authenticated organizer/captain writes
+- import event history, raw payload storage, and normalized per-player match rows
+- heroes, per-player stats, public security-invoker analytics views, and service-only materialized analytics views
+- notifications/outbox and audit logging for operational changes
+- RLS policies for public reads, authenticated captain workflows, tournament staff workflows, and service-role backend jobs
 
 ## GitHub Integration
 
