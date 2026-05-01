@@ -39,7 +39,6 @@ Namesti:
 - npm
 - Java 21
 - Git
-- Supabase dostop do projekta `hjszjebirxhdtrbhefbv`
 
 Maven ni treba namescati globalno, ker backend uporablja `mvnw.cmd`.
 
@@ -55,14 +54,13 @@ Copy-Item .env.example .env
 V `.env` dopolni vsaj:
 
 ```properties
-SUPABASE_PROJECT_REF=hjszjebirxhdtrbhefbv
 SUPABASE_DB_URL=jdbc:postgresql://aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require
-SUPABASE_DB_USER=postgres.hjszjebirxhdtrbhefbv
+SUPABASE_DB_USER=postgres.<projectRef>
 SUPABASE_DB_PASSWORD=YOUR_DATABASE_PASSWORD
 SPRING_FLYWAY_ENABLED=true
 OPENDOTA_API_BASE_URL=https://api.opendota.com/api
 
-NEXT_PUBLIC_SUPABASE_URL=https://hjszjebirxhdtrbhefbv.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://<projectRef>.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
 NEXT_PUBLIC_API_URL=http://localhost:8080/api
 ```
@@ -101,7 +99,7 @@ JDBC oblika za Spring Boot:
 SUPABASE_DB_URL=jdbc:postgresql://aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require
 ```
 
-Ne uporabljaj direct cloud connection stringa `db.hjszjebirxhdtrbhefbv.supabase.co`, razen ce je okolje namenoma na IPv6 ali ima Supabase IPv4 add-on.
+Ne uporabljaj direct cloud connection stringa `db.<projectRef>.supabase.co`, razen ce je okolje namenoma na IPv6 ali ima Supabase IPv4 add-on.
 
 ## Zagon Backenda
 
