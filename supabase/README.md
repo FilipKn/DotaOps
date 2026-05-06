@@ -5,6 +5,7 @@ This folder contains Supabase project configuration for DotaOps.
 ## What Is Included
 
 - `config.toml`: Supabase local/project configuration.
+- `post_flyway_hardening.sql`: manual post-Flyway hardening for Flyway's own metadata table.
 - Database migrations are owned by the Spring Boot backend in `../backend/src/main/resources/db/migration`.
 - No seed data is committed at this stage.
 
@@ -23,6 +24,20 @@ The schema covers:
 - notifications/outbox and audit logging for operational changes
 - RLS policies for public reads, authenticated captain workflows, tournament staff workflows, and service-role backend jobs
 
+## Steam Identity Flow
+
+Steam identity writes are backend-managed. Clients can read linked identity rows permitted by RLS, but they cannot directly claim or rewrite Steam accounts.
+
+Backend/service code should use:
+
+- `private.upsert_steam_profile(...)` after a Steam login has been validated. It creates or updates the DotaOps profile and links the SteamID64 identity.
+- `private.link_steam_account_to_profile(...)` when an existing player profile needs another SteamID64 linked to it.
+- `private.unlink_steam_account_from_profile(...)` when the backend needs to remove a linked SteamID64. By default it blocks removing the last Steam login identity from a profile.
+- `private.set_primary_external_account(...)` when the backend needs to switch which linked identity is primary.
+- `private.create_steam_login_state(...)` and `private.consume_steam_login_state(...)` for short-lived, hashed Steam OpenID state handling.
+
+`public.profiles.steam_id` is kept only as a legacy/public mirror of the primary SteamID64. The source of truth for one or more Steam profiles per player is `public.profile_external_accounts` with `provider = 'steam'`.
+
 ## GitHub Integration
 
 Your Supabase dashboard is configured to read this repository with working directory `.` and production branch `main`.
@@ -39,6 +54,14 @@ supabase status
 ```
 
 Do not run seed/reset commands against production unless the team intentionally wants to recreate data.
+
+After Flyway has created or migrated the schema, run the post-Flyway hardening SQL once for each environment:
+
+```sql
+\i supabase/post_flyway_hardening.sql
+```
+
+This is intentionally not a Flyway migration because Flyway locks `public.flyway_schema_history` while it is running.
 
 ## Required Secrets
 
