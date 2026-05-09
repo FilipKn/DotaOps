@@ -1,67 +1,58 @@
-import { ShieldCheck } from "lucide-react";
-
 import { SectionHeader } from "@/components/section-header";
+import { TeamCommandHeader } from "@/components/team-command-header";
+import { TeamPerformanceCard } from "@/components/team-performance-card";
+import { TeamRosterGrid } from "@/components/team-roster-grid";
+import { TeamStatusPanel } from "@/components/team-status-panel";
 import { TeamTable } from "@/components/team-table";
 import { getTeams } from "@/lib/data";
-import { formatPercent } from "@/lib/utils";
 
 export default async function TeamsPage() {
   const teams = await getTeams();
+  const rankedTeams = [...teams].sort((a, b) => b.winRate - a.winRate);
 
   return (
-    <div className="page-stack">
-      <section className="page-header">
-        <div>
-          <p className="eyebrow">Ekipe in igralci</p>
-          <h1>Profili ekip</h1>
-          <p>
-            Osnovni javni pregled rosterjev, kapetanov, zgodovine nastopov in
-            primerljivih metrik uspesnosti.
-          </p>
-        </div>
-      </section>
+    <div className="team-command">
+      <TeamCommandHeader teams={teams} />
 
-      <section className="panel">
-        <SectionHeader
-          eyebrow="Seznam"
-          title="Ekipe"
-          description="Tabela je pripravljena za filtre, Steam povezave in zgodovino nastopov."
-        />
-        <TeamTable teams={teams} />
-      </section>
-
-      <section className="cards-grid">
-        {teams.map((team) => (
-          <article className="team-profile-card" key={team.id}>
-            <div className="card-title-row">
-              <div>
-                <p className="eyebrow">{team.region}</p>
-                <h3>{team.name}</h3>
-              </div>
-              <ShieldCheck size={22} />
-            </div>
-            <div className="profile-stats">
-              <span>
-                <strong>{formatPercent(team.winRate)}</strong>
-                Win rate
-              </span>
-              <span>
-                <strong>{team.kda.toFixed(1)}</strong>
-                KDA
-              </span>
-            </div>
-            <div className="roster-list">
-              {team.roster.map((player) => (
-                <div key={player.id}>
-                  <strong>{player.nickname}</strong>
-                  <span>
-                    {player.role} · {player.favoriteHero}
-                  </span>
-                </div>
+      <section className="team-command-grid">
+        <div className="team-command-main">
+          <section className="team-command-panel ops-panel">
+            <SectionHeader
+              eyebrow="Tactical roster grid"
+              title="Ekipe"
+              description="Pregled kapetanov, regij, win rate, KDA in osnovnega hero poola za vsako ekipo."
+            />
+            <div className="team-performance-grid">
+              {rankedTeams.map((team, index) => (
+                <TeamPerformanceCard
+                  key={team.id}
+                  rank={index + 1}
+                  team={team}
+                />
               ))}
             </div>
-          </article>
-        ))}
+          </section>
+
+          <section className="team-command-panel team-table-panel ops-panel">
+            <SectionHeader
+              eyebrow="Roster registry"
+              title="Podatkovna tabela"
+              description="Tabela ostaja pripravljena za filtre, Steam povezave in zgodovino nastopov."
+            />
+            <TeamTable teams={rankedTeams} />
+          </section>
+        </div>
+
+        <TeamStatusPanel teams={teams} />
+      </section>
+
+      <section className="team-command-panel ops-panel">
+        <SectionHeader
+          eyebrow="Player assignments"
+          title="Rosterji in vloge"
+          description="Operativni pregled igralcev, vlog, najljubsih junakov in KDA signala po ekipah."
+        />
+        <TeamRosterGrid teams={rankedTeams} />
       </section>
     </div>
   );
