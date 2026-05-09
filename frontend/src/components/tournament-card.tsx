@@ -7,7 +7,7 @@ import { formatDateTime } from "@/lib/utils";
 
 export function TournamentCard({ tournament }: { tournament: Tournament }) {
   return (
-    <article className="tournament-card">
+    <article className="tournament-card ops-card">
       <div className="card-title-row">
         <div>
           <h3>{tournament.title}</h3>
@@ -19,11 +19,11 @@ export function TournamentCard({ tournament }: { tournament: Tournament }) {
       <p className="card-description">{tournament.description}</p>
 
       <div className="card-meta-grid">
-        <span>
+        <span className="ops-mono">
           <CalendarDays size={16} />
           {formatDateTime(tournament.startsAt)}
         </span>
-        <span>
+        <span className="ops-mono">
           <UsersRound size={16} />
           {tournament.registrationsCount}/{tournament.teamsCount} ekip
         </span>

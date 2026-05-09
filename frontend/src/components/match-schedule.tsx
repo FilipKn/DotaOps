@@ -8,19 +8,19 @@ export function MatchSchedule({ matches }: { matches: Match[] }) {
   return (
     <div className="match-list">
       {matches.map((match) => (
-        <article className="match-row" key={match.id}>
+        <article className="match-row ops-card" key={match.id}>
           <div>
-            <p className="eyebrow">{match.round}</p>
+            <p className="eyebrow ops-label">{match.round}</p>
             <h3>
               {match.teamA} <span>vs</span> {match.teamB}
             </h3>
             <div className="match-meta">
-              <span>
+              <span className="ops-mono">
                 <Clock size={15} />
                 {formatDateTime(match.startsAt)}
               </span>
               {match.dotaMatchId ? (
-                <span>
+                <span className="ops-mono">
                   <Hash size={15} />
                   {match.dotaMatchId}
                 </span>
@@ -29,11 +29,11 @@ export function MatchSchedule({ matches }: { matches: Match[] }) {
           </div>
           <div className="match-result">
             {typeof match.scoreA === "number" && typeof match.scoreB === "number" ? (
-              <strong>
+              <strong className="ops-data">
                 {match.scoreA}:{match.scoreB}
               </strong>
             ) : (
-              <strong>TBD</strong>
+              <strong className="ops-data">TBD</strong>
             )}
             <StatusBadge status={match.status} />
           </div>

@@ -29,7 +29,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <aside className="sidebar ops-panel ops-scanline">
         <Link href="/" className="brand" aria-label="DotaOps domov">
           <span className="brand-mark" aria-hidden="true">
             <Swords size={22} />
@@ -61,7 +61,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        <div className="sidebar-panel">
+        <div className="sidebar-panel ops-card">
           <Shield size={18} />
           <div>
             <span>API povezava</span>
@@ -71,12 +71,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="main-area">
-        <header className="topbar">
+        <header className="topbar ops-panel">
           <div>
             <span className="topbar-kicker">Projekt IPT</span>
             <strong>Frontend okolje za razvoj DotaOps</strong>
           </div>
-          <Link className="button button-primary" href="/organizator">
+          <Link className="button button-primary ops-button-primary" href="/organizator">
             <Brackets size={18} />
             <span>Upravljaj turnir</span>
           </Link>

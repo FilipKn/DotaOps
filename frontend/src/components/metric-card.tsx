@@ -16,14 +16,14 @@ export function MetricCard({
   tone = "red"
 }: MetricCardProps) {
   return (
-    <article className={`metric-card metric-${tone}`}>
+    <article className={`metric-card metric-${tone} ops-card`}>
       <div className="metric-icon" aria-hidden="true">
         <Icon size={20} />
       </div>
       <div>
-        <p>{label}</p>
-        <strong>{value}</strong>
-        <span>{trend}</span>
+        <p className="ops-label">{label}</p>
+        <strong className="ops-data">{value}</strong>
+        <span className="ops-mono">{trend}</span>
       </div>
     </article>
   );

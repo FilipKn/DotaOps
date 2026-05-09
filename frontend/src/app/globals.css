@@ -17,6 +17,42 @@
   --green-soft: #e7f5ec;
   --radius: 8px;
   --shadow: 0 18px 42px rgba(26, 30, 39, 0.08);
+  --ops-bg: #0a0a0a;
+  --ops-bg-soft: #101010;
+  --ops-surface: #131313;
+  --ops-surface-low: #1c1b1b;
+  --ops-surface-panel: rgba(18, 18, 18, 0.86);
+  --ops-surface-elevated: #201f1f;
+  --ops-panel: #171313;
+  --ops-panel-strong: #211616;
+  --ops-text: #f0eeee;
+  --ops-muted: #c9aba7;
+  --ops-muted-strong: #eabcb7;
+  --ops-line: rgba(176, 135, 131, 0.34);
+  --ops-line-soft: rgba(255, 255, 255, 0.1);
+  --ops-primary: #ff544e;
+  --ops-primary-strong: #ff0024;
+  --ops-primary-soft: rgba(255, 84, 78, 0.14);
+  --ops-secondary: #e9c349;
+  --ops-secondary-soft: rgba(233, 195, 73, 0.14);
+  --ops-cyan: #00dddd;
+  --ops-cyan-soft: rgba(0, 221, 221, 0.14);
+  --ops-green: #6ee7a8;
+  --ops-green-soft: rgba(110, 231, 168, 0.14);
+  --ops-error: #ffb4ab;
+  --ops-radius: 4px;
+  --ops-radius-sm: 2px;
+  --ops-space-1: 4px;
+  --ops-space-2: 8px;
+  --ops-space-3: 12px;
+  --ops-space-4: 16px;
+  --ops-space-5: 20px;
+  --ops-space-6: 24px;
+  --ops-gutter: 16px;
+  --ops-page-margin: 32px;
+  --ops-container: 1440px;
+  --ops-glow-red: 0 0 18px rgba(255, 84, 78, 0.24);
+  --ops-glow-cyan: 0 0 16px rgba(0, 221, 221, 0.2);
 }
 
 * {
@@ -59,6 +95,125 @@ h2,
 h3,
 p {
   margin: 0;
+}
+
+.ops-panel {
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
+    var(--ops-surface-panel);
+  color: var(--ops-text);
+  backdrop-filter: blur(18px);
+}
+
+.ops-card {
+  position: relative;
+  border: 1px solid var(--ops-line-soft);
+  border-radius: var(--ops-radius);
+  background:
+    linear-gradient(180deg, rgba(255, 84, 78, 0.055), transparent 58%),
+    var(--ops-surface);
+  color: var(--ops-text);
+}
+
+.ops-card::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: var(--ops-primary);
+  content: "";
+  opacity: 0.72;
+}
+
+.ops-data,
+.ops-mono {
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  letter-spacing: 0.02em;
+}
+
+.ops-data {
+  color: var(--ops-text);
+  font-weight: 800;
+}
+
+.ops-label {
+  color: var(--ops-muted-strong);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ops-signal {
+  gap: 7px;
+}
+
+.ops-signal::before {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
+  content: "";
+}
+
+.ops-scanline {
+  position: relative;
+  overflow: hidden;
+}
+
+.ops-scanline::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent 50%, rgba(255, 84, 78, 0.05) 51%);
+  background-size: 100% 4px;
+  content: "";
+  opacity: 0.5;
+}
+
+.ops-command-grid {
+  background-image:
+    linear-gradient(rgba(176, 135, 131, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(176, 135, 131, 0.1) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.ops-button-primary {
+  border-color: transparent;
+  background: var(--ops-primary);
+  color: #ffffff;
+  box-shadow: var(--ops-glow-red);
+}
+
+.ops-button-primary:hover {
+  background: var(--ops-primary-strong);
+}
+
+.ops-button-secondary {
+  border-color: var(--ops-secondary);
+  background: transparent;
+  color: var(--ops-secondary);
+}
+
+.ops-button-secondary:hover {
+  background: var(--ops-secondary-soft);
+}
+
+.ops-badge {
+  border: 1px solid currentColor;
+  border-radius: var(--ops-radius-sm);
+  background: rgba(255, 255, 255, 0.055);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .app-shell {
@@ -901,6 +1056,112 @@ textarea:focus {
   color: var(--muted);
   font-size: 0.84rem;
   text-align: right;
+}
+
+.app-shell {
+  background:
+    radial-gradient(circle at 88% 8%, rgba(0, 221, 221, 0.08), transparent 28%),
+    linear-gradient(180deg, var(--ops-bg) 0%, #111111 100%);
+}
+
+.sidebar.ops-panel {
+  border-width: 0 1px 0 0;
+  border-color: var(--ops-line);
+  background:
+    linear-gradient(160deg, rgba(255, 84, 78, 0.18), transparent 30%),
+    var(--ops-surface);
+  box-shadow: none;
+}
+
+.topbar.ops-panel {
+  border-width: 0 0 1px;
+  border-color: var(--ops-line);
+  background: rgba(19, 19, 19, 0.9);
+  color: var(--ops-text);
+}
+
+.topbar.ops-panel .topbar-kicker {
+  color: var(--ops-muted);
+}
+
+.button.ops-button-primary {
+  border-color: transparent;
+  background: var(--ops-primary);
+  color: #ffffff;
+  box-shadow: var(--ops-glow-red);
+}
+
+.button.ops-button-primary:hover {
+  background: var(--ops-primary-strong);
+}
+
+.sidebar-panel.ops-card {
+  background: var(--ops-surface-low);
+}
+
+.metric-card.ops-card,
+.tournament-card.ops-card,
+.match-row.ops-card {
+  border-color: var(--ops-line);
+  background:
+    linear-gradient(180deg, rgba(255, 84, 78, 0.07), transparent 48%),
+    var(--ops-surface);
+  color: var(--ops-text);
+  box-shadow: none;
+}
+
+.metric-card.ops-card p,
+.metric-card.ops-card span,
+.tournament-card.ops-card p,
+.tournament-card.ops-card .card-description,
+.tournament-card.ops-card .card-meta-grid span,
+.match-row.ops-card .match-meta span,
+.match-row.ops-card h3 span {
+  color: var(--ops-muted);
+}
+
+.metric-card.ops-card .ops-label,
+.match-row.ops-card .ops-label,
+.section-header .ops-label {
+  color: var(--ops-muted-strong);
+}
+
+.metric-card.ops-card .ops-data,
+.match-row.ops-card .ops-data,
+.tournament-card.ops-card h3,
+.match-row.ops-card h3 {
+  color: var(--ops-text);
+}
+
+.metric-card.ops-card .metric-icon {
+  border: 1px solid currentColor;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.status-badge.ops-badge.status-live,
+.status-badge.ops-badge.status-registration,
+.status-badge.ops-badge.status-processing {
+  background: var(--ops-secondary-soft);
+  color: var(--ops-secondary);
+}
+
+.status-badge.ops-badge.status-ready,
+.status-badge.ops-badge.status-published,
+.status-badge.ops-badge.status-finished {
+  background: var(--ops-green-soft);
+  color: var(--ops-green);
+}
+
+.status-badge.ops-badge.status-draft,
+.status-badge.ops-badge.status-scheduled,
+.status-badge.ops-badge.status-idle {
+  background: var(--ops-cyan-soft);
+  color: var(--ops-cyan);
+}
+
+.status-badge.ops-badge.status-error {
+  background: var(--ops-primary-soft);
+  color: var(--ops-error);
 }
 
 @media (max-width: 1180px) {

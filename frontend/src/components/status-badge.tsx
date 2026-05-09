@@ -18,7 +18,7 @@ const labels: Record<Status, string> = {
 
 export function StatusBadge({ status }: { status: Status }) {
   return (
-    <span className={classNames("status-badge", `status-${status}`)}>
+    <span className={classNames("status-badge ops-badge ops-signal", `status-${status}`)}>
       {labels[status]}
     </span>
   );
