@@ -1164,6 +1164,316 @@ textarea:focus {
   color: var(--ops-error);
 }
 
+.organizer-command {
+  display: grid;
+  gap: var(--ops-gutter);
+  color: var(--ops-text);
+}
+
+.organizer-command-header {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.72fr);
+  gap: var(--ops-space-6);
+  overflow: hidden;
+  padding: 34px;
+}
+
+.organizer-command-header::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, rgba(255, 84, 78, 0.16), transparent 42%),
+    radial-gradient(circle at 84% 8%, rgba(233, 195, 73, 0.12), transparent 32%);
+  content: "";
+}
+
+.organizer-command-header::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, transparent 50%, rgba(0, 221, 221, 0.035) 50%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.026) 1px, transparent 1px);
+  background-size: 100% 4px, 52px 100%;
+  content: "";
+  opacity: 0.65;
+}
+
+.organizer-command-header > * {
+  position: relative;
+  z-index: 1;
+}
+
+.organizer-command-copy h1 {
+  max-width: 860px;
+  margin-top: var(--ops-space-2);
+  color: var(--ops-text);
+  font-size: clamp(2.35rem, 5.4vw, 5rem);
+  line-height: 0.96;
+  text-transform: uppercase;
+}
+
+.organizer-command-copy p:not(.ops-label) {
+  max-width: 760px;
+  margin-top: var(--ops-space-4);
+  color: var(--ops-muted-strong);
+  line-height: 1.65;
+}
+
+.organizer-command-status,
+.organizer-status-list,
+.organizer-side-stack,
+.organizer-main-stack {
+  display: grid;
+  gap: var(--ops-space-3);
+}
+
+.organizer-command-status article,
+.organizer-status-list article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px var(--ops-space-3);
+  align-items: center;
+  padding: var(--ops-space-4);
+  border: 1px solid var(--ops-line-soft);
+  border-radius: var(--ops-radius);
+  background: rgba(10, 10, 10, 0.58);
+}
+
+.organizer-command-status svg,
+.organizer-status-list svg {
+  grid-row: span 2;
+  color: var(--ops-cyan);
+}
+
+.organizer-command-panel,
+.organizer-status-panel,
+.organizer-import-shell {
+  min-width: 0;
+  padding: var(--ops-space-5);
+}
+
+.organizer-action-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ops-gutter);
+}
+
+.organizer-action-card {
+  display: grid;
+  gap: var(--ops-space-2);
+  min-width: 0;
+  min-height: 124px;
+  padding: var(--ops-space-4);
+  border: 1px solid var(--ops-line-soft);
+  border-left: 3px solid var(--ops-cyan);
+  border-radius: var(--ops-radius);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.organizer-action-card svg {
+  color: var(--ops-cyan);
+}
+
+.organizer-action-card p {
+  overflow-wrap: anywhere;
+  color: var(--ops-muted);
+  font-size: 0.76rem;
+}
+
+.organizer-action-red {
+  border-left-color: var(--ops-primary);
+}
+
+.organizer-action-red svg {
+  color: var(--ops-primary);
+}
+
+.organizer-action-gold {
+  border-left-color: var(--ops-secondary);
+}
+
+.organizer-action-gold svg {
+  color: var(--ops-secondary);
+}
+
+.organizer-action-green {
+  border-left-color: var(--ops-green);
+}
+
+.organizer-action-green svg {
+  color: var(--ops-green);
+}
+
+.organizer-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  gap: var(--ops-gutter);
+}
+
+.organizer-form-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.organizer-form-panel::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(120deg, rgba(255, 84, 78, 0.08), transparent 42%);
+  content: "";
+}
+
+.organizer-form-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.organizer-form-grid label {
+  color: var(--ops-muted-strong);
+  font-family: var(--ops-font-mono);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+.organizer-command input,
+.organizer-command select,
+.organizer-command textarea {
+  border-color: var(--ops-line);
+  background: var(--ops-bg);
+  color: var(--ops-text);
+}
+
+.organizer-command input:focus,
+.organizer-command select:focus,
+.organizer-command textarea:focus {
+  border-color: var(--ops-cyan);
+  box-shadow: 0 0 0 3px rgba(0, 221, 221, 0.12);
+}
+
+.organizer-status-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ops-space-3);
+  margin-bottom: var(--ops-space-4);
+}
+
+.organizer-online-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ops-space-1);
+  min-height: 26px;
+  padding: 5px 8px;
+  border: 1px solid var(--ops-green);
+  border-radius: var(--ops-radius);
+  background: var(--ops-green-soft);
+  color: var(--ops-green);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.organizer-import-shell .import-panel {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.organizer-import-shell .card-title-row h3 {
+  color: var(--ops-text);
+}
+
+.organizer-import-shell .import-form label {
+  color: var(--ops-muted-strong);
+  font-family: var(--ops-font-mono);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+.organizer-import-shell .button {
+  border-color: transparent;
+  background: var(--ops-primary);
+  color: #ffffff;
+  box-shadow: var(--ops-glow-red);
+}
+
+.organizer-import-shell .pipeline-grid span {
+  border: 1px solid var(--ops-line-soft);
+  background: var(--ops-surface-elevated);
+  color: var(--ops-muted-strong);
+}
+
+.organizer-workflow-panel {
+  display: grid;
+  gap: var(--ops-space-3);
+}
+
+.organizer-workflow-panel article {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: var(--ops-space-3);
+  align-items: center;
+  padding: var(--ops-space-4);
+  border: 1px solid var(--ops-line-soft);
+  border-radius: var(--ops-radius);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.organizer-workflow-panel article > span {
+  color: var(--ops-secondary);
+}
+
+.organizer-workflow-panel svg {
+  color: var(--ops-primary);
+}
+
+.organizer-workflow-panel strong {
+  color: var(--ops-text);
+  text-transform: uppercase;
+}
+
+.organizer-workflow-panel p {
+  margin-top: 3px;
+  color: var(--ops-muted);
+  font-size: 0.78rem;
+}
+
+.organizer-roadmap-panel .roadmap-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.organizer-roadmap-panel .roadmap-item {
+  border-color: var(--ops-line-soft);
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--ops-text);
+}
+
+.organizer-roadmap-panel .roadmap-icon {
+  border: 1px solid var(--ops-line);
+  background: var(--ops-bg);
+  color: var(--ops-muted-strong);
+}
+
+.organizer-roadmap-panel .roadmap-active .roadmap-icon {
+  background: var(--ops-secondary-soft);
+  color: var(--ops-secondary);
+}
+
+.organizer-roadmap-panel .roadmap-done .roadmap-icon {
+  background: var(--ops-green-soft);
+  color: var(--ops-green);
+}
+
+.organizer-roadmap-panel .roadmap-item h3 {
+  color: var(--ops-text);
+}
+
+.organizer-roadmap-panel .roadmap-item ul {
+  color: var(--ops-muted);
+}
+
 .team-command {
   display: grid;
   gap: var(--ops-gutter);
@@ -2436,6 +2746,16 @@ textarea:focus {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .organizer-command-header,
+  .organizer-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .organizer-action-grid,
+  .organizer-roadmap-panel .roadmap-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .team-command-grid,
   .team-roster-grid {
     grid-template-columns: 1fr;
@@ -2522,6 +2842,16 @@ textarea:focus {
 
   .page-header h1 {
     font-size: 2rem;
+  }
+
+  .organizer-command-header {
+    padding: var(--ops-space-5);
+  }
+
+  .organizer-command-panel,
+  .organizer-status-panel,
+  .organizer-import-shell {
+    padding: var(--ops-space-4);
   }
 
   .team-command-header {
@@ -2628,6 +2958,26 @@ textarea:focus {
   .button {
     width: 100%;
     white-space: normal;
+  }
+
+  .organizer-action-grid,
+  .organizer-roadmap-panel .roadmap-list {
+    grid-template-columns: 1fr;
+  }
+
+  .organizer-command-copy h1 {
+    font-size: 2.35rem;
+  }
+
+  .organizer-command-status article,
+  .organizer-status-list article,
+  .organizer-workflow-panel article {
+    grid-template-columns: 1fr;
+  }
+
+  .organizer-command-status svg,
+  .organizer-status-list svg {
+    grid-row: auto;
   }
 
   .team-performance-grid,
