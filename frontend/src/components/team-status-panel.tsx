@@ -36,7 +36,7 @@ export function TeamStatusPanel({ teams }: TeamStatusPanelProps) {
         </article>
         <article>
           <Database size={18} />
-          <span className="ops-label">Regije</span>
+          <span className="ops-label">Regions</span>
           <strong className="ops-data">{regions}</strong>
         </article>
       </div>

@@ -35,51 +35,51 @@ export async function DashboardOverview() {
       <section className="page-header">
         <div>
           <p className="eyebrow">DotaOps</p>
-          <h1>Operativna plosca za Dota 2 turnirje</h1>
+          <h1>Operations Dashboard for Dota 2 Tournaments</h1>
           <p>
-            Enotno mesto za turnirje, prijave ekip, rezultate, bracket,
-            match_id tok in osnovno analitiko igralcev, ekip ter junakov.
+            A unified workspace for tournaments, team registrations, results,
+            brackets, match_id flow, and core analytics for players, teams, and heroes.
           </p>
         </div>
         <div className="header-actions">
           <Link className="button button-primary" href="/turnirji">
             <Trophy size={18} />
-            <span>Preglej turnirje</span>
+            <span>View Tournaments</span>
           </Link>
           <Link className="button button-secondary" href="/analitika">
             <Activity size={18} />
-            <span>Odpri analitiko</span>
+            <span>Open Analytics</span>
           </Link>
         </div>
       </section>
 
-      <section className="metric-grid" aria-label="Povzetek">
+      <section className="metric-grid" aria-label="Summary">
         <MetricCard
           icon={Trophy}
-          label="Aktivni turnirji"
+          label="Active Tournaments"
           tone="red"
-          trend="1 live, 1 v prijavah"
+          trend="1 live, 1 in registration"
           value="3"
         />
         <MetricCard
           icon={UsersRound}
-          label="Ekipe v sistemu"
+          label="Teams in System"
           tone="teal"
-          trend="profili pripravljeni"
+          trend="profiles ready"
           value="24"
         />
         <MetricCard
           icon={Swords}
-          label="Tekme"
+          label="Matches"
           tone="amber"
-          trend="2 z uvozenim match_id"
+          trend="2 with imported match_id"
           value="48"
         />
         <MetricCard
           icon={DatabaseZap}
-          label="Analiticni tok"
+          label="Analytics Pipeline"
           tone="green"
-          trend="obdelava + agregati"
+          trend="processing + aggregates"
           value="P1"
         />
       </section>
@@ -87,12 +87,12 @@ export async function DashboardOverview() {
       <section className="content-grid">
         <div className="panel panel-large">
           <SectionHeader
-            eyebrow="Javni pregled"
-            title="Razpored in rezultati"
-            description="Osnovni prikaz tekem, statusov in povezav na Dota 2 match podatke."
+            eyebrow="Public Overview"
+            title="Schedule and Results"
+            description="Core display for matches, statuses, and links to Dota 2 match data."
             action={
               <Link className="text-link" href="/turnirji/ancient-cup-ljubljana">
-                <span>Podrobnosti</span>
+                <span>Details</span>
               </Link>
             }
           />
@@ -101,9 +101,9 @@ export async function DashboardOverview() {
 
         <div className="panel">
           <SectionHeader
-            eyebrow="Turnirski tok"
+            eyebrow="Tournament Flow"
             title="Bracket"
-            description="Napredovanje ekip za trenutni turnir."
+            description="Team advancement for the current tournament."
           />
           <BracketView matches={liveMatches} />
         </div>
@@ -112,9 +112,9 @@ export async function DashboardOverview() {
       <section className="two-column">
         <div className="panel">
           <SectionHeader
-            eyebrow="Turnirji"
-            title="Aktualni dogodki"
-            description="Zacetni pregled za organizatorje, ekipe in obiskovalce."
+            eyebrow="Tournaments"
+            title="Current Events"
+            description="Initial overview for organizers, teams, and viewers."
           />
           <div className="cards-grid compact">
             {tournaments.slice(0, 2).map((tournament) => (
@@ -128,9 +128,9 @@ export async function DashboardOverview() {
 
       <div className="panel">
         <SectionHeader
-          eyebrow="Analitika"
-          title="Ekipe, igralci in junaki"
-          description="Pripravljena postavitev za KDA, win rate, najpogosteje igrane junake in primerjave."
+          eyebrow="Analytics"
+          title="Teams, Players, and Heroes"
+          description="Prepared layout for KDA, win rate, most played heroes, and comparisons."
         />
         <AnalyticsOverview heroes={analytics.heroMetrics} teams={analytics.teams} />
       </div>

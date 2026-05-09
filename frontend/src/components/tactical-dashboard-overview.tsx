@@ -44,33 +44,33 @@ export async function TacticalDashboardOverview() {
     <div className="tactical-dashboard">
       <DashboardHero />
 
-      <section className="dashboard-metrics" aria-label="Takticni povzetek">
+      <section className="dashboard-metrics" aria-label="Tactical summary">
         <MetricCard
           icon={Trophy}
-          label="Aktivni turnirji"
+          label="Active Tournaments"
           tone="red"
-          trend="1 live, 1 v prijavah"
+          trend="1 live, 1 in registration"
           value="3"
         />
         <MetricCard
           icon={UsersRound}
-          label="Ekipe v sistemu"
+          label="Teams in System"
           tone="teal"
-          trend="profili pripravljeni"
+          trend="profiles ready"
           value="24"
         />
         <MetricCard
           icon={Swords}
-          label="Tekme"
+          label="Matches"
           tone="amber"
-          trend="2 z uvozenim match_id"
+          trend="2 with imported match_id"
           value="48"
         />
         <MetricCard
           icon={DatabaseZap}
-          label="Analiticni tok"
+          label="Analytics Pipeline"
           tone="green"
-          trend="obdelava + agregati"
+          trend="processing + aggregates"
           value="P1"
         />
       </section>
@@ -79,11 +79,11 @@ export async function TacticalDashboardOverview() {
         <div className="dashboard-panel dashboard-panel-main ops-panel">
           <SectionHeader
             eyebrow="Live matches"
-            title="Razpored in rezultati"
-            description="Operativni pregled tekem, statusov in povezav na Dota 2 match podatke."
+            title="Schedule and Results"
+            description="Operational overview of matches, statuses, and links to Dota 2 match data."
             action={
               <Link className="text-link ops-mono" href="/turnirji/ancient-cup-ljubljana">
-                <span>Podrobnosti</span>
+                <span>Details</span>
               </Link>
             }
           />
@@ -94,15 +94,15 @@ export async function TacticalDashboardOverview() {
           <div className="dashboard-panel ops-panel">
             <SectionHeader
               eyebrow="Tactical insights"
-              title="Vpogledi"
-              description="Hitri signali za organizatorja in ekipe."
+              title="Insights"
+              description="Fast signals for organizers and teams."
             />
             <div className="tactical-insight-list">
-              <TacticalInsightCard icon={Radar} title="Tekmovalni tok">
-                Finalni sloti so pripravljeni za naslednji krog bracket faze.
+              <TacticalInsightCard icon={Radar} title="Competitive Flow">
+                Final slots are ready for the next bracket round.
               </TacticalInsightCard>
-              <TacticalInsightCard icon={Eye} tone="cyan" title="Javni pogled">
-                Razpored, rezultati in match_id statusi so usklajeni za gledalce.
+              <TacticalInsightCard icon={Eye} tone="cyan" title="Public View">
+                Schedule, results, and match_id statuses are synchronized for viewers.
               </TacticalInsightCard>
             </div>
           </div>
@@ -110,8 +110,8 @@ export async function TacticalDashboardOverview() {
           <div className="dashboard-panel ops-panel">
             <SectionHeader
               eyebrow="Active teams"
-              title="Ekipe"
-              description="Najbolj stabilne ekipe po trenutnih metrikah."
+              title="Teams"
+              description="Most stable teams based on current metrics."
             />
             <div className="dashboard-team-list">
               {topTeams.map((team) => (
@@ -134,8 +134,8 @@ export async function TacticalDashboardOverview() {
         <div className="dashboard-panel ops-panel">
           <SectionHeader
             eyebrow="Bracket system"
-            title="Turnirski tok"
-            description="Napredovanje ekip za trenutni turnir."
+            title="Tournament Flow"
+            description="Team advancement for the current tournament."
           />
           <BracketView matches={liveMatches} />
         </div>
@@ -143,8 +143,8 @@ export async function TacticalDashboardOverview() {
         <div className="dashboard-panel ops-panel">
           <SectionHeader
             eyebrow="Tournament circuits"
-            title="Aktualni dogodki"
-            description="Pregled turnirjev in statusov za operativno spremljanje."
+            title="Current Events"
+            description="Tournament and status overview for operational monitoring."
           />
           <div className="dashboard-tournament-list">
             {tournaments.slice(0, 2).map((tournament) => (
@@ -156,8 +156,8 @@ export async function TacticalDashboardOverview() {
         <div className="dashboard-panel ops-panel">
           <SectionHeader
             eyebrow="OpenDota pipeline"
-            title="Uvoz podatkov"
-            description={`${importedMatches.length} tekem ima povezan match_id.`}
+            title="Data Import"
+            description={`${importedMatches.length} matches have linked match_id data.`}
           />
           <MatchImportPanel />
         </div>
@@ -166,12 +166,12 @@ export async function TacticalDashboardOverview() {
       <section className="dashboard-panel ops-panel dashboard-analytics-panel">
         <SectionHeader
           eyebrow="Analytics core"
-          title="Ekipe, igralci in junaki"
-          description="Pripravljena postavitev za KDA, win rate, najpogosteje igrane junake in primerjave."
+          title="Teams, Players, and Heroes"
+          description="Prepared layout for KDA, win rate, most played heroes, and comparisons."
           action={
             <Link className="text-link ops-mono" href="/analitika">
               <Activity size={16} />
-              <span>Odpri analitiko</span>
+              <span>Open Analytics</span>
             </Link>
           }
         />

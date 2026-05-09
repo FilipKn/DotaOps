@@ -11,8 +11,8 @@ export function BracketCommandPanel({ matches }: BracketCommandPanelProps) {
     <section className="bracket-command-panel ops-panel">
       <SectionHeader
         eyebrow="Bracket control"
-        title="Napredovanje ekip"
-        description="Vizualni pregled krogov, rezultatov in odprtih mest v turnirskem toku."
+        title="Team Advancement"
+        description="Visual overview of rounds, results, and open slots in the tournament flow."
       />
       <BracketView matches={matches} />
     </section>

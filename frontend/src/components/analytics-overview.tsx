@@ -14,7 +14,7 @@ export function AnalyticsOverview({ heroes, teams }: AnalyticsOverviewProps) {
   return (
     <div className="analytics-grid">
       <section className="analytics-panel">
-        <h3>Najuspesnejsi junaki</h3>
+        <h3>Top Performing Heroes</h3>
         <div className="bar-list">
           {heroes.map((hero) => (
             <div className="bar-row" key={hero.hero}>
@@ -35,7 +35,7 @@ export function AnalyticsOverview({ heroes, teams }: AnalyticsOverviewProps) {
       </section>
 
       <section className="analytics-panel">
-        <h3>Primerjava ekip</h3>
+        <h3>Team Comparison</h3>
         <div className="team-rank-list">
           {topTeams.map((team, index) => (
             <article className="team-rank" key={team.id}>
@@ -43,7 +43,7 @@ export function AnalyticsOverview({ heroes, teams }: AnalyticsOverviewProps) {
               <div>
                 <strong>{team.name}</strong>
                 <p>
-                  {formatPercent(team.winRate)} win rate · KDA{" "}
+                  {formatPercent(team.winRate)} win rate - KDA{" "}
                   {team.kda.toFixed(1)}
                 </p>
               </div>
@@ -54,3 +54,4 @@ export function AnalyticsOverview({ heroes, teams }: AnalyticsOverviewProps) {
     </div>
   );
 }
+

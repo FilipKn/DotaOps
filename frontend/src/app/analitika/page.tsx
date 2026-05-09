@@ -70,19 +70,19 @@ export default async function AnalyticsPage() {
           icon={Percent}
           label="Avg win rate"
           value={formatPercent(avgWinRate)}
-          delta={`${topTeam.name} vodi`}
+          delta={`${topTeam.name} leads`}
           tone="cyan"
         />
         <TelemetryCard
           icon={Swords}
           label="Avg KDA"
           value={avgKda.toFixed(1)}
-          delta="ekipni model"
+          delta="team model"
           tone="gold"
         />
         <TelemetryCard
           icon={Clock3}
-          label="Avg trajanje"
+          label="Avg duration"
           value={avgDuration}
           delta="match window"
           tone="green"
@@ -100,8 +100,8 @@ export default async function AnalyticsPage() {
         <div className="analytics-terminal-panel analytics-performance-panel ops-panel">
           <SectionHeader
             eyebrow="Performance telemetry"
-            title="Win rate, KDA in tempo tekem"
-            description="Terminalni pogled za spremljanje OpenDota signalov, primerjav in nihanj skozi match tok."
+            title="Win Rate, KDA, and Match Tempo"
+            description="Terminal view for monitoring OpenDota signals, comparisons, and variance across the match flow."
           />
 
           <div className="analytics-chart" aria-hidden="true">
@@ -138,8 +138,8 @@ export default async function AnalyticsPage() {
         <aside className="analytics-terminal-panel analytics-import-panel ops-panel">
           <SectionHeader
             eyebrow="OpenDota pipeline"
-            title="Stanja uvoza"
-            description="Match_id zapisi, ki napajajo analiticne panele."
+            title="Import Status"
+            description="Match_id records that feed the analytics panels."
           />
 
           <div className="analytics-import-list">
@@ -167,8 +167,8 @@ export default async function AnalyticsPage() {
       <section className="analytics-terminal-panel ops-panel">
         <SectionHeader
           eyebrow="Hero specialization"
-          title="Uspesnost junakov"
-          description="Pregled win rate, pick rate in KDA signala za najpomembnejse hero metrike."
+          title="Hero Performance"
+          description="Overview of win rate, pick rate, and KDA signals for key hero metrics."
         />
         <HeroPerformanceGrid heroes={analytics.heroMetrics} />
       </section>
@@ -177,8 +177,8 @@ export default async function AnalyticsPage() {
         <div className="analytics-terminal-panel ops-panel">
           <SectionHeader
             eyebrow="Team comparison"
-            title="Primerjave ekip"
-            description="Razvrstitev ekip po trenutnih win rate in KDA signalih."
+            title="Team Comparisons"
+            description="Team ranking based on current win rate and KDA signals."
             action={
               <span className="ops-badge">
                 <GitCompare size={14} />
@@ -192,8 +192,8 @@ export default async function AnalyticsPage() {
         <div className="analytics-terminal-panel ops-panel">
           <SectionHeader
             eyebrow="Telemetry status"
-            title="Analiticni signali"
-            description="Hitri pregled kvalitete podatkov za organizatorja turnirja."
+            title="Analytics Signals"
+            description="Fast data quality overview for the tournament organizer."
           />
           <div className="analytics-signal-list">
             <article>
@@ -220,8 +220,8 @@ export default async function AnalyticsPage() {
       <section className="analytics-terminal-panel analytics-table-panel ops-panel">
         <SectionHeader
           eyebrow="Roster data"
-          title="Ekipe in igralni profili"
-          description="Tabela ostaja funkcionalna in uporablja obstojece podatke ekip."
+          title="Teams and Player Profiles"
+          description="The table remains functional and uses existing team data."
         />
         <TeamTable teams={analytics.teams} />
       </section>

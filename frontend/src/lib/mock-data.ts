@@ -158,9 +158,9 @@ export const tournaments: Tournament[] = [
     teamsCount: 8,
     registrationsCount: 8,
     organizer: "DotaOps",
-    prizePool: "Community nagrade",
+    prizePool: "Community rewards",
     description:
-      "Prvi predstavitveni turnir za preverjanje prijav, bracketov, rezultatov in analitike match podatkov."
+      "First demo tournament for validating registrations, brackets, results, and match data analytics."
   },
   {
     id: "t2",
@@ -174,7 +174,7 @@ export const tournaments: Tournament[] = [
     organizer: "DotaOps",
     prizePool: "TBD",
     description:
-      "Odprt turnir za ekipe in kapetane, s poudarkom na hitrem potrjevanju prijav in javnem razporedu."
+      "Open tournament for teams and captains, focused on fast registration approval and a public schedule."
   },
   {
     id: "t3",
@@ -188,7 +188,7 @@ export const tournaments: Tournament[] = [
     organizer: "DotaOps",
     prizePool: "Demo",
     description:
-      "Zakljucni format za testiranje napredovanja, vnosa rezultatov in dashboardov pred oddajo projekta."
+      "Final format for testing advancement, result entry, and dashboards before project submission."
   }
 ];
 
@@ -196,7 +196,7 @@ export const matches: Match[] = [
   {
     id: "m1",
     tournamentSlug: "ancient-cup-ljubljana",
-    round: "Cetrtfinale",
+    round: "Quarterfinal",
     teamA: "Radiant Core",
     teamB: "Ancient Five",
     scoreA: 2,
@@ -209,7 +209,7 @@ export const matches: Match[] = [
   {
     id: "m2",
     tournamentSlug: "ancient-cup-ljubljana",
-    round: "Cetrtfinale",
+    round: "Quarterfinal",
     teamA: "Dire Stack",
     teamB: "Smoke Gank",
     scoreA: 1,
@@ -222,7 +222,7 @@ export const matches: Match[] = [
   {
     id: "m3",
     tournamentSlug: "ancient-cup-ljubljana",
-    round: "Polfinale",
+    round: "Semifinal",
     teamA: "Radiant Core",
     teamB: "TBD",
     startsAt: "2026-05-08T18:30:00+02:00",
@@ -231,7 +231,7 @@ export const matches: Match[] = [
   {
     id: "m4",
     tournamentSlug: "ancient-cup-ljubljana",
-    round: "Finale",
+    round: "Final",
     teamA: "TBD",
     teamB: "TBD",
     startsAt: "2026-05-10T20:00:00+02:00",
@@ -240,9 +240,9 @@ export const matches: Match[] = [
   {
     id: "m5",
     tournamentSlug: "mid-wars-open",
-    round: "Skupina A",
-    teamA: "Prijavljena ekipa",
-    teamB: "Prijavljena ekipa",
+    round: "Group A",
+    teamA: "Registered Team",
+    teamB: "Registered Team",
     startsAt: "2026-05-20T19:00:00+02:00",
     status: "scheduled"
   }
@@ -258,53 +258,53 @@ export const heroMetrics: HeroMetric[] = [
 
 export const roadmap: RoadmapItem[] = [
   {
-    iteration: "1. iteracija",
-    title: "Racuni, profili in javni pregled",
+    iteration: "Iteration 1",
+    title: "Accounts, Profiles, and Public Overview",
     status: "active",
     items: [
-      "Uporabniski racuni in prijava",
-      "Profili igralcev in ekip",
-      "Javni pregled turnirjev in osnovnih informacij"
+      "User accounts and login",
+      "Player and team profiles",
+      "Public tournament overview and core information"
     ]
   },
   {
-    iteration: "2. iteracija",
-    title: "Ustvarjanje turnirjev in prijave",
+    iteration: "Iteration 2",
+    title: "Tournament Creation and Registrations",
     status: "planned",
     items: [
-      "Urejanje in objava turnirjev",
-      "Prijavni obrazci ekip",
-      "Potrjevanje sodelovanja"
+      "Tournament editing and publishing",
+      "Team registration forms",
+      "Participation confirmation"
     ]
   },
   {
-    iteration: "3. iteracija",
-    title: "Bracketi, razpored in rezultati",
+    iteration: "Iteration 3",
+    title: "Brackets, Schedule, and Results",
     status: "planned",
     items: [
-      "Zreb oziroma pari",
-      "Vnos rezultatov",
-      "Javni prikaz napredovanja"
+      "Draws and pairings",
+      "Result entry",
+      "Public advancement display"
     ]
   },
   {
-    iteration: "4. iteracija",
-    title: "OpenDota tok in analitika",
+    iteration: "Iteration 4",
+    title: "OpenDota Flow and Analytics",
     status: "planned",
     items: [
-      "Uvoz match_id",
-      "Normalizacija podatkov",
-      "Metrike ekip, igralcev in junakov"
+      "match_id import",
+      "Data normalization",
+      "Team, player, and hero metrics"
     ]
   },
   {
-    iteration: "5. iteracija",
-    title: "Integracije in stabilizacija",
+    iteration: "Iteration 5",
+    title: "Integrations and Stabilization",
     status: "planned",
     items: [
-      "Steam profil oziroma identifikacija",
-      "Discord ali e-postna obvestila",
-      "Regresijski test in koncna dokumentacija"
+      "Steam profile or identification",
+      "Discord or email notifications",
+      "Regression testing and final documentation"
     ]
   }
 ];

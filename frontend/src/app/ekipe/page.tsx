@@ -19,8 +19,8 @@ export default async function TeamsPage() {
           <section className="team-command-panel ops-panel">
             <SectionHeader
               eyebrow="Tactical roster grid"
-              title="Ekipe"
-              description="Pregled kapetanov, regij, win rate, KDA in osnovnega hero poola za vsako ekipo."
+              title="Teams"
+              description="Overview of captains, regions, win rate, KDA, and core hero pool for each team."
             />
             <div className="team-performance-grid">
               {rankedTeams.map((team, index) => (
@@ -36,8 +36,8 @@ export default async function TeamsPage() {
           <section className="team-command-panel team-table-panel ops-panel">
             <SectionHeader
               eyebrow="Roster registry"
-              title="Podatkovna tabela"
-              description="Tabela ostaja pripravljena za filtre, Steam povezave in zgodovino nastopov."
+              title="Data Table"
+              description="The table remains ready for filters, Steam links, and appearance history."
             />
             <TeamTable teams={rankedTeams} />
           </section>
@@ -49,8 +49,8 @@ export default async function TeamsPage() {
       <section className="team-command-panel ops-panel">
         <SectionHeader
           eyebrow="Player assignments"
-          title="Rosterji in vloge"
-          description="Operativni pregled igralcev, vlog, najljubsih junakov in KDA signala po ekipah."
+          title="Rosters and Roles"
+          description="Operational overview of players, roles, favorite heroes, and KDA signals by team."
         />
         <TeamRosterGrid teams={rankedTeams} />
       </section>

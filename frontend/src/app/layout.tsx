@@ -6,7 +6,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "DotaOps",
-  description: "Frontend za organizacijo Dota 2 turnirjev in analitiko tekem."
+  description: "Frontend for organizing Dota 2 tournaments and match analytics."
 };
 
 export default function RootLayout({
@@ -15,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="sl">
+    <html lang="en">
       <body>
         <AppShell>{children}</AppShell>
       </body>

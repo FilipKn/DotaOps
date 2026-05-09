@@ -32,17 +32,17 @@ export function OrganizerStatusPanel({
       <div className="organizer-status-list">
         <article>
           <UsersRound size={18} />
-          <span className="ops-label">Prijave ekip</span>
+          <span className="ops-label">Team Registrations</span>
           <strong className="ops-data">{registrations}</strong>
         </article>
         <article>
           <GitBranch size={18} />
-          <span className="ops-label">Live tekme</span>
+          <span className="ops-label">Live Matches</span>
           <strong className="ops-data">{liveMatches}</strong>
         </article>
         <article>
           <CheckCircle2 size={18} />
-          <span className="ops-label">Rezultati</span>
+          <span className="ops-label">Results</span>
           <strong className="ops-data">{finishedMatches}</strong>
         </article>
         <article>

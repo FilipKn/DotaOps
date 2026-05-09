@@ -8,29 +8,29 @@ export function DashboardHero() {
     <section className="dashboard-hero ops-panel ops-command-grid">
       <div>
         <p className="ops-label">DotaOps Terminal</p>
-        <h1>Komandni center</h1>
+        <h1>Command Center</h1>
         <p className="dashboard-hero-status ops-mono">
           <span />
-          Analiza turnirskega toka in zadnjih tekem je pripravljena.
+          Tournament flow and recent match analysis are ready.
         </p>
       </div>
 
       <div className="dashboard-hero-actions">
         <Link className="button ops-button-primary" href="/organizator">
           <Play size={17} />
-          <span>Upravljaj turnir</span>
+          <span>Manage Tournament</span>
         </Link>
         <Link className="button ops-button-secondary" href="/analitika">
           <Activity size={17} />
-          <span>Globalni vpogledi</span>
+          <span>Global Insights</span>
         </Link>
       </div>
 
       <div className="dashboard-hero-strip">
         <article>
           <Trophy size={18} />
-          <span className="ops-label">Turnirji</span>
-          <strong className="ops-data">3 aktivni</strong>
+          <span className="ops-label">Tournaments</span>
+          <strong className="ops-data">3 active</strong>
         </article>
         <article>
           <Brackets size={18} />

@@ -4,16 +4,16 @@ import { classNames } from "@/lib/utils";
 type Status = TournamentStatus | MatchStatus | ImportStatus;
 
 const labels: Record<Status, string> = {
-  draft: "Osnutek",
-  registration: "Prijave",
-  published: "Objavljeno",
-  live: "V teku",
-  finished: "Zakljuceno",
-  scheduled: "Planirano",
-  ready: "Pripravljeno",
-  processing: "V obdelavi",
-  error: "Napaka",
-  idle: "Caka"
+  draft: "Draft",
+  registration: "Registration",
+  published: "Published",
+  live: "Live",
+  finished: "Completed",
+  scheduled: "Scheduled",
+  ready: "Ready",
+  processing: "Processing",
+  error: "Error",
+  idle: "Idle"
 };
 
 export function StatusBadge({ status }: { status: Status }) {

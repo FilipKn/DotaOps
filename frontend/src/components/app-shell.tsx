@@ -16,31 +16,31 @@ import type { ReactNode } from "react";
 import { classNames } from "@/lib/utils";
 
 const navItems = [
-  { href: "/dashboard", label: "Nadzorna plosca", icon: LayoutDashboard },
-  { href: "/turnirji", label: "Turnirji", icon: Trophy },
-  { href: "/organizator", label: "Organizator", icon: Brackets },
-  { href: "/ekipe", label: "Ekipe", icon: UsersRound },
-  { href: "/analitika", label: "Analitika", icon: BarChart3 }
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/turnirji", label: "Tournaments", icon: Trophy },
+  { href: "/organizator", label: "Organizer", icon: Brackets },
+  { href: "/ekipe", label: "Teams", icon: UsersRound },
+  { href: "/analitika", label: "Analytics", icon: BarChart3 }
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "mock podatki";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "mock data";
 
   return (
     <div className="app-shell">
       <aside className="sidebar ops-panel ops-scanline">
-        <Link href="/" className="brand" aria-label="DotaOps domov">
+        <Link href="/" className="brand" aria-label="DotaOps home">
           <span className="brand-mark" aria-hidden="true">
             <Swords size={22} />
           </span>
           <span>
             <strong>DotaOps</strong>
-            <small>Dota 2 turnirji in analitika</small>
+            <small>Dota 2 tournaments and analytics</small>
           </span>
         </Link>
 
-        <nav className="nav-list" aria-label="Glavna navigacija">
+        <nav className="nav-list" aria-label="Main navigation">
           {navItems.map((item) => {
             const isActive =
               item.href === "/dashboard"
@@ -64,7 +64,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="sidebar-panel ops-card">
           <Shield size={18} />
           <div>
-            <span>API povezava</span>
+            <span>API connection</span>
             <strong>{apiUrl}</strong>
           </div>
         </div>
@@ -73,12 +73,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="main-area">
         <header className="topbar ops-panel">
           <div>
-            <span className="topbar-kicker">Projekt IPT</span>
-            <strong>Frontend okolje za razvoj DotaOps</strong>
+            <span className="topbar-kicker">IPT Project</span>
+            <strong>Frontend environment for DotaOps development</strong>
           </div>
           <Link className="button button-primary ops-button-primary" href="/organizator">
             <Brackets size={18} />
-            <span>Upravljaj turnir</span>
+            <span>Manage Tournament</span>
           </Link>
         </header>
 

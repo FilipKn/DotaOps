@@ -19,10 +19,10 @@ export function AnalyticsTerminalHeader({
     <section className="analytics-terminal-header ops-panel ops-command-grid">
       <div className="analytics-terminal-copy">
         <p className="ops-label">DotaOps Analytics Terminal</p>
-        <h1>Analiticni terminal</h1>
+        <h1>Analytics Terminal</h1>
         <p className="ops-mono">
-          OpenDota match_id tok, primerjave ekip in junakov ter telemetry
-          metrike za turnirske odlocitve.
+          OpenDota match_id flow, team and hero comparisons, and telemetry
+          metrics for tournament decisions.
         </p>
       </div>
 

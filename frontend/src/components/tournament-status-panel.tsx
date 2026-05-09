@@ -26,14 +26,14 @@ export function TournamentStatusPanel({
       <div className="tournament-status-list">
         <article>
           <UsersRound size={18} />
-          <span className="ops-label">Prijave</span>
+          <span className="ops-label">Registrations</span>
           <strong className="ops-data">
             {tournament.registrationsCount}/{tournament.teamsCount}
           </strong>
         </article>
         <article>
           <GitBranch size={18} />
-          <span className="ops-label">Tekme</span>
+          <span className="ops-label">Matches</span>
           <strong className="ops-data">
             {finishedMatches}/{matches.length}
           </strong>

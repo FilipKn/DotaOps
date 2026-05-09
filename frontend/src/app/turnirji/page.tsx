@@ -26,42 +26,42 @@ export default async function TournamentsPage() {
     <div className="tournament-command">
       <TournamentCommandHeader
         eyebrow="Tournament operations"
-        title="Turnirski command center"
-        description="Javni in organizatorski pregled statusov, prijav, formatov ter zacetnih podatkov za Dota 2 turnirje."
+        title="Tournament Command Center"
+        description="Public and organizer overview of statuses, registrations, formats, and initial data for Dota 2 tournaments."
         actions={
           <Link className="button ops-button-primary" href="/organizator">
             <Plus size={18} />
-            <span>Nov turnir</span>
+            <span>New Tournament</span>
           </Link>
         }
       >
         <TournamentMetaGrid
           items={[
             {
-              detail: "vsi circuits",
+              detail: "all circuits",
               icon: ShieldCheck,
-              label: "Turnirji",
+              label: "Tournaments",
               tone: "red",
               value: String(tournaments.length)
             },
             {
-              detail: "trenutno aktivni",
+              detail: "currently active",
               icon: GitBranch,
               label: "Live",
               tone: "green",
               value: String(liveTournaments)
             },
             {
-              detail: `${totalRegistrations}/${totalSlots} ekip`,
+              detail: `${totalRegistrations}/${totalSlots} teams`,
               icon: UsersRound,
-              label: "Prijave",
+              label: "Registrations",
               tone: "cyan",
               value: String(openRegistrations)
             },
             {
-              detail: "operativni koledar",
+              detail: "operations calendar",
               icon: CalendarDays,
-              label: "Razpored",
+              label: "Schedule",
               tone: "gold",
               value: "SYNC"
             }
@@ -72,8 +72,8 @@ export default async function TournamentsPage() {
       <section className="tournament-command-panel ops-panel">
         <SectionHeader
           eyebrow="Tournament registry"
-          title="Vsi turnirji"
-          description="Statusi, prijave, ekipe in format so pripravljeni za operativni pregled."
+          title="All Tournaments"
+          description="Statuses, registrations, teams, and format are ready for operational review."
         />
         <div className="tournament-card-grid">
           {tournaments.map((tournament) => (

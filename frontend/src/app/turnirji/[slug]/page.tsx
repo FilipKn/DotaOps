@@ -63,10 +63,10 @@ export default async function TournamentDetailPage({
         actions={
           <>
             <Link className="button ops-button-secondary" href="/turnirji">
-              Vsi turnirji
+              All Tournaments
             </Link>
             <Link className="button ops-button-primary" href="/organizator">
-              Upravljaj
+              Manage
             </Link>
           </>
         }
@@ -76,21 +76,21 @@ export default async function TournamentDetailPage({
             {
               detail: "format",
               icon: Trophy,
-              label: "Sistem",
+              label: "System",
               tone: "red",
               value: tournament.format
             },
             {
-              detail: "zacetek",
+              detail: "start",
               icon: CalendarDays,
-              label: "Razpored",
+              label: "Schedule",
               tone: "gold",
               value: formatDateTime(tournament.startsAt)
             },
             {
-              detail: "registracije",
+              detail: "registrations",
               icon: UsersRound,
-              label: "Ekipe",
+              label: "Teams",
               tone: "cyan",
               value: `${tournament.registrationsCount}/${tournament.teamsCount}`
             },
@@ -110,12 +110,12 @@ export default async function TournamentDetailPage({
           <section className="tournament-command-panel ops-panel">
             <SectionHeader
               eyebrow="Match operations"
-              title="Razpored, rezultati in match_id"
-              description="Podlaga za javni pogled obiskovalcev in povezavo z internimi zapisi turnirja."
+              title="Schedule, Results, and match_id"
+              description="Foundation for the public viewer experience and links to internal tournament records."
               action={
                 <span className="ops-badge">
                   <GitBranch size={14} />
-                  {tournamentMatches.length} tekem
+                  {tournamentMatches.length} matches
                 </span>
               }
             />
@@ -130,13 +130,13 @@ export default async function TournamentDetailPage({
 
       <section className="tournament-command-panel tournament-analytics-panel ops-panel">
         <SectionHeader
-          eyebrow="Turnirska analitika"
-          title="Metrike po uvozenih tekmah"
-          description="Pripravljeno za win rate, KDA, trajanje tekem in uspesnost junakov."
+          eyebrow="Tournament Analytics"
+          title="Metrics from Imported Matches"
+          description="Ready for win rate, KDA, match duration, and hero performance."
           action={
             <Link className="text-link ops-mono" href="/analitika">
               <BarChart3 size={16} />
-              <span>Odpri analitiko</span>
+              <span>Open Analytics</span>
             </Link>
           }
         />

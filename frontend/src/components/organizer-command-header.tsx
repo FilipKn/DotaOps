@@ -17,22 +17,22 @@ export function OrganizerCommandHeader({
     <section className="organizer-command-header ops-panel ops-command-grid">
       <div className="organizer-command-copy">
         <p className="ops-label">Organizer operations</p>
-        <h1>Organizatorski command center</h1>
+        <h1>Organizer Command Center</h1>
         <p className="ops-mono">
-          Delovni prostor za turnirje, prijave ekip, rezultate, bracket in
-          OpenDota match_id podatkovni tok.
+          Workspace for tournaments, team registrations, results, brackets, and
+          OpenDota match_id data flow.
         </p>
       </div>
 
       <div className="organizer-command-status">
         <article>
           <Trophy size={18} />
-          <span className="ops-label">Turnirji</span>
+          <span className="ops-label">Tournaments</span>
           <strong className="ops-data">{tournamentCount}</strong>
         </article>
         <article>
           <Brackets size={18} />
-          <span className="ops-label">Prijave</span>
+          <span className="ops-label">Registrations</span>
           <strong className="ops-data">{registrationCount}</strong>
         </article>
         <article>
