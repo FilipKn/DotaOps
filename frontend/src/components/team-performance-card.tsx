@@ -38,13 +38,13 @@ export function TeamPerformanceCard({ team, rank }: TeamPerformanceCardProps) {
         </span>
         <span>
           <strong className="ops-data">{team.roster.length}</strong>
-          <em>Clani</em>
+          <em>Members</em>
         </span>
       </div>
 
       <div className="team-captain-line">
         <UsersRound size={16} />
-        <span className="ops-label">Kapetan</span>
+        <span className="ops-label">Captain</span>
         <strong>{team.captain}</strong>
       </div>
 
@@ -56,7 +56,7 @@ export function TeamPerformanceCard({ team, rank }: TeamPerformanceCardProps) {
         ))}
       </div>
 
-      <div className="team-form-line" aria-label="Zadnjih pet tekem">
+      <div className="team-form-line" aria-label="Last five matches">
         <Swords size={16} />
         {team.lastFive.map((result, index) => (
           <span className={`team-form-pill team-form-${result.toLowerCase()}`} key={`${team.id}-${index}`}>

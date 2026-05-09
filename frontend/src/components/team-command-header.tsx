@@ -18,22 +18,22 @@ export function TeamCommandHeader({ teams }: TeamCommandHeaderProps) {
     <section className="team-command-header ops-panel ops-command-grid">
       <div className="team-command-copy">
         <p className="ops-label">Team operations</p>
-        <h1>Ekipni command center</h1>
+        <h1>Team Command Center</h1>
         <p className="ops-mono">
-          Operativni pregled rosterjev, kapetanov, regij in tekmovalnih metrik
-          za Dota 2 ekipe.
+          Operational overview of rosters, captains, regions, and competitive
+          metrics for Dota 2 teams.
         </p>
       </div>
 
       <div className="team-command-status">
         <article>
           <ShieldCheck size={18} />
-          <span className="ops-label">Aktivne ekipe</span>
+          <span className="ops-label">Active Teams</span>
           <strong className="ops-data">{teams.length}</strong>
         </article>
         <article>
           <UsersRound size={18} />
-          <span className="ops-label">Igralci</span>
+          <span className="ops-label">Players</span>
           <strong className="ops-data">{totalPlayers}</strong>
         </article>
         <article>

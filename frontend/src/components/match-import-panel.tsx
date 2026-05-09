@@ -20,8 +20,8 @@ export function MatchImportPanel() {
     <section className="import-panel">
       <div className="card-title-row">
         <div>
-          <p className="eyebrow">OpenDota tok</p>
-          <h3>Uvoz match podatkov</h3>
+          <p className="eyebrow">OpenDota Flow</p>
+          <h3>Match Data Import</h3>
         </div>
         <StatusBadge status={status} />
       </div>
@@ -38,15 +38,15 @@ export function MatchImportPanel() {
         </label>
         <button className="button button-primary" type="submit">
           {status === "processing" ? <RefreshCw size={18} /> : <UploadCloud size={18} />}
-          <span>Uvozi</span>
+          <span>Import</span>
         </button>
       </form>
 
       <div className="pipeline-grid">
-        <span>Vnos</span>
-        <span>Pridobivanje</span>
-        <span>Normalizacija</span>
-        <span>Metrike</span>
+        <span>Input</span>
+        <span>Fetching</span>
+        <span>Normalization</span>
+        <span>Metrics</span>
       </div>
     </section>
   );

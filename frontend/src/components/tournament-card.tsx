@@ -25,12 +25,12 @@ export function TournamentCard({ tournament }: { tournament: Tournament }) {
         </span>
         <span className="ops-mono">
           <UsersRound size={16} />
-          {tournament.registrationsCount}/{tournament.teamsCount} ekip
+          {tournament.registrationsCount}/{tournament.teamsCount} teams
         </span>
       </div>
 
       <Link className="text-link" href={`/turnirji/${tournament.slug}`}>
-        <span>Odpri turnir</span>
+        <span>Open Tournament</span>
         <ChevronRight size={16} />
       </Link>
     </article>

@@ -2,29 +2,29 @@ import { CalendarDays, DatabaseZap, GitBranch, Send, UsersRound } from "lucide-r
 
 const workflow = [
   {
-    detail: "Osnovni podatki, format in zacetek",
+    detail: "Core data, format, and start time",
     icon: CalendarDays,
-    label: "Turnir"
+    label: "Tournament"
   },
   {
-    detail: "Kapetani, rosterji in potrditve",
+    detail: "Captains, rosters, and confirmations",
     icon: UsersRound,
-    label: "Prijave"
+    label: "Registrations"
   },
   {
-    detail: "Pari, rezultati in napredovanje",
+    detail: "Pairings, results, and advancement",
     icon: GitBranch,
     label: "Bracket"
   },
   {
-    detail: "match_id, normalizacija in metrike",
+    detail: "match_id, normalization, and metrics",
     icon: DatabaseZap,
     label: "OpenDota"
   },
   {
-    detail: "Javni pogled in objava rezultatov",
+    detail: "Public view and result publishing",
     icon: Send,
-    label: "Objava"
+    label: "Publishing"
   }
 ];
 

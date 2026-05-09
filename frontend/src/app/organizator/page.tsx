@@ -46,34 +46,34 @@ export default async function OrganizerPage() {
       <section className="organizer-command-panel ops-panel">
         <SectionHeader
           eyebrow="Command tasks"
-          title="Operativne naloge"
-          description="Hitri pregled glavnih organizatorskih tokov: turnir, prijave, tekme, bracket in podatkovni uvoz."
+          title="Operational Tasks"
+          description="Quick overview of key organizer flows: tournament, registrations, matches, bracket, and data import."
         />
         <OrganizerActionGrid
           actions={[
             {
-              detail: "obrazec + objava",
+              detail: "form + publishing",
               icon: CalendarDays,
-              label: "Turnir",
+              label: "Tournament",
               tone: "red",
-              value: registrationTournament?.title ?? "Osnutek"
+              value: registrationTournament?.title ?? "Draft"
             },
             {
-              detail: "ekipe v prijavah",
+              detail: "teams in registration",
               icon: UsersRound,
-              label: "Prijave",
+              label: "Registrations",
               tone: "cyan",
               value: String(totalRegistrations)
             },
             {
-              detail: "planirano za izvedbo",
+              detail: "scheduled for execution",
               icon: GitBranch,
-              label: "Tekme",
+              label: "Matches",
               tone: "gold",
               value: String(scheduledMatches)
             },
             {
-              detail: "match_id povezave",
+              detail: "match_id links",
               icon: DatabaseZap,
               label: "OpenDota",
               tone: "green",
@@ -88,8 +88,8 @@ export default async function OrganizerPage() {
           <section className="organizer-command-panel organizer-form-panel ops-panel">
             <SectionHeader
               eyebrow="Tournament editor"
-              title="Osnovni podatki turnirja"
-              description="Polja so pripravljena za povezavo z validacijami in Spring Boot API-jem."
+              title="Core Tournament Data"
+              description="Fields are ready to connect to validation and the Spring Boot API."
               action={
                 <span className="ops-badge">
                   <Brackets size={14} />
@@ -100,7 +100,7 @@ export default async function OrganizerPage() {
 
             <form className="form-grid organizer-form-grid">
               <label>
-                <span>Naziv turnirja</span>
+                <span>Tournament Name</span>
                 <input defaultValue={registrationTournament?.title ?? ""} />
               </label>
               <label>
@@ -112,11 +112,11 @@ export default async function OrganizerPage() {
                 </select>
               </label>
               <label>
-                <span>Zacetek</span>
+                <span>Start</span>
                 <input defaultValue="2026-05-20T19:00" type="datetime-local" />
               </label>
               <label>
-                <span>Stevilo ekip</span>
+                <span>Number of Teams</span>
                 <input
                   defaultValue={registrationTournament?.teamsCount ?? 8}
                   min={2}
@@ -124,17 +124,17 @@ export default async function OrganizerPage() {
                 />
               </label>
               <label className="form-wide">
-                <span>Opis</span>
+                <span>Description</span>
                 <textarea defaultValue={registrationTournament?.description ?? ""} rows={4} />
               </label>
               <div className="form-actions">
                 <button className="button ops-button-secondary" type="button">
                   <Save size={18} />
-                  <span>Shrani osnutek</span>
+                  <span>Save Draft</span>
                 </button>
                 <button className="button ops-button-primary" type="button">
                   <Send size={18} />
-                  <span>Objavi</span>
+                  <span>Publish</span>
                 </button>
               </div>
             </form>
@@ -143,8 +143,8 @@ export default async function OrganizerPage() {
           <section className="organizer-command-panel ops-panel">
             <SectionHeader
               eyebrow="Workflow"
-              title="Turnirski operativni tok"
-              description="Od priprave turnirja do javne objave rezultatov in analitike."
+              title="Tournament Operations Flow"
+              description="From tournament setup to public result publishing and analytics."
             />
             <OrganizerWorkflowPanel />
           </section>
@@ -160,9 +160,9 @@ export default async function OrganizerPage() {
 
       <section className="organizer-command-panel organizer-roadmap-panel ops-panel">
         <SectionHeader
-          eyebrow="Plan izvedbe"
-          title="Operativni razvojni/statusni plan"
-          description="Sklep iz projektnega dokumenta, prikazan kot P1/P2/P3 roadmap za nadaljnji razvoj."
+          eyebrow="Execution Plan"
+          title="Operational Development and Status Plan"
+          description="Project document summary displayed as a P1/P2/P3 roadmap for future development."
         />
         <PriorityRoadmap items={roadmap} />
       </section>

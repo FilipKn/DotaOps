@@ -7,12 +7,12 @@ export function TeamTable({ teams }: { teams: Team[] }) {
       <table className="team-table">
         <thead>
           <tr>
-            <th>Ekipa</th>
-            <th>Kapetan</th>
-            <th>Regija</th>
+            <th>Team</th>
+            <th>Captain</th>
+            <th>Region</th>
             <th>Win rate</th>
             <th>KDA</th>
-            <th>Junaki</th>
+            <th>Heroes</th>
           </tr>
         </thead>
         <tbody>

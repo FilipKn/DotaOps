@@ -4,7 +4,7 @@ export function BracketView({ matches }: { matches: Match[] }) {
   const rounds = Array.from(new Set(matches.map((match) => match.round)));
 
   return (
-    <div className="bracket" aria-label="Turnirski bracket">
+    <div className="bracket" aria-label="Tournament bracket">
       {rounds.map((round) => (
         <section className="bracket-column" key={round}>
           <h3>{round}</h3>
