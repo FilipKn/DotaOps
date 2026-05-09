@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, Gauge, ShieldCheck, Terminal } from "lucide-react";
+import { ArrowDown, BarChart3, Gauge, ShieldCheck, Terminal, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 
@@ -124,18 +124,71 @@ export function TeleportIntro() {
           </div>
         </div>
 
-        <div className="teleport-preview" aria-label="Dashboard preview">
-          <div className="teleport-preview-topline">
-            <span className="ops-label">Command preview</span>
-            <strong className="ops-data">ONLINE</strong>
+        <div className="teleport-preview" aria-label="Command center preview">
+          <div className="teleport-preview-screen">
+            <div className="teleport-preview-topline">
+              <span className="ops-label">DotaOps Command Center</span>
+              <strong className="ops-data">ONLINE</strong>
+            </div>
+
+            <div className="teleport-preview-app">
+              <div className="teleport-preview-sidebar" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+                <span />
+              </div>
+
+              <div className="teleport-preview-main">
+                <div className="teleport-preview-hero">
+                  <span className="ops-label">Komandni center</span>
+                  <strong>Turnirski sistem pripravljen</strong>
+                </div>
+
+                <div className="teleport-preview-grid">
+                  <article>
+                    <span className="ops-label">Turnirji</span>
+                    <strong className="ops-data">3</strong>
+                  </article>
+                  <article>
+                    <span className="ops-label">Tekme</span>
+                    <strong className="ops-data">48</strong>
+                  </article>
+                  <article>
+                    <span className="ops-label">Ekipe</span>
+                    <strong className="ops-data">24</strong>
+                  </article>
+                </div>
+
+                <div className="teleport-preview-rows" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="teleport-preview-grid">
-            <span />
-            <span />
-            <span />
-            <span />
+
+          <div className="teleport-system-summary" aria-label="Sistemski povzetek">
+            <span className="ops-mono">TURNIRJI ONLINE</span>
+            <span className="ops-mono">MATCH DATA READY</span>
+            <span className="ops-mono">ANALYTICS ACTIVE</span>
           </div>
-          <p className="ops-mono">Dashboard, turnirji, ekipe in analitika so pripravljeni.</p>
+
+          <div className="teleport-entry-actions">
+            <Link className="teleport-entry-primary" href="/dashboard">
+              <Terminal size={17} />
+              <span>Odpri command center</span>
+            </Link>
+            <Link className="teleport-entry-secondary" href="/turnirji">
+              <Trophy size={17} />
+              <span>Preglej turnirje</span>
+            </Link>
+            <Link className="teleport-entry-chip" href="/analitika">
+              <BarChart3 size={15} />
+              <span>Analitika</span>
+            </Link>
+          </div>
         </div>
 
         <div className="teleport-status-stack" aria-label="Teleport status">
