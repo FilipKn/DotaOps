@@ -884,21 +884,34 @@ textarea:focus {
 }
 
 .landing-teleport,
-.teleport-screen {
-  min-height: 100vh;
+.teleport-stage {
+  min-height: 400vh;
+  background: var(--ops-bg);
 }
 
 .teleport-screen {
+  --teleport-progress: 0;
+  --teleport-activation: 0;
+  --teleport-surge: 0;
+  --teleport-arrival: 0;
   position: relative;
   display: grid;
   place-items: center;
   overflow: hidden;
+  height: 100vh;
+  min-height: 100svh;
   padding: clamp(24px, 4vw, 56px);
   background:
     radial-gradient(circle at 50% 52%, rgba(255, 84, 78, 0.18), transparent 20%),
     radial-gradient(circle at 50% 50%, rgba(0, 221, 221, 0.1), transparent 34%),
     linear-gradient(180deg, #050505 0%, var(--ops-bg) 58%, #050505 100%);
   color: var(--ops-text);
+}
+
+.teleport-frame {
+  position: sticky;
+  top: 0;
+  isolation: isolate;
 }
 
 .teleport-backdrop,
@@ -946,18 +959,144 @@ textarea:focus {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: min(56vw, 640px);
+  width: min(62vw, 720px);
   aspect-ratio: 1;
   border: 1px solid rgba(255, 84, 78, 0.36);
   border-radius: 50%;
   background:
-    radial-gradient(circle, transparent 0 42%, rgba(255, 84, 78, 0.13) 43% 44%, transparent 45%),
-    conic-gradient(from 110deg, transparent, rgba(255, 84, 78, 0.34), transparent, rgba(0, 221, 221, 0.22), transparent);
+    radial-gradient(circle, rgba(10, 10, 10, 0.2) 0 31%, rgba(0, 221, 221, calc(0.05 + var(--teleport-surge) * 0.11)) 32% 33%, transparent 34%),
+    radial-gradient(circle, transparent 0 42%, rgba(255, 84, 78, calc(0.13 + var(--teleport-surge) * 0.2)) 43% 44%, transparent 45%),
+    conic-gradient(from 110deg, transparent, rgba(255, 84, 78, 0.48), transparent, rgba(0, 221, 221, 0.34), transparent);
   box-shadow:
-    inset 0 0 48px rgba(255, 84, 78, 0.12),
-    0 0 80px rgba(255, 84, 78, 0.16);
-  opacity: 0.44;
-  transform: translate(-50%, -50%);
+    inset 0 0 calc(46px + var(--teleport-surge) * 54px) rgba(255, 84, 78, 0.18),
+    0 0 calc(72px + var(--teleport-surge) * 92px) rgba(255, 84, 78, 0.24),
+    0 0 calc(var(--teleport-surge) * 110px) rgba(0, 221, 221, 0.16);
+  opacity: calc(0.3 + (var(--teleport-activation) * 0.26) + (var(--teleport-surge) * 0.28));
+  transform:
+    translate(-50%, -50%)
+    scale(calc(0.82 + (var(--teleport-activation) * 0.18) + (var(--teleport-surge) * 0.16)));
+}
+
+.teleport-rings,
+.teleport-energy-lines,
+.teleport-portal-fragments {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.teleport-rings span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(46vw, 520px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 84, 78, 0.28);
+  border-radius: 50%;
+  opacity: calc(var(--teleport-activation) * 0.36 + var(--teleport-surge) * 0.32);
+  transform:
+    translate(-50%, -50%)
+    scale(calc(0.82 + var(--teleport-surge) * 0.36));
+}
+
+.teleport-rings span:nth-child(2) {
+  width: min(35vw, 400px);
+  border-color: rgba(0, 221, 221, 0.32);
+  opacity: calc(var(--teleport-surge) * 0.54);
+}
+
+.teleport-rings span:nth-child(3) {
+  width: min(25vw, 290px);
+  border-color: rgba(233, 195, 73, 0.28);
+  opacity: calc(var(--teleport-surge) * 0.42);
+}
+
+.teleport-energy-lines span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(42vw, 520px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 84, 78, 0.72), transparent);
+  opacity: calc(var(--teleport-activation) * 0.18 + var(--teleport-surge) * 0.42);
+  transform-origin: center;
+}
+
+.teleport-energy-lines span:nth-child(1) {
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+
+.teleport-energy-lines span:nth-child(2) {
+  transform: translate(-50%, -50%) rotate(35deg);
+}
+
+.teleport-energy-lines span:nth-child(3) {
+  background: linear-gradient(90deg, transparent, rgba(0, 221, 221, 0.58), transparent);
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.teleport-energy-lines span:nth-child(4) {
+  background: linear-gradient(90deg, transparent, rgba(233, 195, 73, 0.45), transparent);
+  transform: translate(-50%, -50%) rotate(145deg);
+}
+
+.teleport-portal-fragments {
+  z-index: 1;
+  opacity: calc(var(--teleport-surge) * 0.92);
+}
+
+.teleport-portal-fragments span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  border: 1px solid var(--ops-line-soft);
+  border-left: 2px solid var(--ops-cyan);
+  border-radius: var(--ops-radius-sm);
+  background:
+    linear-gradient(180deg, rgba(0, 221, 221, 0.14), transparent),
+    rgba(18, 18, 18, 0.78);
+  box-shadow: 0 0 18px rgba(0, 221, 221, 0.08);
+  transform: translate(-50%, -50%) scale(calc(0.78 + var(--teleport-surge) * 0.22));
+}
+
+.teleport-portal-fragments span:nth-child(1) {
+  width: 150px;
+  height: 34px;
+  margin: -92px 0 0 -110px;
+}
+
+.teleport-portal-fragments span:nth-child(2) {
+  width: 92px;
+  height: 74px;
+  margin: -44px 0 0 126px;
+  border-left-color: var(--ops-primary);
+}
+
+.teleport-portal-fragments span:nth-child(3) {
+  width: 120px;
+  height: 26px;
+  margin: 64px 0 0 -70px;
+  border-left-color: var(--ops-secondary);
+}
+
+.teleport-portal-fragments span:nth-child(4) {
+  width: 56px;
+  height: 56px;
+  margin: 22px 0 0 62px;
+}
+
+.teleport-portal-fragments span:nth-child(5) {
+  width: 86px;
+  height: 20px;
+  margin: -10px 0 0 -150px;
+  border-left-color: var(--ops-green);
+}
+
+.teleport-portal-fragments span:nth-child(6) {
+  width: 112px;
+  height: 28px;
+  margin: 98px 0 0 92px;
 }
 
 .teleport-corners {
@@ -1009,6 +1148,7 @@ textarea:focus {
   justify-items: center;
   width: min(1120px, 100%);
   text-align: center;
+  transform: translateY(calc(var(--teleport-progress) * -3vh));
 }
 
 .teleport-kicker {
@@ -1046,6 +1186,15 @@ textarea:focus {
   text-shadow:
     0 0 22px rgba(255, 84, 78, 0.32),
     0 0 58px rgba(255, 84, 78, 0.16);
+  filter:
+    blur(calc(var(--teleport-surge) * 1.05px))
+    drop-shadow(0 0 calc(18px + (var(--teleport-activation) * 24px) + (var(--teleport-surge) * 44px)) rgba(255, 84, 78, 0.42));
+  letter-spacing: calc((var(--teleport-activation) * 0.035em) + (var(--teleport-surge) * 0.045em));
+  opacity: calc(1 - (var(--teleport-surge) * 0.2));
+  transform:
+    translate3d(0, calc((var(--teleport-activation) * -5vh) + (var(--teleport-surge) * -9vh)), 0)
+    scale(calc(1 - (var(--teleport-activation) * 0.2) - (var(--teleport-surge) * 0.28)));
+  transform-origin: center center;
 }
 
 .teleport-wordmark strong {
@@ -1092,6 +1241,115 @@ textarea:focus {
   color: var(--ops-primary);
 }
 
+.teleport-preview {
+  position: absolute;
+  bottom: clamp(118px, 14vh, 170px);
+  left: 50%;
+  z-index: 3;
+  display: grid;
+  gap: var(--ops-space-3);
+  width: min(560px, calc(100% - 48px));
+  padding: var(--ops-space-4);
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius);
+  background:
+    linear-gradient(180deg, rgba(255, 84, 78, 0.08), transparent 62%),
+    rgba(18, 18, 18, 0.82);
+  box-shadow: 0 0 46px rgba(255, 84, 78, 0.12);
+  opacity: calc((var(--teleport-surge) * 0.24) + (var(--teleport-arrival) * 0.76));
+  pointer-events: none;
+  transform:
+    translateX(-50%)
+    translateY(calc((1 - var(--teleport-surge)) * 28px))
+    scale(calc(0.94 + (var(--teleport-surge) * 0.04) + (var(--teleport-arrival) * 0.02)));
+}
+
+.teleport-preview-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ops-space-3);
+}
+
+.teleport-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ops-space-2);
+}
+
+.teleport-preview-grid span {
+  display: block;
+  height: 46px;
+  border: 1px solid var(--ops-line-soft);
+  border-left: 2px solid var(--ops-primary);
+  border-radius: var(--ops-radius-sm);
+  background:
+    linear-gradient(180deg, rgba(0, 221, 221, 0.12), transparent),
+    var(--ops-surface-low);
+}
+
+.teleport-preview p {
+  color: var(--ops-muted);
+  font-size: 0.8rem;
+}
+
+.teleport-status-stack {
+  position: absolute;
+  top: clamp(26px, 5vh, 58px);
+  left: clamp(24px, 4vw, 56px);
+  z-index: 4;
+  display: grid;
+  gap: var(--ops-space-2);
+  min-width: min(300px, calc(100% - 48px));
+  color: var(--ops-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.teleport-status-stack span {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ops-space-2);
+  opacity: 0.28;
+}
+
+.teleport-status-stack span::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--ops-muted);
+  content: "";
+}
+
+.teleport-status-stack span:nth-child(1) {
+  opacity: calc(1 - var(--teleport-activation) * 0.62);
+}
+
+.teleport-status-stack span:nth-child(1)::before {
+  background: var(--ops-secondary);
+}
+
+.teleport-status-stack span:nth-child(2) {
+  color: var(--ops-cyan);
+  opacity: var(--teleport-activation);
+}
+
+.teleport-status-stack span:nth-child(2)::before {
+  background: var(--ops-cyan);
+  box-shadow: var(--ops-glow-cyan);
+}
+
+.teleport-status-stack span:nth-child(3) {
+  color: var(--ops-green);
+  opacity: var(--teleport-arrival);
+}
+
+.teleport-status-stack span:nth-child(3)::before {
+  background: var(--ops-green);
+  box-shadow: 0 0 12px rgba(110, 231, 168, 0.24);
+}
+
 .teleport-bottom {
   position: absolute;
   right: clamp(24px, 4vw, 56px);
@@ -1110,7 +1368,9 @@ textarea:focus {
   gap: var(--ops-space-3);
   margin-inline: auto;
   color: var(--ops-muted);
+  opacity: calc(1 - (var(--teleport-activation) * 0.72) - (var(--teleport-surge) * 0.2));
   text-transform: uppercase;
+  transform: translateY(calc(var(--teleport-progress) * 18px));
 }
 
 .teleport-scroll-cue > div {
@@ -1133,10 +1393,51 @@ textarea:focus {
   border-radius: var(--ops-radius);
   font-size: 0.78rem;
   font-weight: 900;
+  opacity: calc(0.34 + (var(--teleport-arrival) * 0.66));
   text-transform: uppercase;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .landing-teleport,
+  .teleport-stage {
+    min-height: 100vh;
+  }
+
+  .teleport-frame {
+    position: relative;
+    top: auto;
+  }
+
+  .teleport-content,
+  .teleport-wordmark,
+  .teleport-bottom,
+  .teleport-scroll-cue,
+  .teleport-preview {
+    transform: none !important;
+  }
+
+  .teleport-wordmark {
+    filter: drop-shadow(0 0 18px rgba(255, 84, 78, 0.28));
+    letter-spacing: 0;
+    opacity: 1;
+  }
+
+  .teleport-gate {
+    opacity: 0.5;
+    transform: translate(-50%, -50%);
+  }
+
+  .teleport-preview {
+    opacity: 1;
+  }
+
+  .teleport-rings span,
+  .teleport-energy-lines span,
+  .teleport-portal-fragments,
+  .teleport-status-stack span {
+    opacity: 1;
+  }
+
   .teleport-screen *,
   .teleport-screen *::before,
   .teleport-screen *::after {
@@ -3119,13 +3420,13 @@ textarea:focus {
   }
 
   .teleport-bottom {
-    position: relative;
-    right: auto;
-    bottom: auto;
-    left: auto;
+    position: absolute;
+    right: 22px;
+    bottom: 22px;
+    left: 22px;
     display: grid;
     justify-items: center;
-    margin-top: var(--ops-space-6);
+    margin-top: 0;
   }
 
   .organizer-command-header {
