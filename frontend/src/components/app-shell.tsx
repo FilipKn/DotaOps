@@ -27,6 +27,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "mock podatki";
 
+  if (pathname === "/") {
+    return <>{children}</>;
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -42,10 +46,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <nav className="nav-list" aria-label="Glavna navigacija">
           {navItems.map((item) => {
-            const isActive =
-              item.href === "/dashboard"
-                ? pathname === "/" || pathname.startsWith(item.href)
-                : pathname.startsWith(item.href);
+            const isActive = pathname.startsWith(item.href);
             const Icon = item.icon;
 
             return (
