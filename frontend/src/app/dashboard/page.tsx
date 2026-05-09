@@ -1,5 +1,5 @@
-import { DashboardOverview } from "@/components/dashboard-overview";
+import { TacticalDashboardOverview } from "@/components/tactical-dashboard-overview";
 
 export default async function DashboardPage() {
-  return <DashboardOverview />;
+  return <TacticalDashboardOverview />;
 }
