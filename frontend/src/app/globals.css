@@ -348,6 +348,88 @@ p {
   text-transform: uppercase;
 }
 
+.topbar-title {
+  min-width: 220px;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.topbar-status-segment,
+.topbar-profile,
+.topbar-icon-button {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.topbar-status-segment {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  gap: 2px 8px;
+  align-items: center;
+  min-height: 42px;
+  padding: 8px 10px;
+}
+
+.topbar-status-segment svg {
+  grid-row: span 2;
+}
+
+.topbar-status-segment span,
+.topbar-profile small {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.topbar-status-segment strong,
+.topbar-profile strong {
+  font-size: 0.78rem;
+}
+
+.topbar-icon-button {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  color: var(--muted);
+}
+
+.topbar-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 6px 10px 6px 6px;
+}
+
+.topbar-profile > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+
+.topbar-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius);
+  background: var(--charcoal);
+  color: #ffffff;
+}
+
+.topbar-primary-action {
+  flex: 0 0 auto;
+}
+
 .page {
   width: min(1480px, 100%);
   margin: 0 auto;
@@ -1082,6 +1164,35 @@ textarea:focus {
 
 .topbar.ops-panel .topbar-kicker {
   color: var(--ops-muted);
+}
+
+.topbar.ops-panel .topbar-status-segment,
+.topbar.ops-panel .topbar-profile,
+.topbar.ops-panel .topbar-icon-button {
+  border-color: var(--ops-line-soft);
+  background: var(--ops-surface-low);
+  color: var(--ops-text);
+}
+
+.topbar.ops-panel .topbar-status-segment svg,
+.topbar.ops-panel .topbar-icon-button svg {
+  color: var(--ops-cyan);
+}
+
+.topbar.ops-panel .topbar-rank-segment svg,
+.topbar.ops-panel .topbar-rank-segment strong {
+  color: var(--ops-secondary);
+}
+
+.topbar.ops-panel .topbar-status-segment span,
+.topbar.ops-panel .topbar-profile small {
+  color: var(--ops-muted);
+}
+
+.topbar.ops-panel .topbar-avatar {
+  border: 1px solid var(--ops-line);
+  background: var(--ops-primary-soft);
+  color: var(--ops-primary);
 }
 
 .button.ops-button-primary {
@@ -2856,6 +2967,14 @@ textarea:focus {
     padding: 14px 16px;
   }
 
+  .topbar-actions {
+    flex-wrap: wrap;
+  }
+
+  .topbar-rank-segment {
+    display: none;
+  }
+
   .page {
     padding: 16px;
   }
@@ -2978,6 +3097,35 @@ textarea:focus {
   .topbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .topbar-title {
+    min-width: 0;
+  }
+
+  .topbar-actions {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    width: 100%;
+  }
+
+  .topbar-status-segment,
+  .topbar-profile {
+    min-width: 0;
+  }
+
+  .topbar-profile > span:last-child {
+    min-width: 0;
+  }
+
+  .topbar-profile strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .topbar-primary-action {
+    grid-column: 1 / -1;
   }
 
   .button {
