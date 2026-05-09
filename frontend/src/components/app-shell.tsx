@@ -73,8 +73,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="main-area">
         <header className="topbar ops-panel">
           <div>
-            <span className="topbar-kicker">IPT Project</span>
-            <strong>Frontend environment for DotaOps development</strong>
+            <span className="topbar-kicker">DOTAOPS COMMAND CENTER</span>
+            <strong>Tournament operations and analytics platform</strong>
           </div>
           <Link className="button button-primary ops-button-primary" href="/organizator">
             <Brackets size={18} />
