@@ -4,14 +4,14 @@ interface OrganizerCommandHeaderProps {
   tournamentCount: number;
   registrationCount: number;
   importedMatches: number;
-  activeRoadmapItems: number;
+  activeChecklistItems: number;
 }
 
 export function OrganizerCommandHeader({
   tournamentCount,
   registrationCount,
   importedMatches,
-  activeRoadmapItems
+  activeChecklistItems
 }: OrganizerCommandHeaderProps) {
   return (
     <section className="organizer-command-header ops-panel ops-command-grid">
@@ -42,8 +42,8 @@ export function OrganizerCommandHeader({
         </article>
         <article>
           <RadioTower size={18} />
-          <span className="ops-label">Roadmap active</span>
-          <strong className="ops-data">{activeRoadmapItems}</strong>
+          <span className="ops-label">Launch ready</span>
+          <strong className="ops-data">{activeChecklistItems}/8</strong>
         </article>
       </div>
     </section>
