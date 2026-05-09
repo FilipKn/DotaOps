@@ -3,9 +3,13 @@ import { Save, Send } from "lucide-react";
 import { MatchImportPanel } from "@/components/match-import-panel";
 import { PriorityRoadmap } from "@/components/priority-roadmap";
 import { SectionHeader } from "@/components/section-header";
-import { roadmap, tournaments } from "@/lib/mock-data";
+import { getRoadmap, getTournaments } from "@/lib/data";
 
-export default function OrganizerPage() {
+export default async function OrganizerPage() {
+  const [roadmap, tournaments] = await Promise.all([
+    getRoadmap(),
+    getTournaments()
+  ]);
   const registrationTournament = tournaments.find(
     (tournament) => tournament.status === "registration"
   );

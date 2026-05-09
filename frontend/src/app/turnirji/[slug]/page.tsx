@@ -5,7 +5,12 @@ import { BracketView } from "@/components/bracket-view";
 import { MatchSchedule } from "@/components/match-schedule";
 import { SectionHeader } from "@/components/section-header";
 import { StatusBadge } from "@/components/status-badge";
-import { heroMetrics, matches, teams, tournaments } from "@/lib/mock-data";
+import {
+  getAnalytics,
+  getMatches,
+  getTournamentBySlug,
+  getTournaments
+} from "@/lib/data";
 import { formatDateTime } from "@/lib/utils";
 
 interface TournamentDetailPageProps {
@@ -14,7 +19,9 @@ interface TournamentDetailPageProps {
   }>;
 }
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const tournaments = await getTournaments();
+
   return tournaments.map((tournament) => ({ slug: tournament.slug }));
 }
 
@@ -22,7 +29,11 @@ export default async function TournamentDetailPage({
   params
 }: TournamentDetailPageProps) {
   const { slug } = await params;
-  const tournament = tournaments.find((item) => item.slug === slug);
+  const [analytics, matches, tournament] = await Promise.all([
+    getAnalytics(),
+    getMatches(),
+    getTournamentBySlug(slug)
+  ]);
 
   if (!tournament) {
     notFound();
@@ -74,7 +85,7 @@ export default async function TournamentDetailPage({
           title="Metrike po uvozenih tekmah"
           description="Pripravljeno za win rate, KDA, trajanje tekem in uspesnost junakov."
         />
-        <AnalyticsOverview heroes={heroMetrics} teams={teams} />
+        <AnalyticsOverview heroes={analytics.heroMetrics} teams={analytics.teams} />
       </section>
     </div>
   );

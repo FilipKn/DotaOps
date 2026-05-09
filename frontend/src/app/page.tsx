@@ -14,9 +14,18 @@ import { MatchSchedule } from "@/components/match-schedule";
 import { MetricCard } from "@/components/metric-card";
 import { SectionHeader } from "@/components/section-header";
 import { TournamentCard } from "@/components/tournament-card";
-import { heroMetrics, matches, teams, tournaments } from "@/lib/mock-data";
+import {
+  getAnalytics,
+  getMatches,
+  getTournaments
+} from "@/lib/data";
 
-export default function Home() {
+export default async function Home() {
+  const [analytics, matches, tournaments] = await Promise.all([
+    getAnalytics(),
+    getMatches(),
+    getTournaments()
+  ]);
   const liveMatches = matches.filter(
     (match) => match.tournamentSlug === "ancient-cup-ljubljana"
   );
@@ -123,7 +132,7 @@ export default function Home() {
           title="Ekipe, igralci in junaki"
           description="Pripravljena postavitev za KDA, win rate, najpogosteje igrane junake in primerjave."
         />
-        <AnalyticsOverview heroes={heroMetrics} teams={teams} />
+        <AnalyticsOverview heroes={analytics.heroMetrics} teams={analytics.teams} />
       </div>
     </div>
   );

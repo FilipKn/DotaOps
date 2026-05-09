@@ -3,9 +3,11 @@ import Link from "next/link";
 
 import { SectionHeader } from "@/components/section-header";
 import { TournamentCard } from "@/components/tournament-card";
-import { tournaments } from "@/lib/mock-data";
+import { getTournaments } from "@/lib/data";
 
-export default function TournamentsPage() {
+export default async function TournamentsPage() {
+  const tournaments = await getTournaments();
+
   return (
     <div className="page-stack">
       <section className="page-header">

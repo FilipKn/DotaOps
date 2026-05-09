@@ -2,10 +2,12 @@ import { ShieldCheck } from "lucide-react";
 
 import { SectionHeader } from "@/components/section-header";
 import { TeamTable } from "@/components/team-table";
-import { teams } from "@/lib/mock-data";
+import { getTeams } from "@/lib/data";
 import { formatPercent } from "@/lib/utils";
 
-export default function TeamsPage() {
+export default async function TeamsPage() {
+  const teams = await getTeams();
+
   return (
     <div className="page-stack">
       <section className="page-header">

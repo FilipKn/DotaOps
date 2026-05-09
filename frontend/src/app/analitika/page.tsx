@@ -3,9 +3,13 @@ import { DatabaseZap } from "lucide-react";
 import { AnalyticsOverview } from "@/components/analytics-overview";
 import { SectionHeader } from "@/components/section-header";
 import { StatusBadge } from "@/components/status-badge";
-import { heroMetrics, matches, teams } from "@/lib/mock-data";
+import { getAnalytics, getMatches } from "@/lib/data";
 
-export default function AnalyticsPage() {
+export default async function AnalyticsPage() {
+  const [analytics, matches] = await Promise.all([
+    getAnalytics(),
+    getMatches()
+  ]);
   const imported = matches.filter((match) => match.dotaMatchId);
 
   return (
@@ -27,7 +31,7 @@ export default function AnalyticsPage() {
           title="KDA, win rate in uspesnost junakov"
           description="Zacetni UI za grafe, primerjave in filtre po vlogah."
         />
-        <AnalyticsOverview heroes={heroMetrics} teams={teams} />
+        <AnalyticsOverview heroes={analytics.heroMetrics} teams={analytics.teams} />
       </section>
 
       <section className="panel">
