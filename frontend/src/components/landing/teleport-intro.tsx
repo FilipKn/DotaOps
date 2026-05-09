@@ -102,10 +102,10 @@ export function TeleportIntro() {
           </div>
 
           <p className="teleport-description ops-mono">
-            Operativni center za Dota 2 turnirje in match analitiko.
+            Command center for Dota 2 tournaments and match analytics.
           </p>
 
-          <div className="teleport-meta" aria-label="Sistemski status">
+          <div className="teleport-meta" aria-label="System status">
             <article>
               <ShieldCheck size={17} />
               <span className="ops-label">Security layer</span>
@@ -141,21 +141,21 @@ export function TeleportIntro() {
 
               <div className="teleport-preview-main">
                 <div className="teleport-preview-hero">
-                  <span className="ops-label">Komandni center</span>
-                  <strong>Turnirski sistem pripravljen</strong>
+                  <span className="ops-label">Command center</span>
+                  <strong>Tournament system ready</strong>
                 </div>
 
                 <div className="teleport-preview-grid">
                   <article>
-                    <span className="ops-label">Turnirji</span>
+                    <span className="ops-label">Tournaments</span>
                     <strong className="ops-data">3</strong>
                   </article>
                   <article>
-                    <span className="ops-label">Tekme</span>
+                    <span className="ops-label">Matches</span>
                     <strong className="ops-data">48</strong>
                   </article>
                   <article>
-                    <span className="ops-label">Ekipe</span>
+                    <span className="ops-label">Teams</span>
                     <strong className="ops-data">24</strong>
                   </article>
                 </div>
@@ -169,8 +169,8 @@ export function TeleportIntro() {
             </div>
           </div>
 
-          <div className="teleport-system-summary" aria-label="Sistemski povzetek">
-            <span className="ops-mono">TURNIRJI ONLINE</span>
+          <div className="teleport-system-summary" aria-label="System summary">
+            <span className="ops-mono">TOURNAMENTS ONLINE</span>
             <span className="ops-mono">MATCH DATA READY</span>
             <span className="ops-mono">ANALYTICS ACTIVE</span>
           </div>
@@ -178,15 +178,15 @@ export function TeleportIntro() {
           <div className="teleport-entry-actions">
             <Link className="teleport-entry-primary" href="/dashboard">
               <Terminal size={17} />
-              <span>Odpri command center</span>
+              <span>Open command center</span>
             </Link>
             <Link className="teleport-entry-secondary" href="/turnirji">
               <Trophy size={17} />
-              <span>Preglej turnirje</span>
+              <span>View tournaments</span>
             </Link>
             <Link className="teleport-entry-chip" href="/analitika">
               <BarChart3 size={15} />
-              <span>Analitika</span>
+              <span>Analytics</span>
             </Link>
           </div>
         </div>
@@ -199,14 +199,14 @@ export function TeleportIntro() {
 
         <div className="teleport-bottom">
           <div className="teleport-scroll-cue">
-            <span className="ops-label">Scroll za vstop</span>
+            <span className="ops-label">Scroll to enter</span>
             <div aria-hidden="true">
               <ArrowDown size={16} />
             </div>
           </div>
 
           <Link className="teleport-dashboard-link ops-button-secondary" href="/dashboard">
-            Odpri command center
+            Open command center
           </Link>
         </div>
       </div>

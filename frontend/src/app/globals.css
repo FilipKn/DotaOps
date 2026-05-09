@@ -1519,17 +1519,17 @@ textarea:focus {
   bottom: clamp(22px, 5vh, 58px);
   left: clamp(24px, 4vw, 56px);
   z-index: 4;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: end;
-  justify-content: space-between;
   gap: var(--ops-space-4);
 }
 
 .teleport-scroll-cue {
   display: grid;
+  grid-column: 2;
   justify-items: center;
   gap: var(--ops-space-3);
-  margin-inline: auto;
   color: var(--ops-muted);
   opacity: calc(1 - (var(--teleport-activation) * 0.72) - (var(--teleport-surge) * 0.2));
   text-transform: uppercase;
@@ -1549,7 +1549,9 @@ textarea:focus {
 
 .teleport-dashboard-link {
   display: inline-flex;
+  grid-column: 3;
   align-items: center;
+  justify-self: end;
   justify-content: center;
   min-height: 38px;
   padding: 9px 12px;
