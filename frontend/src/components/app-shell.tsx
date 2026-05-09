@@ -2,11 +2,15 @@
 
 import {
   BarChart3,
+  Bell,
   Brackets,
   LayoutDashboard,
+  Plus,
+  RadioTower,
   Shield,
   Swords,
   Trophy,
+  UserRound,
   UsersRound
 } from "lucide-react";
 import Link from "next/link";
@@ -72,14 +76,43 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="main-area">
         <header className="topbar ops-panel">
-          <div>
-            <span className="topbar-kicker">IPT Project</span>
-            <strong>Frontend environment for DotaOps development</strong>
+          <div className="topbar-title">
+            <span className="topbar-kicker">DOTAOPS COMMAND CENTER</span>
+            <strong>Tournament operations and analytics platform</strong>
           </div>
-          <Link className="button button-primary ops-button-primary" href="/organizator">
-            <Brackets size={18} />
-            <span>Manage Tournament</span>
-          </Link>
+
+          <div className="topbar-actions" aria-label="Application status and actions">
+            <div className="topbar-status-segment">
+              <RadioTower size={16} />
+              <span>OPS STATUS</span>
+              <strong>ONLINE</strong>
+            </div>
+
+            <div className="topbar-status-segment topbar-rank-segment">
+              <Shield size={16} />
+              <span>RANK</span>
+              <strong>IMMORTAL</strong>
+            </div>
+
+            <button className="topbar-icon-button" type="button" aria-label="Notifications">
+              <Bell size={17} />
+            </button>
+
+            <div className="topbar-profile" aria-label="User profile">
+              <span className="topbar-avatar" aria-hidden="true">
+                <UserRound size={16} />
+              </span>
+              <span>
+                <strong>SOLO_TACTICIAN</strong>
+                <small>Organizer</small>
+              </span>
+            </div>
+
+            <Link className="button button-primary ops-button-primary topbar-primary-action" href="/organizator">
+              <Plus size={18} />
+              <span>New Tournament</span>
+            </Link>
+          </div>
         </header>
 
         <main className="page">{children}</main>

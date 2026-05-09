@@ -11,22 +11,20 @@ import {
 import { MatchImportPanel } from "@/components/match-import-panel";
 import { OrganizerActionGrid } from "@/components/organizer-action-grid";
 import { OrganizerCommandHeader } from "@/components/organizer-command-header";
+import { OrganizerLaunchChecklist } from "@/components/organizer-launch-checklist";
 import { OrganizerStatusPanel } from "@/components/organizer-status-panel";
 import { OrganizerWorkflowPanel } from "@/components/organizer-workflow-panel";
-import { PriorityRoadmap } from "@/components/priority-roadmap";
 import { SectionHeader } from "@/components/section-header";
-import { getMatches, getRoadmap, getTournaments } from "@/lib/data";
+import { getMatches, getTournaments } from "@/lib/data";
 
 export default async function OrganizerPage() {
-  const [matches, roadmap, tournaments] = await Promise.all([
+  const [matches, tournaments] = await Promise.all([
     getMatches(),
-    getRoadmap(),
     getTournaments()
   ]);
   const registrationTournament = tournaments.find(
     (tournament) => tournament.status === "registration"
   );
-  const activeRoadmapItems = roadmap.filter((item) => item.status === "active").length;
   const importedMatches = matches.filter((match) => match.dotaMatchId).length;
   const totalRegistrations = tournaments.reduce(
     (total, tournament) => total + tournament.registrationsCount,
@@ -37,7 +35,7 @@ export default async function OrganizerPage() {
   return (
     <div className="organizer-command">
       <OrganizerCommandHeader
-        activeRoadmapItems={activeRoadmapItems}
+        activeChecklistItems={4}
         importedMatches={importedMatches}
         registrationCount={totalRegistrations}
         tournamentCount={tournaments.length}
@@ -158,13 +156,13 @@ export default async function OrganizerPage() {
         </aside>
       </section>
 
-      <section className="organizer-command-panel organizer-roadmap-panel ops-panel">
+      <section className="organizer-command-panel organizer-checklist-panel ops-panel">
         <SectionHeader
-          eyebrow="Execution Plan"
-          title="Operational Development and Status Plan"
-          description="Project document summary displayed as a P1/P2/P3 roadmap for future development."
+          eyebrow="Launch Readiness"
+          title="Tournament Launch Checklist"
+          description="Operational checklist for preparing a tournament from setup to public publishing."
         />
-        <PriorityRoadmap items={roadmap} />
+        <OrganizerLaunchChecklist />
       </section>
     </div>
   );
