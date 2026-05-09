@@ -16,7 +16,7 @@ import type { ReactNode } from "react";
 import { classNames } from "@/lib/utils";
 
 const navItems = [
-  { href: "/", label: "Nadzorna plosca", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Nadzorna plosca", icon: LayoutDashboard },
   { href: "/turnirji", label: "Turnirji", icon: Trophy },
   { href: "/organizator", label: "Organizator", icon: Brackets },
   { href: "/ekipe", label: "Ekipe", icon: UsersRound },
@@ -43,7 +43,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav className="nav-list" aria-label="Glavna navigacija">
           {navItems.map((item) => {
             const isActive =
-              item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+              item.href === "/dashboard"
+                ? pathname === "/" || pathname.startsWith(item.href)
+                : pathname.startsWith(item.href);
             const Icon = item.icon;
 
             return (
