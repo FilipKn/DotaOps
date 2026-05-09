@@ -878,6 +878,275 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(22, 143, 145, 0.16);
 }
 
+.public-shell {
+  min-height: 100vh;
+  background: var(--ops-bg);
+}
+
+.landing-teleport,
+.teleport-screen {
+  min-height: 100vh;
+}
+
+.teleport-screen {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: clamp(24px, 4vw, 56px);
+  background:
+    radial-gradient(circle at 50% 52%, rgba(255, 84, 78, 0.18), transparent 20%),
+    radial-gradient(circle at 50% 50%, rgba(0, 221, 221, 0.1), transparent 34%),
+    linear-gradient(180deg, #050505 0%, var(--ops-bg) 58%, #050505 100%);
+  color: var(--ops-text);
+}
+
+.teleport-backdrop,
+.teleport-grid,
+.teleport-scanline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.teleport-backdrop {
+  overflow: hidden;
+}
+
+.teleport-backdrop::before {
+  position: absolute;
+  inset: -10%;
+  background:
+    linear-gradient(90deg, transparent 0 18%, rgba(255, 255, 255, 0.035) 18.4% 18.8%, transparent 19.2%),
+    linear-gradient(90deg, transparent 0 40%, rgba(255, 84, 78, 0.045) 40.2% 40.5%, transparent 41%),
+    linear-gradient(90deg, transparent 0 68%, rgba(0, 221, 221, 0.035) 68.2% 68.5%, transparent 69%),
+    linear-gradient(180deg, transparent 0 74%, rgba(255, 255, 255, 0.035) 74.2% 74.5%, transparent 75%);
+  content: "";
+  opacity: 0.5;
+  transform: perspective(780px) rotateX(58deg) scale(1.4);
+  transform-origin: center bottom;
+}
+
+.teleport-grid {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(circle at center, black 0 44%, transparent 72%);
+  opacity: 0.55;
+}
+
+.teleport-scanline {
+  background: linear-gradient(to bottom, transparent 50%, rgba(255, 84, 78, 0.035) 50%);
+  background-size: 100% 4px;
+  opacity: 0.75;
+}
+
+.teleport-gate {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(56vw, 640px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 84, 78, 0.36);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 0 42%, rgba(255, 84, 78, 0.13) 43% 44%, transparent 45%),
+    conic-gradient(from 110deg, transparent, rgba(255, 84, 78, 0.34), transparent, rgba(0, 221, 221, 0.22), transparent);
+  box-shadow:
+    inset 0 0 48px rgba(255, 84, 78, 0.12),
+    0 0 80px rgba(255, 84, 78, 0.16);
+  opacity: 0.44;
+  transform: translate(-50%, -50%);
+}
+
+.teleport-corners {
+  position: absolute;
+  inset: clamp(20px, 3vw, 48px);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.teleport-corners span {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  border-color: rgba(176, 135, 131, 0.36);
+}
+
+.teleport-corners span:nth-child(1) {
+  top: 0;
+  left: 0;
+  border-top: 1px solid;
+  border-left: 1px solid;
+}
+
+.teleport-corners span:nth-child(2) {
+  top: 0;
+  right: 0;
+  border-top: 1px solid;
+  border-right: 1px solid;
+}
+
+.teleport-corners span:nth-child(3) {
+  right: 0;
+  bottom: 0;
+  border-right: 1px solid;
+  border-bottom: 1px solid;
+}
+
+.teleport-corners span:nth-child(4) {
+  bottom: 0;
+  left: 0;
+  border-bottom: 1px solid;
+  border-left: 1px solid;
+}
+
+.teleport-content {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  width: min(1120px, 100%);
+  text-align: center;
+}
+
+.teleport-kicker {
+  display: flex;
+  align-items: center;
+  gap: var(--ops-space-4);
+  color: var(--ops-muted-strong);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.teleport-kicker span {
+  width: clamp(34px, 8vw, 76px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ops-line));
+}
+
+.teleport-kicker span:last-child {
+  background: linear-gradient(90deg, var(--ops-line), transparent);
+}
+
+.teleport-wordmark {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  margin-top: var(--ops-space-5);
+  color: var(--ops-text);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-size: clamp(4.7rem, 15vw, 12rem);
+  font-weight: 900;
+  line-height: 0.82;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 22px rgba(255, 84, 78, 0.32),
+    0 0 58px rgba(255, 84, 78, 0.16);
+}
+
+.teleport-wordmark strong {
+  color: var(--ops-primary);
+  font: inherit;
+}
+
+.teleport-description {
+  max-width: 660px;
+  margin-top: var(--ops-space-5);
+  color: var(--ops-muted-strong);
+  font-size: clamp(0.95rem, 1.6vw, 1.15rem);
+  line-height: 1.65;
+}
+
+.teleport-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ops-space-3);
+  width: min(720px, 100%);
+  margin-top: var(--ops-space-6);
+}
+
+.teleport-meta article {
+  display: grid;
+  gap: var(--ops-space-2);
+  min-width: 0;
+  padding: var(--ops-space-4);
+  border: 1px solid var(--ops-line-soft);
+  border-radius: var(--ops-radius);
+  background: rgba(10, 10, 10, 0.58);
+}
+
+.teleport-meta svg {
+  justify-self: center;
+  color: var(--ops-cyan);
+}
+
+.teleport-meta article:nth-child(2) svg {
+  color: var(--ops-secondary);
+}
+
+.teleport-meta article:nth-child(3) svg {
+  color: var(--ops-primary);
+}
+
+.teleport-bottom {
+  position: absolute;
+  right: clamp(24px, 4vw, 56px);
+  bottom: clamp(22px, 5vh, 58px);
+  left: clamp(24px, 4vw, 56px);
+  z-index: 4;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--ops-space-4);
+}
+
+.teleport-scroll-cue {
+  display: grid;
+  justify-items: center;
+  gap: var(--ops-space-3);
+  margin-inline: auto;
+  color: var(--ops-muted);
+  text-transform: uppercase;
+}
+
+.teleport-scroll-cue > div {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 46px;
+  border: 1px solid var(--ops-line);
+  border-radius: 999px;
+  color: var(--ops-primary);
+  box-shadow: inset 0 0 16px rgba(255, 84, 78, 0.08);
+}
+
+.teleport-dashboard-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 9px 12px;
+  border-radius: var(--ops-radius);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .teleport-screen *,
+  .teleport-screen *::before,
+  .teleport-screen *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 .pipeline-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2844,6 +3113,21 @@ textarea:focus {
     font-size: 2rem;
   }
 
+  .teleport-meta {
+    grid-template-columns: 1fr;
+    width: min(420px, 100%);
+  }
+
+  .teleport-bottom {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    display: grid;
+    justify-items: center;
+    margin-top: var(--ops-space-6);
+  }
+
   .organizer-command-header {
     padding: var(--ops-space-5);
   }
@@ -2958,6 +3242,38 @@ textarea:focus {
   .button {
     width: 100%;
     white-space: normal;
+  }
+
+  .teleport-screen {
+    min-height: 100svh;
+    padding: 22px;
+  }
+
+  .teleport-kicker {
+    gap: var(--ops-space-2);
+    letter-spacing: 0.14em;
+  }
+
+  .teleport-kicker span {
+    width: 28px;
+  }
+
+  .teleport-wordmark {
+    display: grid;
+    font-size: clamp(4rem, 22vw, 6.8rem);
+  }
+
+  .teleport-description {
+    font-size: 0.92rem;
+  }
+
+  .teleport-corners span {
+    width: 42px;
+    height: 42px;
+  }
+
+  .teleport-dashboard-link {
+    width: 100%;
   }
 
   .organizer-action-grid,

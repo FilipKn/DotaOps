@@ -27,6 +27,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "mock podatki";
 
+  if (pathname === "/") {
+    return <main className="public-shell">{children}</main>;
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar ops-panel ops-scanline">

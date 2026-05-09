@@ -1,5 +1,5 @@
-import { DashboardOverview } from "@/components/dashboard-overview";
+import { TeleportIntro } from "@/components/landing/teleport-intro";
 
-export default async function Home() {
-  return <DashboardOverview />;
+export default function Home() {
+  return <TeleportIntro />;
 }
