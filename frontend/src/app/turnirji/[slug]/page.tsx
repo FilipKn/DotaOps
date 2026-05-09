@@ -1,11 +1,27 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import {
+  BarChart3,
+  CalendarDays,
+  DatabaseZap,
+  GitBranch,
+  Trophy,
+  UsersRound
+} from "lucide-react";
 
 import { AnalyticsOverview } from "@/components/analytics-overview";
-import { BracketView } from "@/components/bracket-view";
+import { BracketCommandPanel } from "@/components/bracket-command-panel";
 import { MatchSchedule } from "@/components/match-schedule";
 import { SectionHeader } from "@/components/section-header";
-import { StatusBadge } from "@/components/status-badge";
-import { heroMetrics, matches, teams, tournaments } from "@/lib/mock-data";
+import { TournamentCommandHeader } from "@/components/tournament-command-header";
+import { TournamentMetaGrid } from "@/components/tournament-meta-grid";
+import { TournamentStatusPanel } from "@/components/tournament-status-panel";
+import {
+  getAnalytics,
+  getMatches,
+  getTournamentBySlug,
+  getTournaments
+} from "@/lib/data";
 import { formatDateTime } from "@/lib/utils";
 
 interface TournamentDetailPageProps {
@@ -14,7 +30,9 @@ interface TournamentDetailPageProps {
   }>;
 }
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const tournaments = await getTournaments();
+
   return tournaments.map((tournament) => ({ slug: tournament.slug }));
 }
 
@@ -22,59 +40,107 @@ export default async function TournamentDetailPage({
   params
 }: TournamentDetailPageProps) {
   const { slug } = await params;
-  const tournament = tournaments.find((item) => item.slug === slug);
+  const [analytics, matches, tournament] = await Promise.all([
+    getAnalytics(),
+    getMatches(),
+    getTournamentBySlug(slug)
+  ]);
 
   if (!tournament) {
     notFound();
   }
 
   const tournamentMatches = matches.filter((match) => match.tournamentSlug === slug);
+  const importedMatches = tournamentMatches.filter((match) => match.dotaMatchId).length;
 
   return (
-    <div className="page-stack">
-      <section className="page-header">
-        <div>
-          <p className="eyebrow">Turnir</p>
-          <h1>{tournament.title}</h1>
-          <p>{tournament.description}</p>
-          <div className="inline-meta">
-            <span>{tournament.format}</span>
-            <span>{formatDateTime(tournament.startsAt)}</span>
-            <span>
-              {tournament.registrationsCount}/{tournament.teamsCount} ekip
-            </span>
-          </div>
+    <div className="tournament-control-room">
+      <TournamentCommandHeader
+        eyebrow="Tournament control room"
+        title={tournament.title}
+        description={tournament.description}
+        status={tournament.status}
+        actions={
+          <>
+            <Link className="button ops-button-secondary" href="/turnirji">
+              Vsi turnirji
+            </Link>
+            <Link className="button ops-button-primary" href="/organizator">
+              Upravljaj
+            </Link>
+          </>
+        }
+      >
+        <TournamentMetaGrid
+          items={[
+            {
+              detail: "format",
+              icon: Trophy,
+              label: "Sistem",
+              tone: "red",
+              value: tournament.format
+            },
+            {
+              detail: "zacetek",
+              icon: CalendarDays,
+              label: "Razpored",
+              tone: "gold",
+              value: formatDateTime(tournament.startsAt)
+            },
+            {
+              detail: "registracije",
+              icon: UsersRound,
+              label: "Ekipe",
+              tone: "cyan",
+              value: `${tournament.registrationsCount}/${tournament.teamsCount}`
+            },
+            {
+              detail: "OpenDota linked",
+              icon: DatabaseZap,
+              label: "Match_id",
+              tone: "green",
+              value: String(importedMatches)
+            }
+          ]}
+        />
+      </TournamentCommandHeader>
+
+      <section className="tournament-control-grid">
+        <div className="tournament-control-main">
+          <section className="tournament-command-panel ops-panel">
+            <SectionHeader
+              eyebrow="Match operations"
+              title="Razpored, rezultati in match_id"
+              description="Podlaga za javni pogled obiskovalcev in povezavo z internimi zapisi turnirja."
+              action={
+                <span className="ops-badge">
+                  <GitBranch size={14} />
+                  {tournamentMatches.length} tekem
+                </span>
+              }
+            />
+            <MatchSchedule matches={tournamentMatches} />
+          </section>
+
+          <BracketCommandPanel matches={tournamentMatches} />
         </div>
-        <StatusBadge status={tournament.status} />
+
+        <TournamentStatusPanel tournament={tournament} matches={tournamentMatches} />
       </section>
 
-      <section className="content-grid">
-        <div className="panel panel-large">
-          <SectionHeader
-            eyebrow="Tekme"
-            title="Razpored, rezultati in match_id"
-            description="Podlaga za javni pogled obiskovalcev in povezavo z internimi zapisi turnirja."
-          />
-          <MatchSchedule matches={tournamentMatches} />
-        </div>
-
-        <div className="panel">
-          <SectionHeader
-            eyebrow="Bracket"
-            title="Napredovanje"
-            description="Prikaz parov, rezultatov in naslednjih krogov."
-          />
-          <BracketView matches={tournamentMatches} />
-        </div>
-      </section>
-
-      <section className="panel">
+      <section className="tournament-command-panel tournament-analytics-panel ops-panel">
         <SectionHeader
           eyebrow="Turnirska analitika"
           title="Metrike po uvozenih tekmah"
           description="Pripravljeno za win rate, KDA, trajanje tekem in uspesnost junakov."
+          action={
+            <Link className="text-link ops-mono" href="/analitika">
+              <BarChart3 size={16} />
+              <span>Odpri analitiko</span>
+            </Link>
+          }
         />
-        <AnalyticsOverview heroes={heroMetrics} teams={teams} />
+        <AnalyticsOverview heroes={analytics.heroMetrics} teams={analytics.teams} />
       </section>
     </div>
   );
