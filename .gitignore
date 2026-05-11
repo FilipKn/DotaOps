@@ -45,4 +45,6 @@ supabase/.temp/
 #Codex
 AGENTS.md
 backend/AGENTS.md
+docs/code_review.md
+
 .vscode
