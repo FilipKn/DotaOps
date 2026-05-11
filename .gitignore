@@ -42,4 +42,7 @@ next-env.d.ts
 # supabase
 supabase/.temp/
 
+#Codex
+AGENTS.md
+backend/AGENTS.md
 .vscode
