@@ -232,3 +232,46 @@ npm run dev -- --port 3001
 ```
 
 Ce je port `8080` zaseden, nastavi `SERVER_PORT` v root `.env`.
+
+## Zagon z Dockerjem
+
+Za hiter lokalni zagon celotnega okolja (backend + frontend) uporabite Docker in `docker-compose`.
+
+1. Predpogoj: namestite `Docker` in `docker-compose` ter v korenu projekta napolnite `.env` (kopirajte iz `.env.example`). V `.env` nastavite Supabase povezavo in potrebne ključe.
+
+2. Gradnja in zagon (iz korena projekta):
+
+```bash
+docker-compose up --build
+```
+
+To bo zgradilo slike za `backend` in `frontend` ter ju zagnalo na vratih:
+
+- Backend: `http://localhost:8080`
+- Frontend: `http://localhost:3000`
+
+3. Če želite samo ponovno zgraditi backend ali frontend:
+
+```bash
+# rebuild only backend
+docker-compose build backend
+# rebuild only frontend
+docker-compose build frontend
+```
+
+4. Zagon v ozadju:
+
+```bash
+docker-compose up -d --build
+```
+
+5. Ustavitev in odstranitev containerjev:
+
+```bash
+docker-compose down
+```
+
+Opombe:
+- `docker-compose` uporablja vrednosti iz vaše root `.env`; poskrbite, da so `SUPABASE_DB_URL`, `SUPABASE_DB_USER` in `SUPABASE_DB_PASSWORD` pravilno nastavljene za vašo Supabase bazo (ali uporabite lokalno Postgres, če želite).
+- Če uporabljate Supabase v oblaku, bo aplikacija zahtevala ustrezne `NEXT_PUBLIC_SUPABASE_*` vrednosti za frontend (nastavite v root `.env` ali v `frontend/.env.local`).
+- Volumni `./backend/src` in `./frontend/src` so nastavljeni kot volumi v `docker-compose` za razvojno izkušnjo (če želite hot-reload). Če želite čisto produkcijsko sliko, odstranite volumenne mape iz `docker-compose.yml`.

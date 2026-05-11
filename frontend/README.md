@@ -11,6 +11,17 @@ npm run dev
 
 Privzeto se aplikacija odpre na `http://localhost:3000`.
 
+### Zagon v produkcijskem načinu / Docker
+
+Gradnja produkcijske slike in zagon z Dockerjem:
+
+```bash
+docker build -t dotaops-frontend ./frontend
+docker run --env-file .env -p 3000:3000 dotaops-frontend
+```
+
+Priporočeno: uporabite `docker-compose up --build` iz korena projekta, ki bo zagnal tako backend kot frontend skupaj.
+
 ## Konfiguracija API-ja
 
 Ustvari `.env.local` po zgledu `.env.example`:
@@ -30,3 +41,7 @@ Dokler zaledje ni pripravljeno, strani uporabljajo začetne podatke iz `src/lib/
 - `src/lib/types.ts` vsebuje pogodbe za frontend.
 - `src/lib/api.ts` je pripravljena vstopna točka za Spring Boot API.
 - `src/lib/mock-data.ts` vsebuje začetne podatke za razvoj UI-ja.
+
+### Opomba o Supabase
+
+Frontend pričakuje dostopne `NEXT_PUBLIC_` env spremenljivke. Če uporabljate Supabase v oblaku, izpolnite `NEXT_PUBLIC_SUPABASE_URL` in ključe v `.env` ali v `docker` `.env`.
