@@ -34,8 +34,6 @@ jobs:
   integration-tests:
     name: Run backend integration tests (Supabase)
     runs-on: ubuntu-latest
-    # Only run if secrets are available (i.e., on main repo, not forks)
-    if: secrets.SUPABASE_DB_URL != ''
 
     env:
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
