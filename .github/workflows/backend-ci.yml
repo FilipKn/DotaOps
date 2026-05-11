@@ -61,4 +61,4 @@ jobs:
         working-directory: backend
         run: |
           chmod +x mvnw
-          ./mvnw -B clean test -Dspring.profiles.active=integration -Dspring.test.mockmvc.print=true
+          ./mvnw -B clean test -Dspring.profiles.active=integration
