@@ -30,6 +30,7 @@ const navItems = [
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "mock data";
+  const isRoleDashboard = pathname.startsWith("/dashboard");
 
   return (
     <div className="app-shell">
@@ -75,47 +76,51 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="main-area">
-        <header className="topbar ops-panel">
-          <div className="topbar-title">
-            <span className="topbar-kicker">DOTAOPS COMMAND CENTER</span>
-            <strong>Tournament operations and analytics platform</strong>
-          </div>
-
-          <div className="topbar-actions" aria-label="Application status and actions">
-            <div className="topbar-status-segment">
-              <RadioTower size={16} />
-              <span>OPS STATUS</span>
-              <strong>ONLINE</strong>
+        {isRoleDashboard ? null : (
+          <header className="topbar ops-panel">
+            <div className="topbar-title">
+              <span className="topbar-kicker">DOTAOPS COMMAND CENTER</span>
+              <strong>Tournament operations and analytics platform</strong>
             </div>
 
-            <div className="topbar-status-segment topbar-rank-segment">
-              <Shield size={16} />
-              <span>RANK</span>
-              <strong>IMMORTAL</strong>
+            <div className="topbar-actions" aria-label="Application status and actions">
+              <div className="topbar-status-segment">
+                <RadioTower size={16} />
+                <span>OPS STATUS</span>
+                <strong>ONLINE</strong>
+              </div>
+
+              <div className="topbar-status-segment topbar-rank-segment">
+                <Shield size={16} />
+                <span>RANK</span>
+                <strong>IMMORTAL</strong>
+              </div>
+
+              <button className="topbar-icon-button" type="button" aria-label="Notifications">
+                <Bell size={17} />
+              </button>
+
+              <div className="topbar-profile" aria-label="User profile">
+                <span className="topbar-avatar" aria-hidden="true">
+                  <UserRound size={16} />
+                </span>
+                <span>
+                  <strong>SOLO_TACTICIAN</strong>
+                  <small>Organizer</small>
+                </span>
+              </div>
+
+              <Link className="button button-primary ops-button-primary topbar-primary-action" href="/organizator">
+                <Plus size={18} />
+                <span>New Tournament</span>
+              </Link>
             </div>
+          </header>
+        )}
 
-            <button className="topbar-icon-button" type="button" aria-label="Notifications">
-              <Bell size={17} />
-            </button>
-
-            <div className="topbar-profile" aria-label="User profile">
-              <span className="topbar-avatar" aria-hidden="true">
-                <UserRound size={16} />
-              </span>
-              <span>
-                <strong>SOLO_TACTICIAN</strong>
-                <small>Organizer</small>
-              </span>
-            </div>
-
-            <Link className="button button-primary ops-button-primary topbar-primary-action" href="/organizator">
-              <Plus size={18} />
-              <span>New Tournament</span>
-            </Link>
-          </div>
-        </header>
-
-        <main className="page">{children}</main>
+        <main className={classNames("page", isRoleDashboard && "dashboard-page")}>
+          {children}
+        </main>
       </div>
     </div>
   );
