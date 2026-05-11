@@ -4,26 +4,54 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import si.um.feri.dotaops.backend.auth.web.SupabaseJwtAuthenticationFilter;
+import si.um.feri.dotaops.backend.common.security.JsonAccessDeniedHandler;
+import si.um.feri.dotaops.backend.common.security.JsonAuthenticationEntryPoint;
+import si.um.feri.dotaops.backend.config.properties.SupabaseAuthProperties;
+
 @Configuration
+@EnableConfigurationProperties(SupabaseAuthProperties.class)
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            SupabaseJwtAuthenticationFilter supabaseJwtAuthenticationFilter,
+            JsonAuthenticationEntryPoint authenticationEntryPoint,
+            JsonAccessDeniedHandler accessDeniedHandler
+    ) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> { })
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
+                .addFilterBefore(supabaseJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info", "/api/health").permitAll()
-                        .anyRequest().permitAll())
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/tournaments/**",
+                                "/api/teams/**",
+                                "/api/matches/**",
+                                "/api/analytics/**",
+                                "/api/roadmap").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/organizer/**").hasAnyRole("ORGANIZER", "ADMIN")
+                        .requestMatchers("/api/me/**").authenticated()
+                        .anyRequest().authenticated())
                 .build();
     }
 
