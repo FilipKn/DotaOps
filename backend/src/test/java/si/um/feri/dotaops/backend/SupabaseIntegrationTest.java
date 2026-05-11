@@ -6,9 +6,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * Integration test suite for Supabase database connectivity.
- * Runs only when SUPABASE_DB_URL environment variable is present.
- * Used in CI pipelines with real Supabase test project credentials.
+ * Migration smoke test for PostgreSQL-backed environments.
+ * Runs only when SUPABASE_DB_URL is present. CI points this at an ephemeral
+ * PostgreSQL service; local/staging runs may still point it at Supabase.
  */
 @SpringBootTest
 @ActiveProfiles("integration")
