@@ -112,7 +112,7 @@ jobs:
           grant select on auth.users to anon, authenticated, service_role;
           SQL
 
-      - name: Run Flyway migration smoke test on Postgres
+      - name: Run Postgres integration tests
         working-directory: backend
         env:
           SUPABASE_DB_URL: jdbc:postgresql://127.0.0.1:5432/dotaops_ci
@@ -122,4 +122,4 @@ jobs:
           SUPABASE_JWT_ISSUER: https://ci.supabase.local/auth/v1
           SUPABASE_JWT_AUDIENCE: authenticated
           SPRING_FLYWAY_ENABLED: "true"
-        run: ./mvnw -B -Dtest=SupabaseIntegrationTest test -Dspring.profiles.active=integration
+        run: ./mvnw -B "-Dtest=*IntegrationTest" test -Dspring.profiles.active=integration
