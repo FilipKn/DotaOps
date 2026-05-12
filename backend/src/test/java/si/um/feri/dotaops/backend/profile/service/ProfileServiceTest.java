@@ -42,6 +42,8 @@ class ProfileServiceTest {
 
         assertThat(response.id()).isEqualTo(PROFILE_ID);
         assertThat(response.nickname()).isEqualTo("CarryOne");
+        assertThat(response.steamId64()).isEqualTo("76561190000000001");
+        assertThat(response.opendotaAccountId()).isEqualTo(39734273L);
         verify(profileRepository).findById(PROFILE_ID);
     }
 
@@ -136,10 +138,13 @@ class ProfileServiceTest {
                 nickname,
                 nickname,
                 "76561190000000001",
+                39734273L,
                 ProfileRole.PLAYER,
                 "https://cdn.example.test/avatar.png",
                 "Dota player",
                 countryCode,
+                now,
+                now,
                 now,
                 now);
     }

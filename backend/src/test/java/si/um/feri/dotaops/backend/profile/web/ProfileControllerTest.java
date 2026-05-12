@@ -99,6 +99,8 @@ class ProfileControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.data.items[0].id").value(PROFILE_ID.toString()))
                 .andExpect(jsonPath("$.data.items[0].nickname").value("MidPulse"))
+                .andExpect(jsonPath("$.data.items[0].steamId64").value("76561190000000001"))
+                .andExpect(jsonPath("$.data.items[0].opendotaAccountId").value(39734273))
                 .andExpect(jsonPath("$.data.items[0].role").value("player"))
                 .andExpect(jsonPath("$.data.page.totalElements").value(1));
     }
@@ -118,7 +120,9 @@ class ProfileControllerTest {
                         .header("Authorization", bearerToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(PROFILE_ID.toString()))
-                .andExpect(jsonPath("$.data.nickname").value("MidPulse"));
+                .andExpect(jsonPath("$.data.nickname").value("MidPulse"))
+                .andExpect(jsonPath("$.data.steamId64").value("76561190000000001"))
+                .andExpect(jsonPath("$.data.opendotaAccountId").value(39734273));
     }
 
     @Test
@@ -129,7 +133,9 @@ class ProfileControllerTest {
                         .cookie(steamSessionCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(PROFILE_ID.toString()))
-                .andExpect(jsonPath("$.data.nickname").value("MidPulse"));
+                .andExpect(jsonPath("$.data.nickname").value("MidPulse"))
+                .andExpect(jsonPath("$.data.steamId64").value("76561190000000001"))
+                .andExpect(jsonPath("$.data.opendotaAccountId").value(39734273));
     }
 
     @Test
@@ -224,10 +230,14 @@ class ProfileControllerTest {
                 "MidPulse",
                 "Mid Pulse",
                 "76561190000000001",
+                "76561190000000001",
+                39734273L,
                 "player",
                 "https://cdn.example.test/avatar.png",
                 "Position two player",
                 "SI",
+                now,
+                now,
                 now,
                 now);
     }

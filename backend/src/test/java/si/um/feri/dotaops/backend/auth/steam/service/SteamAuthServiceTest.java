@@ -24,6 +24,7 @@ import si.um.feri.dotaops.backend.auth.steam.repository.SteamLoginStateRepositor
 import si.um.feri.dotaops.backend.auth.steam.repository.SteamProfileRepository;
 import si.um.feri.dotaops.backend.common.error.BadRequestException;
 import si.um.feri.dotaops.backend.config.properties.SteamAuthProperties;
+import si.um.feri.dotaops.backend.profile.service.SteamProfileBootstrapService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -49,12 +50,14 @@ class SteamAuthServiceTest {
     private final SteamProfileRepository profileRepository = mock(SteamProfileRepository.class);
     private final SteamOpenIdClient openIdClient = mock(SteamOpenIdClient.class);
     private final CurrentUserProvider currentUserProvider = mock(CurrentUserProvider.class);
+    private final SteamProfileBootstrapService profileBootstrapService = mock(SteamProfileBootstrapService.class);
     private final SteamAuthService steamAuthService = new SteamAuthService(
             properties("http://localhost:3000/auth/steam/callback"),
             loginStateRepository,
             profileRepository,
             openIdClient,
             currentUserProvider,
+            profileBootstrapService,
             fixedRandom(),
             CLOCK);
 
@@ -118,6 +121,14 @@ class SteamAuthServiceTest {
                 .startsWith("http://localhost:3000/auth/steam/callback?steamLogin=success")
                 .contains("steamId=" + STEAM_ID)
                 .contains("profileId=" + PROFILE_ID);
+        verify(profileBootstrapService).bootstrapAfterSteamLogin(
+                eq(PROFILE_ID),
+                eq(STEAM_ID),
+                eq(new SteamPlayerSummary(
+                        STEAM_ID,
+                        "Dota Player",
+                        "https://cdn.example.test/avatar.png",
+                        "https://steamcommunity.com/profiles/" + STEAM_ID + "/")));
     }
 
     @Test

@@ -11,10 +11,13 @@ public record Profile(
         String nickname,
         String displayName,
         String steamId,
+        Long opendotaAccountId,
         ProfileRole role,
         String avatarUrl,
         String bio,
         String countryCode,
+        OffsetDateTime steamProfileSyncedAt,
+        OffsetDateTime opendotaProfileSyncedAt,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
 ) {
