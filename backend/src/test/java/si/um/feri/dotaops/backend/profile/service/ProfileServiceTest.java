@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import si.um.feri.dotaops.backend.auth.domain.AuthenticatedProfile;
 import si.um.feri.dotaops.backend.auth.domain.ProfileRole;
@@ -84,6 +85,23 @@ class ProfileServiceTest {
                 null)))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Authenticated user already has a profile.");
+    }
+
+    @Test
+    void createCurrentProfileMapsDuplicateNicknameConstraint() {
+        when(currentUserProvider.requireAuthUserId()).thenReturn(AUTH_USER_ID);
+        when(profileRepository.findByAuthUserId(AUTH_USER_ID)).thenReturn(Optional.empty());
+        when(profileRepository.create(org.mockito.ArgumentMatchers.any()))
+                .thenThrow(new DataIntegrityViolationException("profiles_nickname_ci_unique_idx"));
+
+        assertThatThrownBy(() -> profileService.createCurrentProfile(new CreateProfileRequest(
+                "CarryOne",
+                null,
+                null,
+                null,
+                null)))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Profile nickname is already in use.");
     }
 
     @Test
@@ -181,6 +199,24 @@ class ProfileServiceTest {
         assertThatThrownBy(() -> profileService.updateCurrentProfile(request))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Required profile field is blank.");
+    }
+
+    @Test
+    void updateCurrentProfileMapsDuplicateNicknameConstraint() {
+        when(currentUserProvider.requireProfileId()).thenReturn(PROFILE_ID);
+        when(profileRepository.updateById(
+                org.mockito.ArgumentMatchers.eq(PROFILE_ID),
+                org.mockito.ArgumentMatchers.any()))
+                .thenThrow(new DataIntegrityViolationException("profiles_nickname_ci_unique_idx"));
+
+        assertThatThrownBy(() -> profileService.updateCurrentProfile(new UpdateProfileRequest(
+                "CarryOne",
+                null,
+                null,
+                null,
+                null)))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Profile nickname is already in use.");
     }
 
     @Test

@@ -155,7 +155,7 @@ public class ProfileRepository {
                           created_at,
                           updated_at
                         from public.profiles
-                        where nickname = ?
+                        where lower(nickname) = lower(?)
                         limit 1
                         """,
                         this::mapProfile,

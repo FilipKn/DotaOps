@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -87,15 +88,19 @@ public class ProfileService {
             throw new BadRequestException("Authenticated user already has a profile.");
         }
 
-        Profile profile = profileRepository.create(new CreateProfileCommand(
-                authUserId,
-                normalizeRequired(request.nickname()),
-                normalizeOptional(request.displayName()),
-                normalizeOptional(request.avatarUrl()),
-                normalizeOptional(request.bio()),
-                normalizeCountryCode(request.countryCode())));
+        try {
+            Profile profile = profileRepository.create(new CreateProfileCommand(
+                    authUserId,
+                    normalizeRequired(request.nickname()),
+                    normalizeOptional(request.displayName()),
+                    normalizeOptional(request.avatarUrl()),
+                    normalizeOptional(request.bio()),
+                    normalizeCountryCode(request.countryCode())));
 
-        return ProfileResponse.from(profile);
+            return ProfileResponse.from(profile);
+        } catch (DataIntegrityViolationException exception) {
+            throw profileConstraintException(exception);
+        }
     }
 
     @Transactional
@@ -106,21 +111,25 @@ public class ProfileService {
 
         UUID profileId = currentUserProvider.requireProfileId();
 
-        return profileRepository.updateById(
-                        profileId,
-                        new UpdateProfileCommand(
-                                request.hasNickname(),
-                                request.hasNickname() ? normalizeRequired(request.nickname()) : null,
-                                request.hasDisplayName(),
-                                request.hasDisplayName() ? normalizeOptional(request.displayName()) : null,
-                                request.hasAvatarUrl(),
-                                request.hasAvatarUrl() ? normalizeOptional(request.avatarUrl()) : null,
-                                request.hasBio(),
-                                request.hasBio() ? normalizeOptional(request.bio()) : null,
-                                request.hasCountryCode(),
-                                request.hasCountryCode() ? normalizeCountryCode(request.countryCode()) : null))
-                .map(ProfileResponse::from)
-                .orElseThrow(() -> new ResourceNotFoundException("Profile", "id", profileId));
+        try {
+            return profileRepository.updateById(
+                            profileId,
+                            new UpdateProfileCommand(
+                                    request.hasNickname(),
+                                    request.hasNickname() ? normalizeRequired(request.nickname()) : null,
+                                    request.hasDisplayName(),
+                                    request.hasDisplayName() ? normalizeOptional(request.displayName()) : null,
+                                    request.hasAvatarUrl(),
+                                    request.hasAvatarUrl() ? normalizeOptional(request.avatarUrl()) : null,
+                                    request.hasBio(),
+                                    request.hasBio() ? normalizeOptional(request.bio()) : null,
+                                    request.hasCountryCode(),
+                                    request.hasCountryCode() ? normalizeCountryCode(request.countryCode()) : null))
+                    .map(ProfileResponse::from)
+                    .orElseThrow(() -> new ResourceNotFoundException("Profile", "id", profileId));
+        } catch (DataIntegrityViolationException exception) {
+            throw profileConstraintException(exception);
+        }
     }
 
     private String normalizeRequired(String value) {
@@ -147,5 +156,20 @@ public class ProfileService {
         }
 
         return normalized.toUpperCase(Locale.ROOT);
+    }
+
+    private BadRequestException profileConstraintException(DataIntegrityViolationException exception) {
+        String message = exception.getMostSpecificCause().getMessage();
+
+        if (message != null && message.contains("profiles_auth_user_id_key")) {
+            return new BadRequestException("Authenticated user already has a profile.");
+        }
+
+        if (message != null && (message.contains("profiles_nickname_ci_unique_idx")
+                || message.contains("profiles_nickname_key"))) {
+            return new BadRequestException("Profile nickname is already in use.");
+        }
+
+        return new BadRequestException("Profile data violates a database constraint.");
     }
 }
