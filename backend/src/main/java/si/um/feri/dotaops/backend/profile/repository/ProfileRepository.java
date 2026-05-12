@@ -1,0 +1,222 @@
+package si.um.feri.dotaops.backend.profile.repository;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+
+import si.um.feri.dotaops.backend.auth.domain.ProfileRole;
+import si.um.feri.dotaops.backend.profile.domain.Profile;
+
+@Repository
+public class ProfileRepository {
+
+    private final JdbcTemplate jdbcTemplate;
+
+    public ProfileRepository(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    public List<Profile> findProfiles(String search, int size, long offset) {
+        String normalizedSearch = normalizeSearch(search);
+
+        return jdbcTemplate.query(
+                """
+                select
+                  id,
+                  auth_user_id,
+                  nickname,
+                  display_name,
+                  steam_id,
+                  role::text as role,
+                  avatar_url,
+                  bio,
+                  country_code,
+                  created_at,
+                  updated_at
+                from public.profiles
+                where (
+                  cast(? as text) is null
+                  or nickname ilike '%' || cast(? as text) || '%'
+                  or display_name ilike '%' || cast(? as text) || '%'
+                )
+                order by created_at desc, id desc
+                limit ? offset ?
+                """,
+                this::mapProfile,
+                normalizedSearch,
+                normalizedSearch,
+                normalizedSearch,
+                size,
+                offset);
+    }
+
+    public long countProfiles(String search) {
+        String normalizedSearch = normalizeSearch(search);
+
+        Long count = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from public.profiles
+                where (
+                  cast(? as text) is null
+                  or nickname ilike '%' || cast(? as text) || '%'
+                  or display_name ilike '%' || cast(? as text) || '%'
+                )
+                """,
+                Long.class,
+                normalizedSearch,
+                normalizedSearch,
+                normalizedSearch);
+
+        return count == null ? 0 : count;
+    }
+
+    public Optional<Profile> findById(UUID profileId) {
+        return jdbcTemplate.query(
+                        """
+                        select
+                          id,
+                          auth_user_id,
+                          nickname,
+                          display_name,
+                          steam_id,
+                          role::text as role,
+                          avatar_url,
+                          bio,
+                          country_code,
+                          created_at,
+                          updated_at
+                        from public.profiles
+                        where id = ?
+                        limit 1
+                        """,
+                        this::mapProfile,
+                        profileId)
+                .stream()
+                .findFirst();
+    }
+
+    public Optional<Profile> findByAuthUserId(UUID authUserId) {
+        return jdbcTemplate.query(
+                        """
+                        select
+                          id,
+                          auth_user_id,
+                          nickname,
+                          display_name,
+                          steam_id,
+                          role::text as role,
+                          avatar_url,
+                          bio,
+                          country_code,
+                          created_at,
+                          updated_at
+                        from public.profiles
+                        where auth_user_id = ?
+                        limit 1
+                        """,
+                        this::mapProfile,
+                        authUserId)
+                .stream()
+                .findFirst();
+    }
+
+    public Profile create(CreateProfileCommand command) {
+        return jdbcTemplate.queryForObject(
+                """
+                insert into public.profiles (
+                  auth_user_id,
+                  nickname,
+                  display_name,
+                  avatar_url,
+                  bio,
+                  country_code
+                )
+                values (?, ?, ?, ?, ?, ?)
+                returning
+                  id,
+                  auth_user_id,
+                  nickname,
+                  display_name,
+                  steam_id,
+                  role::text as role,
+                  avatar_url,
+                  bio,
+                  country_code,
+                  created_at,
+                  updated_at
+                """,
+                this::mapProfile,
+                command.authUserId(),
+                command.nickname(),
+                command.displayName(),
+                command.avatarUrl(),
+                command.bio(),
+                command.countryCode());
+    }
+
+    public Optional<Profile> updateByAuthUserId(UUID authUserId, UpdateProfileCommand command) {
+        return jdbcTemplate.query(
+                        """
+                        update public.profiles
+                        set
+                          nickname = coalesce(?, nickname),
+                          display_name = coalesce(?, display_name),
+                          avatar_url = coalesce(?, avatar_url),
+                          bio = coalesce(?, bio),
+                          country_code = coalesce(?, country_code),
+                          updated_at = now()
+                        where auth_user_id = ?
+                        returning
+                          id,
+                          auth_user_id,
+                          nickname,
+                          display_name,
+                          steam_id,
+                          role::text as role,
+                          avatar_url,
+                          bio,
+                          country_code,
+                          created_at,
+                          updated_at
+                        """,
+                        this::mapProfile,
+                        command.nickname(),
+                        command.displayName(),
+                        command.avatarUrl(),
+                        command.bio(),
+                        command.countryCode(),
+                        authUserId)
+                .stream()
+                .findFirst();
+    }
+
+    private Profile mapProfile(ResultSet resultSet, int rowNumber) throws SQLException {
+        return new Profile(
+                resultSet.getObject("id", UUID.class),
+                resultSet.getObject("auth_user_id", UUID.class),
+                resultSet.getString("nickname"),
+                resultSet.getString("display_name"),
+                resultSet.getString("steam_id"),
+                ProfileRole.fromDatabaseValue(resultSet.getString("role")),
+                resultSet.getString("avatar_url"),
+                resultSet.getString("bio"),
+                resultSet.getString("country_code"),
+                resultSet.getObject("created_at", OffsetDateTime.class),
+                resultSet.getObject("updated_at", OffsetDateTime.class));
+    }
+
+    private String normalizeSearch(String search) {
+        if (search == null || search.isBlank()) {
+            return null;
+        }
+
+        return search.trim();
+    }
+}

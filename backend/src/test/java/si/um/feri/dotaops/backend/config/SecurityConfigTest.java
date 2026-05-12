@@ -2,9 +2,13 @@ package si.um.feri.dotaops.backend.config;
 
 import java.time.Instant;
 import java.nio.charset.StandardCharsets;
+import java.net.URI;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import jakarta.servlet.http.Cookie;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +33,8 @@ import si.um.feri.dotaops.backend.auth.domain.ProfileRole;
 import si.um.feri.dotaops.backend.auth.repository.AuthenticatedProfileRepository;
 import si.um.feri.dotaops.backend.auth.service.SupabaseJwtTestSupport;
 import si.um.feri.dotaops.backend.auth.service.SupabasePrincipal;
+import si.um.feri.dotaops.backend.auth.steam.domain.SteamAuthResult;
+import si.um.feri.dotaops.backend.auth.steam.service.SteamSessionTokenService;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -48,18 +54,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.flyway.enabled=false",
         "dotaops.supabase.auth.jwt-secret=" + SupabaseJwtTestSupport.SECRET,
         "dotaops.supabase.auth.issuer=" + SupabaseJwtTestSupport.ISSUER,
-        "dotaops.supabase.auth.audience=" + SupabaseJwtTestSupport.AUDIENCE
+        "dotaops.supabase.auth.audience=" + SupabaseJwtTestSupport.AUDIENCE,
+        "dotaops.steam.session.jwt-secret=" + SupabaseJwtTestSupport.SECRET,
+        "dotaops.steam.session.ttl=1h"
 })
 class SecurityConfigTest {
 
     private static final UUID PLAYER_AUTH_USER_ID = UUID.fromString("44444444-4444-4444-8444-444444444444");
     private static final UUID ORGANIZER_AUTH_USER_ID = UUID.fromString("55555555-5555-4555-8555-555555555555");
+    private static final UUID STEAM_PROFILE_ID = UUID.fromString("66666666-6666-4666-8666-666666666666");
+    private static final String STEAM_ID = "76561198000000001";
 
     @Autowired
     private MockMvc mockMvc;
 
     @Autowired
     private AuthenticatedProfileRepository profileRepository;
+
+    @Autowired
+    private SteamSessionTokenService steamSessionTokenService;
 
     @BeforeEach
     void setUp() {
@@ -71,6 +84,11 @@ class SecurityConfigTest {
         when(profileRepository.findByAuthUserId(ORGANIZER_AUTH_USER_ID)).thenReturn(Optional.of(profile(
                 ORGANIZER_AUTH_USER_ID,
                 ProfileRole.ORGANIZER)));
+        when(profileRepository.findByProfileId(STEAM_PROFILE_ID)).thenReturn(Optional.of(new AuthenticatedProfile(
+                STEAM_PROFILE_ID,
+                null,
+                "steam_player",
+                ProfileRole.PLAYER)));
     }
 
     @Test
@@ -126,8 +144,55 @@ class SecurityConfigTest {
                 .andExpect(jsonPath("$.result").value("organizer"));
     }
 
+    @Test
+    void steamSessionCookieCreatesCurrentUserContext() throws Exception {
+        mockMvc.perform(get("/api/me/security-test")
+                        .cookie(steamSessionCookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.profileId").value(STEAM_PROFILE_ID.toString()))
+                .andExpect(jsonPath("$.role").value("PLAYER"));
+    }
+
+    @Test
+    void invalidSteamSessionCookieReturnsUnauthorizedContract() throws Exception {
+        mockMvc.perform(get("/api/me/security-test")
+                        .cookie(new Cookie("dotaops_steam_session", "invalid")))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void steamPlayerCannotAccessOrganizerEndpoint() throws Exception {
+        mockMvc.perform(get("/api/organizer/security-test")
+                        .cookie(steamSessionCookie()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void bearerJwtKeepsPriorityOverSteamSessionCookie() throws Exception {
+        mockMvc.perform(get("/api/organizer/security-test")
+                        .cookie(new Cookie("dotaops_steam_session", "invalid"))
+                        .header("Authorization", bearerToken(ORGANIZER_AUTH_USER_ID)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result").value("organizer"));
+    }
+
     private static String bearerToken(UUID authUserId) throws Exception {
         return "Bearer " + SupabaseJwtTestSupport.token(authUserId, Instant.now());
+    }
+
+    private Cookie steamSessionCookie() {
+        return new Cookie("dotaops_steam_session", steamSessionTokenService.createToken(new SteamAuthResult(
+                STEAM_ID,
+                STEAM_PROFILE_ID,
+                UUID.fromString("77777777-7777-4777-8777-777777777777"),
+                false,
+                false,
+                "Steam Player",
+                null,
+                "https://steamcommunity.com/profiles/" + STEAM_ID + "/",
+                URI.create("http://localhost:3000/auth/steam/callback"))));
     }
 
     private static AuthenticatedProfile profile(UUID authUserId, ProfileRole role) {
@@ -142,12 +207,17 @@ class SecurityConfigTest {
     static class SecurityTestController {
 
         @GetMapping("/api/me/security-test")
-        Map<String, String> me(Authentication authentication) {
+        Map<String, Object> me(Authentication authentication) {
             SupabasePrincipal principal = (SupabasePrincipal) authentication.getPrincipal();
 
-            return Map.of(
-                    "authUserId", principal.authUserId().toString(),
-                    "role", principal.role().name());
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("authUserId", principal.authUserId() == null ? null : principal.authUserId().toString());
+            response.put("profileId", principal.profile()
+                    .map(AuthenticatedProfile::profileId)
+                    .map(UUID::toString)
+                    .orElse(null));
+            response.put("role", principal.role().name());
+            return response;
         }
 
         @GetMapping("/api/organizer/security-test")
