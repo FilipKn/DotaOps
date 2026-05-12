@@ -24,6 +24,28 @@ function unwrapBackendPayload(value: unknown) {
   return value;
 }
 
+async function readJson(response: Response) {
+  const text = await response.text();
+
+  if (!text) {
+    return null;
+  }
+
+  return JSON.parse(text) as unknown;
+}
+
+function apiErrorMessage(value: unknown) {
+  if (isRecord(value) && typeof value.message === "string") {
+    return value.message;
+  }
+
+  if (isRecord(value) && isRecord(value.error) && typeof value.error.message === "string") {
+    return value.error.message;
+  }
+
+  return null;
+}
+
 function hasCompatibleShape<T>(value: unknown, fallback: T): value is T {
   if (Array.isArray(fallback)) {
     if (!Array.isArray(value)) {
@@ -60,6 +82,29 @@ function hasCompatibleShape<T>(value: unknown, fallback: T): value is T {
   return typeof value === typeof fallback;
 }
 
+export async function postApi<T>(path: string, body: unknown): Promise<T> {
+  if (!API_URL) {
+    throw new Error("Backend API URL is not configured.");
+  }
+
+  const response = await fetch(`${API_URL}${path}`, {
+    body: JSON.stringify(body),
+    cache: "no-store",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    method: "POST"
+  });
+  const rawPayload = await readJson(response);
+
+  if (!response.ok) {
+    throw new Error(apiErrorMessage(rawPayload) ?? "Backend request failed.");
+  }
+
+  return unwrapBackendPayload(rawPayload) as T;
+}
+
 export async function fetchApi<T>(
   path: string,
   fallback: T,
@@ -83,7 +128,7 @@ export async function fetchApi<T>(
       return { data: fallback, source: "mock" };
     }
 
-    const payload = unwrapBackendPayload(await response.json());
+    const payload = unwrapBackendPayload(await readJson(response));
 
     if (!hasCompatibleShape(payload, fallback)) {
       return { data: fallback, source: "mock" };

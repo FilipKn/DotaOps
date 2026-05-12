@@ -10,6 +10,7 @@ const labels: Record<Status, string> = {
   live: "Live",
   finished: "Completed",
   scheduled: "Scheduled",
+  queued: "Queued",
   ready: "Ready",
   processing: "Processing",
   error: "Error",

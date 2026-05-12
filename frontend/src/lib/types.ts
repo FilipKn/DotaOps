@@ -15,7 +15,7 @@ export type MatchStatus =
   | "processing"
   | "error";
 
-export type ImportStatus = "idle" | "processing" | "ready" | "error";
+export type ImportStatus = "idle" | "queued" | "processing" | "ready" | "error";
 
 export interface Player {
   id: string;
@@ -78,6 +78,19 @@ export interface RoadmapItem {
   title: string;
   status: "planned" | "active" | "done";
   items: string[];
+}
+
+export interface MatchImportResponse {
+  id: string;
+  matchId?: string | null;
+  matchGameId?: string | null;
+  dotaMatchId: string;
+  status: Exclude<ImportStatus, "idle">;
+  errorMessage?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ApiResult<T> {

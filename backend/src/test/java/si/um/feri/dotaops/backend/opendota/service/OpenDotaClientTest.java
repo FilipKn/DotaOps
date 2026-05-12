@@ -90,6 +90,48 @@ class OpenDotaClientTest {
         server.verify();
     }
 
+    @Test
+    void fetchMatchReturnsRawMatchPayload() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        OpenDotaClient client = new OpenDotaClient(properties(), builder);
+
+        server.expect(requestTo("https://api.opendota.com/api/matches/7894561230"))
+                .andExpect(method(GET))
+                .andRespond(withSuccess("""
+                        {
+                          "match_id": 7894561230,
+                          "duration": 1900,
+                          "radiant_win": true,
+                          "players": []
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        var match = client.fetchMatch(7894561230L);
+
+        assertThat(match).isPresent();
+        assertThat(match.orElseThrow().path("match_id").asLong()).isEqualTo(7894561230L);
+        server.verify();
+    }
+
+    @Test
+    void fetchMatchReturnsEmptyWhenOpenDotaReturnsErrorPayload() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        OpenDotaClient client = new OpenDotaClient(properties(), builder);
+
+        server.expect(requestTo("https://api.opendota.com/api/matches/7894561230"))
+                .andExpect(method(GET))
+                .andRespond(withSuccess("""
+                        {
+                          "error": "match not found"
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        assertThat(client.fetchMatch(7894561230L)).isEmpty();
+        server.verify();
+    }
+
     private static OpenDotaProperties properties() {
         return new OpenDotaProperties("https://api.opendota.com/api", "");
     }

@@ -4,16 +4,37 @@ import { RefreshCw, UploadCloud } from "lucide-react";
 import { FormEvent, useState } from "react";
 
 import { StatusBadge } from "@/components/status-badge";
-import type { ImportStatus } from "@/lib/types";
+import { postApi } from "@/lib/api";
+import type { ImportStatus, MatchImportResponse } from "@/lib/types";
 
 export function MatchImportPanel() {
   const [matchId, setMatchId] = useState("7894561230");
   const [status, setStatus] = useState<ImportStatus>("idle");
+  const [message, setMessage] = useState<string | null>(null);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const trimmedMatchId = matchId.trim();
+
+    if (!trimmedMatchId) {
+      setStatus("error");
+      setMessage("Match ID is required.");
+      return;
+    }
+
     setStatus("processing");
-    window.setTimeout(() => setStatus(matchId.trim() ? "ready" : "error"), 700);
+    setMessage(null);
+
+    try {
+      const response = await postApi<MatchImportResponse>("/match-imports", {
+        dotaMatchId: trimmedMatchId
+      });
+      setStatus(response.status);
+      setMessage(response.errorMessage ?? `match_id ${response.dotaMatchId}`);
+    } catch (error) {
+      setStatus("error");
+      setMessage(error instanceof Error ? error.message : "Import failed.");
+    }
   }
 
   return (
@@ -36,11 +57,13 @@ export function MatchImportPanel() {
             value={matchId}
           />
         </label>
-        <button className="button button-primary" type="submit">
+        <button className="button button-primary" disabled={status === "processing"} type="submit">
           {status === "processing" ? <RefreshCw size={18} /> : <UploadCloud size={18} />}
           <span>Import</span>
         </button>
       </form>
+
+      {message ? <p className="ops-label">{message}</p> : null}
 
       <div className="pipeline-grid">
         <span>Input</span>

@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,
                                 "/api/teams/*/invitations",
                                 "/api/teams/*/invitations/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/match-imports").authenticated()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/profiles/**",
                                 "/api/tournaments/**",
