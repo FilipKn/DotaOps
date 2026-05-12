@@ -34,6 +34,20 @@ public class AuthenticatedProfileRepository {
                 .findFirst();
     }
 
+    public Optional<AuthenticatedProfile> findByProfileId(UUID profileId) {
+        return jdbcTemplate.query(
+                        """
+                        select id, auth_user_id, nickname, role::text as role
+                        from public.profiles
+                        where id = ?
+                        limit 1
+                        """,
+                        this::mapProfile,
+                        profileId)
+                .stream()
+                .findFirst();
+    }
+
     private AuthenticatedProfile mapProfile(ResultSet resultSet, int rowNumber) throws SQLException {
         return new AuthenticatedProfile(
                 resultSet.getObject("id", UUID.class),

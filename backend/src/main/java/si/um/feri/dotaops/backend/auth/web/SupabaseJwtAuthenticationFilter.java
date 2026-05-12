@@ -1,10 +1,12 @@
 package si.um.feri.dotaops.backend.auth.web;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Optional;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -21,6 +23,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import si.um.feri.dotaops.backend.auth.domain.AuthenticatedProfile;
 import si.um.feri.dotaops.backend.auth.domain.SupabaseJwtClaims;
 import si.um.feri.dotaops.backend.auth.repository.AuthenticatedProfileRepository;
+import si.um.feri.dotaops.backend.auth.steam.domain.SteamSessionClaims;
+import si.um.feri.dotaops.backend.auth.steam.service.SteamSessionCookieService;
+import si.um.feri.dotaops.backend.auth.steam.service.SteamSessionTokenService;
 import si.um.feri.dotaops.backend.auth.service.SupabaseAuthorities;
 import si.um.feri.dotaops.backend.auth.service.SupabaseJwtVerifier;
 import si.um.feri.dotaops.backend.auth.service.SupabasePrincipal;
@@ -33,15 +38,21 @@ public class SupabaseJwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final SupabaseJwtVerifier jwtVerifier;
     private final AuthenticatedProfileRepository profileRepository;
+    private final SteamSessionTokenService steamSessionTokenService;
+    private final SteamSessionCookieService steamSessionCookieService;
     private final AuthenticationEntryPoint authenticationEntryPoint;
 
     public SupabaseJwtAuthenticationFilter(
             SupabaseJwtVerifier jwtVerifier,
             AuthenticatedProfileRepository profileRepository,
+            SteamSessionTokenService steamSessionTokenService,
+            SteamSessionCookieService steamSessionCookieService,
             AuthenticationEntryPoint authenticationEntryPoint
     ) {
         this.jwtVerifier = jwtVerifier;
         this.profileRepository = profileRepository;
+        this.steamSessionTokenService = steamSessionTokenService;
+        this.steamSessionCookieService = steamSessionCookieService;
         this.authenticationEntryPoint = authenticationEntryPoint;
     }
 
@@ -54,7 +65,7 @@ public class SupabaseJwtAuthenticationFilter extends OncePerRequestFilter {
         String authorizationHeader = request.getHeader(AUTHORIZATION_HEADER);
 
         if (!StringUtils.hasText(authorizationHeader)) {
-            filterChain.doFilter(request, response);
+            authenticateSteamSessionCookie(request, response, filterChain);
             return;
         }
 
@@ -84,6 +95,56 @@ public class SupabaseJwtAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.clearContext();
             reject(request, response, exception);
         }
+    }
+
+    private void authenticateSteamSessionCookie(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
+        Optional<String> sessionToken = steamSessionCookie(request);
+        if (sessionToken.isEmpty()) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        try {
+            SteamSessionClaims claims = steamSessionTokenService.verify(sessionToken.orElseThrow());
+            Optional<AuthenticatedProfile> profile = profileRepository.findByProfileId(claims.profileId());
+            if (profile.isEmpty()) {
+                throw new BadCredentialsException("Steam session profile was not found.");
+            }
+
+            SupabasePrincipal principal = new SupabasePrincipal(
+                    profile.get().authUserId(),
+                    null,
+                    profile,
+                    null);
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    principal,
+                    null,
+                    SupabaseAuthorities.from(profile));
+            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            filterChain.doFilter(request, response);
+        } catch (AuthenticationException exception) {
+            SecurityContextHolder.clearContext();
+            reject(request, response, exception);
+        }
+    }
+
+    private Optional<String> steamSessionCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null || cookies.length == 0) {
+            return Optional.empty();
+        }
+
+        return Arrays.stream(cookies)
+                .filter(cookie -> steamSessionCookieService.cookieName().equals(cookie.getName()))
+                .map(Cookie::getValue)
+                .filter(StringUtils::hasText)
+                .findFirst();
     }
 
     private void reject(

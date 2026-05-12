@@ -19,12 +19,14 @@ import si.um.feri.dotaops.backend.auth.web.SupabaseJwtAuthenticationFilter;
 import si.um.feri.dotaops.backend.common.security.JsonAccessDeniedHandler;
 import si.um.feri.dotaops.backend.common.security.JsonAuthenticationEntryPoint;
 import si.um.feri.dotaops.backend.config.properties.SteamAuthProperties;
+import si.um.feri.dotaops.backend.config.properties.SteamSessionProperties;
 import si.um.feri.dotaops.backend.config.properties.SupabaseAuthProperties;
 
 @Configuration
 @EnableConfigurationProperties({
         SupabaseAuthProperties.class,
-        SteamAuthProperties.class
+        SteamAuthProperties.class,
+        SteamSessionProperties.class
 })
 public class SecurityConfig {
 
@@ -47,6 +49,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info", "/api/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/steam/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/steam/logout").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/teams/*/invitations",
                                 "/api/teams/*/invitations/**").authenticated()

@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import si.um.feri.dotaops.backend.auth.domain.AuthenticatedProfile;
 import si.um.feri.dotaops.backend.auth.domain.ProfileRole;
 import si.um.feri.dotaops.backend.auth.service.CurrentUserProvider;
 import si.um.feri.dotaops.backend.common.error.BadRequestException;
@@ -31,6 +32,18 @@ class ProfileServiceTest {
     private final ProfileRepository profileRepository = mock(ProfileRepository.class);
     private final CurrentUserProvider currentUserProvider = mock(CurrentUserProvider.class);
     private final ProfileService profileService = new ProfileService(profileRepository, currentUserProvider);
+
+    @Test
+    void getCurrentProfileUsesAuthenticatedProfileId() {
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile());
+        when(profileRepository.findById(PROFILE_ID)).thenReturn(Optional.of(profile("CarryOne", "SI")));
+
+        var response = profileService.getCurrentProfile();
+
+        assertThat(response.id()).isEqualTo(PROFILE_ID);
+        assertThat(response.nickname()).isEqualTo("CarryOne");
+        verify(profileRepository).findById(PROFILE_ID);
+    }
 
     @Test
     void createCurrentProfileUsesAuthenticatedUserAndNormalizesInput() {
@@ -104,6 +117,14 @@ class ProfileServiceTest {
         assertThat(captor.getValue().displayName()).isNull();
         assertThat(captor.getValue().bio()).isEqualTo("Draft caller");
         assertThat(captor.getValue().countryCode()).isEqualTo("DE");
+    }
+
+    private AuthenticatedProfile authenticatedProfile() {
+        return new AuthenticatedProfile(
+                PROFILE_ID,
+                null,
+                "steam_player",
+                ProfileRole.PLAYER);
     }
 
     private Profile profile(String nickname, String countryCode) {

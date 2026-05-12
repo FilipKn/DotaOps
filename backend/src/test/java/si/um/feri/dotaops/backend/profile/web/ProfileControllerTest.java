@@ -1,10 +1,13 @@
 package si.um.feri.dotaops.backend.profile.web;
 
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
+
+import jakarta.servlet.http.Cookie;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +28,8 @@ import si.um.feri.dotaops.backend.auth.domain.AuthenticatedProfile;
 import si.um.feri.dotaops.backend.auth.domain.ProfileRole;
 import si.um.feri.dotaops.backend.auth.repository.AuthenticatedProfileRepository;
 import si.um.feri.dotaops.backend.auth.service.SupabaseJwtTestSupport;
+import si.um.feri.dotaops.backend.auth.steam.domain.SteamAuthResult;
+import si.um.feri.dotaops.backend.auth.steam.service.SteamSessionTokenService;
 import si.um.feri.dotaops.backend.common.pagination.PageMeta;
 import si.um.feri.dotaops.backend.common.pagination.PageResponse;
 import si.um.feri.dotaops.backend.profile.service.ProfileService;
@@ -51,12 +56,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.flyway.enabled=false",
         "dotaops.supabase.auth.jwt-secret=" + SupabaseJwtTestSupport.SECRET,
         "dotaops.supabase.auth.issuer=" + SupabaseJwtTestSupport.ISSUER,
-        "dotaops.supabase.auth.audience=" + SupabaseJwtTestSupport.AUDIENCE
+        "dotaops.supabase.auth.audience=" + SupabaseJwtTestSupport.AUDIENCE,
+        "dotaops.steam.session.jwt-secret=" + SupabaseJwtTestSupport.SECRET,
+        "dotaops.steam.session.ttl=1h"
 })
 class ProfileControllerTest {
 
     private static final UUID AUTH_USER_ID = UUID.fromString("33333333-3333-4333-8333-333333333333");
     private static final UUID PROFILE_ID = UUID.fromString("44444444-4444-4444-8444-444444444444");
+    private static final UUID STEAM_PROFILE_ID = UUID.fromString("55555555-5555-4555-8555-555555555555");
+    private static final String STEAM_ID = "76561198000000001";
 
     @Autowired
     private MockMvc mockMvc;
@@ -67,11 +76,16 @@ class ProfileControllerTest {
     @Autowired
     private AuthenticatedProfileRepository authenticatedProfileRepository;
 
+    @Autowired
+    private SteamSessionTokenService steamSessionTokenService;
+
     @BeforeEach
     void setUp() {
         Mockito.reset(profileService, authenticatedProfileRepository);
         when(authenticatedProfileRepository.findByAuthUserId(AUTH_USER_ID))
                 .thenReturn(Optional.of(authenticatedProfile()));
+        when(authenticatedProfileRepository.findByProfileId(STEAM_PROFILE_ID))
+                .thenReturn(Optional.of(steamAuthenticatedProfile()));
     }
 
     @Test
@@ -102,6 +116,17 @@ class ProfileControllerTest {
 
         mockMvc.perform(get("/api/me/profile")
                         .header("Authorization", bearerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(PROFILE_ID.toString()))
+                .andExpect(jsonPath("$.data.nickname").value("MidPulse"));
+    }
+
+    @Test
+    void getCurrentProfileAcceptsSteamSessionCookie() throws Exception {
+        when(profileService.getCurrentProfile()).thenReturn(profileResponse());
+
+        mockMvc.perform(get("/api/me/profile")
+                        .cookie(steamSessionCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(PROFILE_ID.toString()))
                 .andExpect(jsonPath("$.data.nickname").value("MidPulse"));
@@ -162,11 +187,32 @@ class ProfileControllerTest {
         return "Bearer " + SupabaseJwtTestSupport.token(AUTH_USER_ID, Instant.now());
     }
 
+    private Cookie steamSessionCookie() {
+        return new Cookie("dotaops_steam_session", steamSessionTokenService.createToken(new SteamAuthResult(
+                STEAM_ID,
+                STEAM_PROFILE_ID,
+                UUID.fromString("66666666-6666-4666-8666-666666666666"),
+                false,
+                false,
+                "Steam Player",
+                null,
+                "https://steamcommunity.com/profiles/" + STEAM_ID + "/",
+                URI.create("http://localhost:3000/auth/steam/callback"))));
+    }
+
     private static AuthenticatedProfile authenticatedProfile() {
         return new AuthenticatedProfile(
                 UUID.nameUUIDFromBytes(AUTH_USER_ID.toString().getBytes(StandardCharsets.UTF_8)),
                 AUTH_USER_ID,
                 "MidPulse",
+                ProfileRole.PLAYER);
+    }
+
+    private static AuthenticatedProfile steamAuthenticatedProfile() {
+        return new AuthenticatedProfile(
+                STEAM_PROFILE_ID,
+                null,
+                "steam_player",
                 ProfileRole.PLAYER);
     }
 

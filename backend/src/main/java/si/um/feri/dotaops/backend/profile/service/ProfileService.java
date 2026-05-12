@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import si.um.feri.dotaops.backend.auth.domain.AuthenticatedProfile;
 import si.um.feri.dotaops.backend.auth.service.CurrentUserProvider;
 import si.um.feri.dotaops.backend.common.error.BadRequestException;
 import si.um.feri.dotaops.backend.common.error.ResourceNotFoundException;
@@ -62,11 +63,11 @@ public class ProfileService {
 
     @Transactional(readOnly = true)
     public ProfileResponse getCurrentProfile() {
-        UUID authUserId = currentUserProvider.requireAuthUserId();
+        AuthenticatedProfile currentProfile = currentUserProvider.requireProfile();
 
-        return profileRepository.findByAuthUserId(authUserId)
+        return profileRepository.findById(currentProfile.profileId())
                 .map(ProfileResponse::from)
-                .orElseThrow(() -> new ResourceNotFoundException("Profile", "authUserId", authUserId));
+                .orElseThrow(() -> new ResourceNotFoundException("Profile", "id", currentProfile.profileId()));
     }
 
     @Transactional
