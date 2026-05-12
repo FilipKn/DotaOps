@@ -30,6 +30,7 @@ import si.um.feri.dotaops.backend.auth.repository.AuthenticatedProfileRepository
 import si.um.feri.dotaops.backend.auth.service.SupabaseJwtTestSupport;
 import si.um.feri.dotaops.backend.auth.steam.domain.SteamAuthResult;
 import si.um.feri.dotaops.backend.auth.steam.service.SteamSessionTokenService;
+import si.um.feri.dotaops.backend.common.error.ResourceNotFoundException;
 import si.um.feri.dotaops.backend.common.pagination.PageMeta;
 import si.um.feri.dotaops.backend.common.pagination.PageResponse;
 import si.um.feri.dotaops.backend.profile.service.ProfileService;
@@ -139,6 +140,27 @@ class ProfileControllerTest {
     }
 
     @Test
+    void getProfileByNicknameWorksWithoutJwt() throws Exception {
+        when(profileService.getProfileByNickname("MidPulse")).thenReturn(profileResponse());
+
+        mockMvc.perform(get("/api/profiles/by-nickname/MidPulse"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(PROFILE_ID.toString()))
+                .andExpect(jsonPath("$.data.nickname").value("MidPulse"))
+                .andExpect(jsonPath("$.data.steamId64").value("76561190000000001"));
+    }
+
+    @Test
+    void getProfileByNicknameReturnsNotFound() throws Exception {
+        when(profileService.getProfileByNickname("missing"))
+                .thenThrow(new ResourceNotFoundException("Profile", "nickname", "missing"));
+
+        mockMvc.perform(get("/api/profiles/by-nickname/missing"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"));
+    }
+
+    @Test
     void createCurrentProfileReturnsCreatedProfile() throws Exception {
         when(profileService.createCurrentProfile(any(CreateProfileRequest.class))).thenReturn(profileResponse());
 
@@ -187,6 +209,35 @@ class ProfileControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.displayName").value("Mid Pulse"));
+    }
+
+    @Test
+    void updateCurrentProfileAcceptsSteamSessionCookie() throws Exception {
+        when(profileService.updateCurrentProfile(any(UpdateProfileRequest.class))).thenReturn(profileResponse());
+
+        mockMvc.perform(patch("/api/me/profile")
+                        .cookie(steamSessionCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "displayName": "Steam Player"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(PROFILE_ID.toString()));
+    }
+
+    @Test
+    void updateCurrentProfileRequiresAuthentication() throws Exception {
+        mockMvc.perform(patch("/api/me/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "displayName": "Mid Pulse"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 
     private static String bearerToken() throws Exception {

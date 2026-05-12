@@ -4,12 +4,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.scheduling.annotation.Async;
 
 import si.um.feri.dotaops.backend.auth.steam.domain.SteamPlayerSummary;
 import si.um.feri.dotaops.backend.opendota.domain.OpenDotaPlayerProfile;
 import si.um.feri.dotaops.backend.opendota.service.OpenDotaClient;
 import si.um.feri.dotaops.backend.profile.repository.ProfileBootstrapRepository;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -37,6 +39,16 @@ class SteamProfileBootstrapServiceTest {
     private final SteamProfileBootstrapService service = new SteamProfileBootstrapService(
             profileBootstrapRepository,
             openDotaClient);
+
+    @Test
+    void bootstrapAfterSteamLoginIsScheduledAsynchronouslyBySpring() throws Exception {
+        Async async = SteamProfileBootstrapService.class
+                .getMethod("bootstrapAfterSteamLogin", UUID.class, String.class, SteamPlayerSummary.class)
+                .getAnnotation(Async.class);
+
+        assertThat(async).isNotNull();
+        assertThat(async.value()).isEqualTo("profileBootstrapTaskExecutor");
+    }
 
     @Test
     void bootstrapStoresSteamAndOpenDotaProfileData() {

@@ -41,7 +41,6 @@ class TeamServiceTest {
 
     @Test
     void createTeamSetsAuthenticatedUserAsCaptainAndGeneratesSlug() {
-        when(currentUserProvider.requireAuthUserId()).thenReturn(AUTH_USER_ID);
         when(currentUserProvider.requireProfile()).thenReturn(profile(CAPTAIN_PROFILE_ID, ProfileRole.PLAYER));
         when(teamRepository.create(any())).thenReturn(team("Ancient Stack", "ancient-stack", CAPTAIN_PROFILE_ID));
 
@@ -67,7 +66,6 @@ class TeamServiceTest {
 
     @Test
     void createTeamNormalizesExplicitSlug() {
-        when(currentUserProvider.requireAuthUserId()).thenReturn(AUTH_USER_ID);
         when(currentUserProvider.requireProfile()).thenReturn(profile(CAPTAIN_PROFILE_ID, ProfileRole.PLAYER));
         when(teamRepository.create(any())).thenReturn(team("Ancient Stack", "ancient-stack", CAPTAIN_PROFILE_ID));
 
@@ -87,7 +85,6 @@ class TeamServiceTest {
 
     @Test
     void createTeamMapsDuplicateSlugToBadRequest() {
-        when(currentUserProvider.requireAuthUserId()).thenReturn(AUTH_USER_ID);
         when(currentUserProvider.requireProfile()).thenReturn(profile(CAPTAIN_PROFILE_ID, ProfileRole.PLAYER));
         when(teamRepository.create(any())).thenThrow(new DataIntegrityViolationException(
                 "duplicate",
@@ -106,7 +103,6 @@ class TeamServiceTest {
 
     @Test
     void createTeamMapsDuplicateNameToBadRequest() {
-        when(currentUserProvider.requireAuthUserId()).thenReturn(AUTH_USER_ID);
         when(currentUserProvider.requireProfile()).thenReturn(profile(CAPTAIN_PROFILE_ID, ProfileRole.PLAYER));
         when(teamRepository.create(any())).thenThrow(new DataIntegrityViolationException(
                 "duplicate",
@@ -121,6 +117,26 @@ class TeamServiceTest {
                 null)))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Team name is already in use.");
+    }
+
+    @Test
+    void createTeamSupportsSteamOnlyProfileWithoutAuthUserId() {
+        when(currentUserProvider.requireProfile()).thenReturn(steamOnlyProfile(CAPTAIN_PROFILE_ID));
+        when(teamRepository.create(any())).thenReturn(team("Ancient Stack", "ancient-stack", CAPTAIN_PROFILE_ID));
+
+        teamService.createTeam(new CreateTeamRequest(
+                "Ancient Stack",
+                null,
+                null,
+                null,
+                null,
+                null));
+
+        ArgumentCaptor<CreateTeamCommand> captor = ArgumentCaptor.forClass(CreateTeamCommand.class);
+        verify(teamRepository).create(captor.capture());
+
+        assertThat(captor.getValue().captainProfileId()).isEqualTo(CAPTAIN_PROFILE_ID);
+        assertThat(captor.getValue().createdBy()).isNull();
     }
 
     @Test
@@ -140,7 +156,9 @@ class TeamServiceTest {
         ArgumentCaptor<UpdateTeamCommand> captor = ArgumentCaptor.forClass(UpdateTeamCommand.class);
         verify(teamRepository).update(eq(TEAM_ID), captor.capture());
 
+        assertThat(captor.getValue().namePresent()).isTrue();
         assertThat(captor.getValue().name()).isEqualTo("Ancient Core");
+        assertThat(captor.getValue().slugPresent()).isTrue();
         assertThat(captor.getValue().slug()).isEqualTo("ancient-core");
     }
 
@@ -190,12 +208,61 @@ class TeamServiceTest {
                 .hasMessage("At least one team field must be provided.");
     }
 
+    @Test
+    void updateTeamClearsExplicitNullableFields() {
+        UpdateTeamRequest request = new UpdateTeamRequest();
+        request.setTag(null);
+        request.setRegion(null);
+        request.setLogoUrl(null);
+        request.setDescription(null);
+
+        when(currentUserProvider.requireProfile()).thenReturn(profile(CAPTAIN_PROFILE_ID, ProfileRole.PLAYER));
+        when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.of(team("Ancient Stack", "ancient-stack", CAPTAIN_PROFILE_ID)));
+        when(teamRepository.update(eq(TEAM_ID), any())).thenReturn(Optional.of(team("Ancient Stack", "ancient-stack", CAPTAIN_PROFILE_ID)));
+
+        teamService.updateTeam(TEAM_ID, request);
+
+        ArgumentCaptor<UpdateTeamCommand> captor = ArgumentCaptor.forClass(UpdateTeamCommand.class);
+        verify(teamRepository).update(eq(TEAM_ID), captor.capture());
+
+        assertThat(captor.getValue().namePresent()).isFalse();
+        assertThat(captor.getValue().tagPresent()).isTrue();
+        assertThat(captor.getValue().tag()).isNull();
+        assertThat(captor.getValue().regionPresent()).isTrue();
+        assertThat(captor.getValue().region()).isNull();
+        assertThat(captor.getValue().logoUrlPresent()).isTrue();
+        assertThat(captor.getValue().logoUrl()).isNull();
+        assertThat(captor.getValue().descriptionPresent()).isTrue();
+        assertThat(captor.getValue().description()).isNull();
+    }
+
+    @Test
+    void updateTeamRejectsExplicitNullRequiredName() {
+        UpdateTeamRequest request = new UpdateTeamRequest();
+        request.setName(null);
+
+        when(currentUserProvider.requireProfile()).thenReturn(profile(CAPTAIN_PROFILE_ID, ProfileRole.PLAYER));
+        when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.of(team("Ancient Stack", "ancient-stack", CAPTAIN_PROFILE_ID)));
+
+        assertThatThrownBy(() -> teamService.updateTeam(TEAM_ID, request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Required team field is blank.");
+    }
+
     private static AuthenticatedProfile profile(UUID profileId, ProfileRole role) {
         return new AuthenticatedProfile(
                 profileId,
                 AUTH_USER_ID,
                 "MidPulse",
                 role);
+    }
+
+    private static AuthenticatedProfile steamOnlyProfile(UUID profileId) {
+        return new AuthenticatedProfile(
+                profileId,
+                null,
+                "steam_player",
+                ProfileRole.PLAYER);
     }
 
     private static Team team(String name, String slug, UUID captainProfileId) {

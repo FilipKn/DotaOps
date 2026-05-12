@@ -79,8 +79,8 @@ public class TeamService {
 
     @Transactional
     public TeamResponse createTeam(CreateTeamRequest request) {
-        UUID authUserId = currentUserProvider.requireAuthUserId();
         AuthenticatedProfile profile = currentUserProvider.requireProfile();
+        UUID authUserId = profile.authUserId();
 
         try {
             Team team = teamRepository.create(new CreateTeamCommand(
@@ -117,12 +117,18 @@ public class TeamService {
             return teamRepository.update(
                             teamId,
                             new UpdateTeamCommand(
-                                    normalizeOptional(request.name()),
-                                    normalizeOptional(request.tag()),
-                                    request.slug() == null ? null : normalizeSlug(request.slug()),
-                                    normalizeOptional(request.region()),
-                                    normalizeOptional(request.logoUrl()),
-                                    normalizeOptional(request.description())))
+                                    request.hasName(),
+                                    request.hasName() ? normalizeRequired(request.name()) : null,
+                                    request.hasTag(),
+                                    request.hasTag() ? normalizeOptional(request.tag()) : null,
+                                    request.hasSlug(),
+                                    request.hasSlug() ? normalizeRequiredSlug(request.slug()) : null,
+                                    request.hasRegion(),
+                                    request.hasRegion() ? normalizeOptional(request.region()) : null,
+                                    request.hasLogoUrl(),
+                                    request.hasLogoUrl() ? normalizeOptional(request.logoUrl()) : null,
+                                    request.hasDescription(),
+                                    request.hasDescription() ? normalizeOptional(request.description()) : null))
                     .map(TeamResponse::from)
                     .orElseThrow(() -> new ResourceNotFoundException("Team", "id", teamId));
         } catch (DataIntegrityViolationException exception) {
@@ -184,6 +190,14 @@ public class TeamService {
         }
 
         return normalized;
+    }
+
+    private String normalizeRequiredSlug(String value) {
+        if (value == null) {
+            throw new BadRequestException("Team slug cannot be cleared.");
+        }
+
+        return normalizeSlug(value);
     }
 
     private String normalizeRequired(String value) {

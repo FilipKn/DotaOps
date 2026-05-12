@@ -62,6 +62,15 @@ public class ProfileService {
     }
 
     @Transactional(readOnly = true)
+    public ProfileResponse getProfileByNickname(String nickname) {
+        String normalizedNickname = normalizeRequired(nickname);
+
+        return profileRepository.findByNickname(normalizedNickname)
+                .map(ProfileResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile", "nickname", normalizedNickname));
+    }
+
+    @Transactional(readOnly = true)
     public ProfileResponse getCurrentProfile() {
         AuthenticatedProfile currentProfile = currentUserProvider.requireProfile();
 
@@ -95,21 +104,30 @@ public class ProfileService {
             throw new BadRequestException("At least one profile field must be provided.");
         }
 
-        UUID authUserId = currentUserProvider.requireAuthUserId();
+        UUID profileId = currentUserProvider.requireProfileId();
 
-        return profileRepository.updateByAuthUserId(
-                        authUserId,
+        return profileRepository.updateById(
+                        profileId,
                         new UpdateProfileCommand(
-                                normalizeOptional(request.nickname()),
-                                normalizeOptional(request.displayName()),
-                                normalizeOptional(request.avatarUrl()),
-                                normalizeOptional(request.bio()),
-                                normalizeCountryCode(request.countryCode())))
+                                request.hasNickname(),
+                                request.hasNickname() ? normalizeRequired(request.nickname()) : null,
+                                request.hasDisplayName(),
+                                request.hasDisplayName() ? normalizeOptional(request.displayName()) : null,
+                                request.hasAvatarUrl(),
+                                request.hasAvatarUrl() ? normalizeOptional(request.avatarUrl()) : null,
+                                request.hasBio(),
+                                request.hasBio() ? normalizeOptional(request.bio()) : null,
+                                request.hasCountryCode(),
+                                request.hasCountryCode() ? normalizeCountryCode(request.countryCode()) : null))
                 .map(ProfileResponse::from)
-                .orElseThrow(() -> new ResourceNotFoundException("Profile", "authUserId", authUserId));
+                .orElseThrow(() -> new ResourceNotFoundException("Profile", "id", profileId));
     }
 
     private String normalizeRequired(String value) {
+        if (value == null || value.isBlank()) {
+            throw new BadRequestException("Required profile field is blank.");
+        }
+
         return value.trim();
     }
 

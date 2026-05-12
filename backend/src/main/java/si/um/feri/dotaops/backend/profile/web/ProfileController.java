@@ -47,6 +47,11 @@ public class ProfileController {
         return ApiResponse.of(profileService.getProfile(profileId));
     }
 
+    @GetMapping("/profiles/by-nickname/{nickname}")
+    ApiResponse<ProfileResponse> getProfileByNickname(@PathVariable String nickname) {
+        return ApiResponse.of(profileService.getProfileByNickname(nickname));
+    }
+
     @GetMapping("/me/profile")
     ApiResponse<ProfileResponse> getCurrentProfile() {
         return ApiResponse.of(profileService.getCurrentProfile());

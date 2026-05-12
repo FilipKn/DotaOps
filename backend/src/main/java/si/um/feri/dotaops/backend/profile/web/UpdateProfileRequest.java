@@ -1,30 +1,140 @@
 package si.um.feri.dotaops.backend.profile.web;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-public record UpdateProfileRequest(
-        @Size(min = 2, max = 40)
-        String nickname,
+public class UpdateProfileRequest {
 
-        @Size(max = 80)
-        String displayName,
+    @Size(min = 2, max = 40)
+    private String nickname;
 
-        @Size(max = 512)
-        String avatarUrl,
+    @Size(max = 80)
+    private String displayName;
 
-        @Size(max = 500)
-        String bio,
+    @Size(max = 512)
+    private String avatarUrl;
 
-        @Pattern(regexp = "^[A-Za-z]{2}$")
-        String countryCode
-) {
+    @Size(max = 500)
+    private String bio;
 
+    @Pattern(regexp = "^[A-Za-z]{2}$")
+    private String countryCode;
+
+    @JsonIgnore
+    private boolean nicknamePresent;
+
+    @JsonIgnore
+    private boolean displayNamePresent;
+
+    @JsonIgnore
+    private boolean avatarUrlPresent;
+
+    @JsonIgnore
+    private boolean bioPresent;
+
+    @JsonIgnore
+    private boolean countryCodePresent;
+
+    public UpdateProfileRequest() {
+    }
+
+    public UpdateProfileRequest(
+            String nickname,
+            String displayName,
+            String avatarUrl,
+            String bio,
+            String countryCode
+    ) {
+        this.nickname = nickname;
+        this.displayName = displayName;
+        this.avatarUrl = avatarUrl;
+        this.bio = bio;
+        this.countryCode = countryCode;
+        this.nicknamePresent = nickname != null;
+        this.displayNamePresent = displayName != null;
+        this.avatarUrlPresent = avatarUrl != null;
+        this.bioPresent = bio != null;
+        this.countryCodePresent = countryCode != null;
+    }
+
+    public String nickname() {
+        return nickname;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+        this.nicknamePresent = true;
+    }
+
+    public String displayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+        this.displayNamePresent = true;
+    }
+
+    public String avatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+        this.avatarUrlPresent = true;
+    }
+
+    public String bio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+        this.bioPresent = true;
+    }
+
+    public String countryCode() {
+        return countryCode;
+    }
+
+    public void setCountryCode(String countryCode) {
+        this.countryCode = countryCode;
+        this.countryCodePresent = true;
+    }
+
+    @JsonIgnore
+    public boolean hasNickname() {
+        return nicknamePresent;
+    }
+
+    @JsonIgnore
+    public boolean hasDisplayName() {
+        return displayNamePresent;
+    }
+
+    @JsonIgnore
+    public boolean hasAvatarUrl() {
+        return avatarUrlPresent;
+    }
+
+    @JsonIgnore
+    public boolean hasBio() {
+        return bioPresent;
+    }
+
+    @JsonIgnore
+    public boolean hasCountryCode() {
+        return countryCodePresent;
+    }
+
+    @JsonIgnore
     public boolean hasChanges() {
-        return nickname != null
-                || displayName != null
-                || avatarUrl != null
-                || bio != null
-                || countryCode != null;
+        return nicknamePresent
+                || displayNamePresent
+                || avatarUrlPresent
+                || bioPresent
+                || countryCodePresent;
     }
 }

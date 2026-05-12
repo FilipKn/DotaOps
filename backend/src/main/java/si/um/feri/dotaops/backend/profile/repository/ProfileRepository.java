@@ -136,6 +136,34 @@ public class ProfileRepository {
                 .findFirst();
     }
 
+    public Optional<Profile> findByNickname(String nickname) {
+        return jdbcTemplate.query(
+                        """
+                        select
+                          id,
+                          auth_user_id,
+                          nickname,
+                          display_name,
+                          steam_id,
+                          opendota_account_id,
+                          role::text as role,
+                          avatar_url,
+                          bio,
+                          country_code,
+                          steam_profile_synced_at,
+                          opendota_profile_synced_at,
+                          created_at,
+                          updated_at
+                        from public.profiles
+                        where nickname = ?
+                        limit 1
+                        """,
+                        this::mapProfile,
+                        nickname)
+                .stream()
+                .findFirst();
+    }
+
     public Profile create(CreateProfileCommand command) {
         return jdbcTemplate.queryForObject(
                 """
@@ -174,17 +202,25 @@ public class ProfileRepository {
     }
 
     public Optional<Profile> updateByAuthUserId(UUID authUserId, UpdateProfileCommand command) {
+        return updateByColumn("auth_user_id", authUserId, command);
+    }
+
+    public Optional<Profile> updateById(UUID profileId, UpdateProfileCommand command) {
+        return updateByColumn("id", profileId, command);
+    }
+
+    private Optional<Profile> updateByColumn(String columnName, UUID value, UpdateProfileCommand command) {
         return jdbcTemplate.query(
                         """
                         update public.profiles
                         set
-                          nickname = coalesce(?, nickname),
-                          display_name = coalesce(?, display_name),
-                          avatar_url = coalesce(?, avatar_url),
-                          bio = coalesce(?, bio),
-                          country_code = coalesce(?, country_code),
+                          nickname = case when ? then ? else nickname end,
+                          display_name = case when ? then ? else display_name end,
+                          avatar_url = case when ? then ? else avatar_url end,
+                          bio = case when ? then ? else bio end,
+                          country_code = case when ? then ? else country_code end,
                           updated_at = now()
-                        where auth_user_id = ?
+                        where %s = ?
                         returning
                           id,
                           auth_user_id,
@@ -200,14 +236,19 @@ public class ProfileRepository {
                           opendota_profile_synced_at,
                           created_at,
                           updated_at
-                        """,
+                        """.formatted(columnName),
                         this::mapProfile,
+                        command.nicknamePresent(),
                         command.nickname(),
+                        command.displayNamePresent(),
                         command.displayName(),
+                        command.avatarUrlPresent(),
                         command.avatarUrl(),
+                        command.bioPresent(),
                         command.bio(),
+                        command.countryCodePresent(),
                         command.countryCode(),
-                        authUserId)
+                        value)
                 .stream()
                 .findFirst();
     }

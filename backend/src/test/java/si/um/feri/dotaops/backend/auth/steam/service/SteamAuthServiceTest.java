@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -129,6 +130,40 @@ class SteamAuthServiceTest {
                         "Dota Player",
                         "https://cdn.example.test/avatar.png",
                         "https://steamcommunity.com/profiles/" + STEAM_ID + "/")));
+    }
+
+    @Test
+    void completeCallbackStillReturnsSessionWhenBootstrapSchedulingFails() {
+        String state = "state-token";
+        MultiValueMap<String, String> params = validCallbackParams(state);
+        SteamPlayerSummary summary = new SteamPlayerSummary(
+                STEAM_ID,
+                "Dota Player",
+                "https://cdn.example.test/avatar.png",
+                "https://steamcommunity.com/profiles/" + STEAM_ID + "/");
+        when(loginStateRepository.consume(anyString())).thenReturn(Optional.of(stateContext()));
+        when(openIdClient.verifyAuthentication(params)).thenReturn(true);
+        when(openIdClient.fetchPlayerSummary(STEAM_ID)).thenReturn(Optional.of(summary));
+        when(profileRepository.upsertSteamProfile(
+                eq(STEAM_ID),
+                eq(AUTH_USER_ID),
+                eq("Dota Player"),
+                eq("Dota Player"),
+                eq("https://cdn.example.test/avatar.png"),
+                eq("https://steamcommunity.com/profiles/" + STEAM_ID + "/"),
+                eq(CLAIMED_ID))).thenReturn(new SteamProfileUpsertResult(
+                PROFILE_ID,
+                EXTERNAL_ACCOUNT_ID,
+                false,
+                false));
+        doThrow(new IllegalStateException("executor rejected"))
+                .when(profileBootstrapService)
+                .bootstrapAfterSteamLogin(PROFILE_ID, STEAM_ID, summary);
+
+        var result = steamAuthService.completeCallback(params);
+
+        assertThat(result.profileId()).isEqualTo(PROFILE_ID);
+        assertThat(result.steamId()).isEqualTo(STEAM_ID);
     }
 
     @Test

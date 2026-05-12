@@ -100,9 +100,9 @@ class ProfileServiceTest {
 
     @Test
     void updateCurrentProfileNormalizesPatchFields() {
-        when(currentUserProvider.requireAuthUserId()).thenReturn(AUTH_USER_ID);
-        when(profileRepository.updateByAuthUserId(
-                org.mockito.ArgumentMatchers.eq(AUTH_USER_ID),
+        when(currentUserProvider.requireProfileId()).thenReturn(PROFILE_ID);
+        when(profileRepository.updateById(
+                org.mockito.ArgumentMatchers.eq(PROFILE_ID),
                 org.mockito.ArgumentMatchers.any())).thenReturn(Optional.of(profile("SupportTwo", "DE")));
 
         profileService.updateCurrentProfile(new UpdateProfileRequest(
@@ -113,12 +113,84 @@ class ProfileServiceTest {
                 "de"));
 
         ArgumentCaptor<UpdateProfileCommand> captor = ArgumentCaptor.forClass(UpdateProfileCommand.class);
-        verify(profileRepository).updateByAuthUserId(org.mockito.ArgumentMatchers.eq(AUTH_USER_ID), captor.capture());
+        verify(profileRepository).updateById(org.mockito.ArgumentMatchers.eq(PROFILE_ID), captor.capture());
 
+        assertThat(captor.getValue().nicknamePresent()).isTrue();
         assertThat(captor.getValue().nickname()).isEqualTo("SupportTwo");
+        assertThat(captor.getValue().displayNamePresent()).isFalse();
         assertThat(captor.getValue().displayName()).isNull();
+        assertThat(captor.getValue().bioPresent()).isTrue();
         assertThat(captor.getValue().bio()).isEqualTo("Draft caller");
+        assertThat(captor.getValue().countryCodePresent()).isTrue();
         assertThat(captor.getValue().countryCode()).isEqualTo("DE");
+    }
+
+    @Test
+    void updateCurrentProfileSupportsSteamOnlyProfileIdWithoutAuthUserId() {
+        when(currentUserProvider.requireProfileId()).thenReturn(PROFILE_ID);
+        when(profileRepository.updateById(
+                org.mockito.ArgumentMatchers.eq(PROFILE_ID),
+                org.mockito.ArgumentMatchers.any())).thenReturn(Optional.of(profile("SteamCarry", "SI")));
+
+        profileService.updateCurrentProfile(new UpdateProfileRequest(
+                "SteamCarry",
+                null,
+                null,
+                null,
+                null));
+
+        verify(profileRepository).updateById(org.mockito.ArgumentMatchers.eq(PROFILE_ID), org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void updateCurrentProfileClearsExplicitNullableFields() {
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setDisplayName(null);
+        request.setAvatarUrl(null);
+        request.setBio(null);
+        request.setCountryCode(null);
+
+        when(currentUserProvider.requireProfileId()).thenReturn(PROFILE_ID);
+        when(profileRepository.updateById(
+                org.mockito.ArgumentMatchers.eq(PROFILE_ID),
+                org.mockito.ArgumentMatchers.any())).thenReturn(Optional.of(profile("CarryOne", null)));
+
+        profileService.updateCurrentProfile(request);
+
+        ArgumentCaptor<UpdateProfileCommand> captor = ArgumentCaptor.forClass(UpdateProfileCommand.class);
+        verify(profileRepository).updateById(org.mockito.ArgumentMatchers.eq(PROFILE_ID), captor.capture());
+
+        assertThat(captor.getValue().nicknamePresent()).isFalse();
+        assertThat(captor.getValue().displayNamePresent()).isTrue();
+        assertThat(captor.getValue().displayName()).isNull();
+        assertThat(captor.getValue().avatarUrlPresent()).isTrue();
+        assertThat(captor.getValue().avatarUrl()).isNull();
+        assertThat(captor.getValue().bioPresent()).isTrue();
+        assertThat(captor.getValue().bio()).isNull();
+        assertThat(captor.getValue().countryCodePresent()).isTrue();
+        assertThat(captor.getValue().countryCode()).isNull();
+    }
+
+    @Test
+    void updateCurrentProfileRejectsExplicitNullNickname() {
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setNickname(null);
+
+        when(currentUserProvider.requireProfileId()).thenReturn(PROFILE_ID);
+
+        assertThatThrownBy(() -> profileService.updateCurrentProfile(request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Required profile field is blank.");
+    }
+
+    @Test
+    void getProfileByNicknameReturnsPublicProfile() {
+        when(profileRepository.findByNickname("CarryOne")).thenReturn(Optional.of(profile("CarryOne", "SI")));
+
+        var response = profileService.getProfileByNickname(" CarryOne ");
+
+        assertThat(response.nickname()).isEqualTo("CarryOne");
+        assertThat(response.id()).isEqualTo(PROFILE_ID);
     }
 
     private AuthenticatedProfile authenticatedProfile() {
