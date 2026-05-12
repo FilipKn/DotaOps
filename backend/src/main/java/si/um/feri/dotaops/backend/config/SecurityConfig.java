@@ -18,10 +18,14 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import si.um.feri.dotaops.backend.auth.web.SupabaseJwtAuthenticationFilter;
 import si.um.feri.dotaops.backend.common.security.JsonAccessDeniedHandler;
 import si.um.feri.dotaops.backend.common.security.JsonAuthenticationEntryPoint;
+import si.um.feri.dotaops.backend.config.properties.SteamAuthProperties;
 import si.um.feri.dotaops.backend.config.properties.SupabaseAuthProperties;
 
 @Configuration
-@EnableConfigurationProperties(SupabaseAuthProperties.class)
+@EnableConfigurationProperties({
+        SupabaseAuthProperties.class,
+        SteamAuthProperties.class
+})
 public class SecurityConfig {
 
     @Bean
@@ -42,6 +46,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info", "/api/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/steam/**").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/teams/*/invitations",
                                 "/api/teams/*/invitations/**").authenticated()
