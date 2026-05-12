@@ -43,6 +43,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info", "/api/health").permitAll()
                         .requestMatchers(HttpMethod.GET,
+                                "/api/profiles/**",
                                 "/api/tournaments/**",
                                 "/api/teams/**",
                                 "/api/matches/**",
