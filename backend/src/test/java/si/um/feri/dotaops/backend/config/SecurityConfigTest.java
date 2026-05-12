@@ -23,9 +23,11 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import si.um.feri.dotaops.backend.BackendApplication;
 import si.um.feri.dotaops.backend.auth.domain.AuthenticatedProfile;
@@ -56,7 +58,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "dotaops.supabase.auth.issuer=" + SupabaseJwtTestSupport.ISSUER,
         "dotaops.supabase.auth.audience=" + SupabaseJwtTestSupport.AUDIENCE,
         "dotaops.steam.session.jwt-secret=" + SupabaseJwtTestSupport.SECRET,
-        "dotaops.steam.session.ttl=1h"
+        "dotaops.steam.session.ttl=1h",
+        "dotaops.cors.allowed-origin-patterns=https://app.example.test,http://localhost:5173"
 })
 class SecurityConfigTest {
 
@@ -73,6 +76,9 @@ class SecurityConfigTest {
 
     @Autowired
     private SteamSessionTokenService steamSessionTokenService;
+
+    @Autowired
+    private CorsConfigurationSource corsConfigurationSource;
 
     @BeforeEach
     void setUp() {
@@ -150,6 +156,7 @@ class SecurityConfigTest {
                         .cookie(steamSessionCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.profileId").value(STEAM_PROFILE_ID.toString()))
+                .andExpect(jsonPath("$.steamId").value(STEAM_ID))
                 .andExpect(jsonPath("$.role").value("PLAYER"));
     }
 
@@ -176,6 +183,16 @@ class SecurityConfigTest {
                         .header("Authorization", bearerToken(ORGANIZER_AUTH_USER_ID)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value("organizer"));
+    }
+
+    @Test
+    void corsAllowedOriginsComeFromConfiguration() {
+        var configuration = corsConfigurationSource.getCorsConfiguration(
+                new MockHttpServletRequest("GET", "/api/health"));
+
+        org.assertj.core.api.Assertions.assertThat(configuration).isNotNull();
+        org.assertj.core.api.Assertions.assertThat(configuration.getAllowedOriginPatterns())
+                .containsExactly("https://app.example.test", "http://localhost:5173");
     }
 
     private static String bearerToken(UUID authUserId) throws Exception {
@@ -216,6 +233,7 @@ class SecurityConfigTest {
                     .map(AuthenticatedProfile::profileId)
                     .map(UUID::toString)
                     .orElse(null));
+            response.put("steamId", principal.steamId());
             response.put("role", principal.role().name());
             return response;
         }

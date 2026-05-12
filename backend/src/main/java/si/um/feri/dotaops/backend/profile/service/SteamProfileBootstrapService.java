@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import si.um.feri.dotaops.backend.auth.steam.domain.SteamPlayerSummary;
@@ -28,6 +29,7 @@ public class SteamProfileBootstrapService {
         this.openDotaClient = openDotaClient;
     }
 
+    @Async("profileBootstrapTaskExecutor")
     public void bootstrapAfterSteamLogin(UUID profileId, String steamId64, SteamPlayerSummary summary) {
         try {
             long opendotaAccountId = DotaAccountIdConverter.steamId64ToAccountId32(steamId64);

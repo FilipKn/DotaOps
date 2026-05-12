@@ -6,6 +6,9 @@ import java.util.Optional;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -21,11 +24,16 @@ import si.um.feri.dotaops.backend.config.properties.SteamAuthProperties;
 @Component
 public class SteamOpenIdClient {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SteamOpenIdClient.class);
+
     private final SteamAuthProperties properties;
     private final RestClient restClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public SteamOpenIdClient(SteamAuthProperties properties, RestClient.Builder restClientBuilder) {
+    public SteamOpenIdClient(
+            SteamAuthProperties properties,
+            @Qualifier("steamRestClientBuilder") RestClient.Builder restClientBuilder
+    ) {
         this.properties = properties;
         this.restClient = restClientBuilder.build();
     }
@@ -49,6 +57,7 @@ public class SteamOpenIdClient {
 
             return body != null && body.lines().anyMatch("is_valid:true"::equals);
         } catch (RestClientException exception) {
+            LOGGER.warn("Steam OpenID verification request failed.", exception);
             return false;
         }
     }
@@ -82,6 +91,7 @@ public class SteamOpenIdClient {
                     blankToNull(player.path("avatarfull").asText(null)),
                     blankToNull(player.path("profileurl").asText(null))));
         } catch (Exception exception) {
+            LOGGER.warn("Steam player summary fetch failed for Steam ID {}.", steamId, exception);
             return Optional.empty();
         }
     }

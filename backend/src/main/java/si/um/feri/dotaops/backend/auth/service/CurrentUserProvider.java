@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import si.um.feri.dotaops.backend.auth.domain.AuthenticatedActor;
 import si.um.feri.dotaops.backend.auth.domain.AuthenticatedProfile;
 import si.um.feri.dotaops.backend.auth.domain.ProfileRole;
 
@@ -31,10 +32,20 @@ public class CurrentUserProvider {
     }
 
     public UUID requireAuthUserId() {
-        return currentUser()
-                .map(SupabasePrincipal::authUserId)
+        return currentActor()
+                .map(AuthenticatedActor::requireAuthUserId)
                 .orElseThrow(() -> new AuthenticationCredentialsNotFoundException(
                         "Authenticated Supabase user is required."));
+    }
+
+    public Optional<AuthenticatedActor> currentActor() {
+        return currentUser().map(AuthenticatedActor::from);
+    }
+
+    public AuthenticatedActor requireActor() {
+        return currentActor()
+                .orElseThrow(() -> new AuthenticationCredentialsNotFoundException(
+                        "Authenticated user is required."));
     }
 
     public AuthenticatedProfile requireProfile() {
@@ -44,7 +55,7 @@ public class CurrentUserProvider {
     }
 
     public UUID requireProfileId() {
-        return requireProfile().profileId();
+        return requireActor().requireProfileId();
     }
 
     public ProfileRole role() {

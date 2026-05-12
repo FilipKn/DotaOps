@@ -11,11 +11,21 @@ public record SupabasePrincipal(
         UUID authUserId,
         String email,
         Optional<AuthenticatedProfile> profile,
-        SupabaseJwtClaims token
+        SupabaseJwtClaims token,
+        String steamId
 ) {
 
     public SupabasePrincipal {
         profile = profile == null ? Optional.empty() : profile;
+    }
+
+    public SupabasePrincipal(
+            UUID authUserId,
+            String email,
+            Optional<AuthenticatedProfile> profile,
+            SupabaseJwtClaims token
+    ) {
+        this(authUserId, email, profile, token, null);
     }
 
     public ProfileRole role() {

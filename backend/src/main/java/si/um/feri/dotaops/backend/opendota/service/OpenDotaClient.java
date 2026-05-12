@@ -8,6 +8,9 @@ import java.util.Optional;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
@@ -21,11 +24,16 @@ import si.um.feri.dotaops.backend.opendota.domain.OpenDotaPlayerProfile;
 @Component
 public class OpenDotaClient {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(OpenDotaClient.class);
+
     private final OpenDotaProperties properties;
     private final RestClient restClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public OpenDotaClient(OpenDotaProperties properties, RestClient.Builder restClientBuilder) {
+    public OpenDotaClient(
+            OpenDotaProperties properties,
+            @Qualifier("openDotaRestClientBuilder") RestClient.Builder restClientBuilder
+    ) {
         this.properties = properties;
         this.restClient = restClientBuilder.build();
     }
@@ -47,8 +55,10 @@ public class OpenDotaClient {
                     blankToNull(profile.path("avatarfull").asText(null)),
                     blankToNull(profile.path("profileurl").asText(null))));
         } catch (RestClientException exception) {
+            LOGGER.warn("OpenDota player fetch failed for account {}.", accountId, exception);
             return Optional.empty();
         } catch (Exception exception) {
+            LOGGER.warn("OpenDota player payload could not be parsed for account {}.", accountId, exception);
             return Optional.empty();
         }
     }
@@ -70,8 +80,10 @@ public class OpenDotaClient {
 
             return Optional.of(match);
         } catch (RestClientException exception) {
+            LOGGER.warn("OpenDota match fetch failed for match {}.", matchId, exception);
             return Optional.empty();
         } catch (Exception exception) {
+            LOGGER.warn("OpenDota match payload could not be parsed for match {}.", matchId, exception);
             return Optional.empty();
         }
     }
@@ -105,8 +117,10 @@ public class OpenDotaClient {
             });
             return result;
         } catch (RestClientException exception) {
+            LOGGER.warn("OpenDota recent matches fetch failed for account {}.", accountId, exception);
             return List.of();
         } catch (Exception exception) {
+            LOGGER.warn("OpenDota recent matches payload could not be parsed for account {}.", accountId, exception);
             return List.of();
         }
     }

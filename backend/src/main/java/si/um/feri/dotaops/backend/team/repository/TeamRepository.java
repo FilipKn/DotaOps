@@ -132,12 +132,12 @@ public class TeamRepository {
                         """
                         update public.teams
                         set
-                          name = coalesce(?, name),
-                          tag = coalesce(?, tag),
-                          slug = coalesce(?, slug),
-                          region = coalesce(?, region),
-                          logo_url = coalesce(?, logo_url),
-                          description = coalesce(?, description),
+                          name = case when ? then ? else name end,
+                          tag = case when ? then ? else tag end,
+                          slug = case when ? then ? else slug end,
+                          region = case when ? then ? else region end,
+                          logo_url = case when ? then ? else logo_url end,
+                          description = case when ? then ? else description end,
                           updated_at = now()
                         where id = ?
                         returning
@@ -159,11 +159,17 @@ public class TeamRepository {
                           updated_at
                         """,
                         this::mapTeam,
+                        command.namePresent(),
                         command.name(),
+                        command.tagPresent(),
                         command.tag(),
+                        command.slugPresent(),
                         command.slug(),
+                        command.regionPresent(),
                         command.region(),
+                        command.logoUrlPresent(),
                         command.logoUrl(),
+                        command.descriptionPresent(),
                         command.description(),
                         teamId)
                 .stream()

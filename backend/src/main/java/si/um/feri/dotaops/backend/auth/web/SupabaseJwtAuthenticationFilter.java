@@ -119,7 +119,8 @@ public class SupabaseJwtAuthenticationFilter extends OncePerRequestFilter {
                     profile.get().authUserId(),
                     null,
                     profile,
-                    null);
+                    null,
+                    claims.steamId());
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     principal,
                     null,

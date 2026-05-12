@@ -15,6 +15,8 @@ import java.util.regex.Pattern;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +38,8 @@ import si.um.feri.dotaops.backend.profile.service.SteamProfileBootstrapService;
 
 @Service
 public class SteamAuthService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SteamAuthService.class);
 
     private static final String OPENID_NS = "http://specs.openid.net/auth/2.0";
     private static final String IDENTIFIER_SELECT = "http://specs.openid.net/auth/2.0/identifier_select";
@@ -150,7 +154,7 @@ public class SteamAuthService {
                 profileUrl,
                 claimedId);
 
-        profileBootstrapService.bootstrapAfterSteamLogin(upsertResult.profileId(), steamId, summary);
+        scheduleProfileBootstrap(upsertResult.profileId(), steamId, summary);
 
         return new SteamAuthResult(
                 steamId,
@@ -162,6 +166,14 @@ public class SteamAuthService {
                 summary.avatarUrl(),
                 profileUrl,
                 buildFrontendRedirect(state.returnTo(), steamId, upsertResult));
+    }
+
+    private void scheduleProfileBootstrap(UUID profileId, String steamId, SteamPlayerSummary summary) {
+        try {
+            profileBootstrapService.bootstrapAfterSteamLogin(profileId, steamId, summary);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Steam/OpenDota profile bootstrap could not be scheduled for profile {}.", profileId, exception);
+        }
     }
 
     private void validateOpenIdCallbackShape(MultiValueMap<String, String> callbackParams, String rawState) {

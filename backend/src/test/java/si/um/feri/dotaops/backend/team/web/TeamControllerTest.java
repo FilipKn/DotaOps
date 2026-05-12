@@ -1,11 +1,14 @@
 package si.um.feri.dotaops.backend.team.web;
 
 import java.nio.charset.StandardCharsets;
+import java.net.URI;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import jakarta.servlet.http.Cookie;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +29,8 @@ import si.um.feri.dotaops.backend.auth.domain.AuthenticatedProfile;
 import si.um.feri.dotaops.backend.auth.domain.ProfileRole;
 import si.um.feri.dotaops.backend.auth.repository.AuthenticatedProfileRepository;
 import si.um.feri.dotaops.backend.auth.service.SupabaseJwtTestSupport;
+import si.um.feri.dotaops.backend.auth.steam.domain.SteamAuthResult;
+import si.um.feri.dotaops.backend.auth.steam.service.SteamSessionTokenService;
 import si.um.feri.dotaops.backend.common.pagination.PageMeta;
 import si.um.feri.dotaops.backend.common.pagination.PageResponse;
 import si.um.feri.dotaops.backend.team.service.TeamService;
@@ -52,13 +57,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.flyway.enabled=false",
         "dotaops.supabase.auth.jwt-secret=" + SupabaseJwtTestSupport.SECRET,
         "dotaops.supabase.auth.issuer=" + SupabaseJwtTestSupport.ISSUER,
-        "dotaops.supabase.auth.audience=" + SupabaseJwtTestSupport.AUDIENCE
+        "dotaops.supabase.auth.audience=" + SupabaseJwtTestSupport.AUDIENCE,
+        "dotaops.steam.session.jwt-secret=" + SupabaseJwtTestSupport.SECRET,
+        "dotaops.steam.session.ttl=1h"
 })
 class TeamControllerTest {
 
     private static final UUID AUTH_USER_ID = UUID.fromString("55555555-5555-4555-8555-555555555555");
     private static final UUID PROFILE_ID = UUID.fromString("66666666-6666-4666-8666-666666666666");
     private static final UUID TEAM_ID = UUID.fromString("77777777-7777-4777-8777-777777777777");
+    private static final UUID STEAM_PROFILE_ID = UUID.fromString("88888888-8888-4888-8888-888888888888");
+    private static final String STEAM_ID = "76561198000000001";
 
     @Autowired
     private MockMvc mockMvc;
@@ -69,11 +78,16 @@ class TeamControllerTest {
     @Autowired
     private AuthenticatedProfileRepository authenticatedProfileRepository;
 
+    @Autowired
+    private SteamSessionTokenService steamSessionTokenService;
+
     @BeforeEach
     void setUp() {
         Mockito.reset(teamService, authenticatedProfileRepository);
         when(authenticatedProfileRepository.findByAuthUserId(AUTH_USER_ID))
                 .thenReturn(Optional.of(authenticatedProfile()));
+        when(authenticatedProfileRepository.findByProfileId(STEAM_PROFILE_ID))
+                .thenReturn(Optional.of(steamAuthenticatedProfile()));
     }
 
     @Test
@@ -136,6 +150,22 @@ class TeamControllerTest {
     }
 
     @Test
+    void createTeamAcceptsSteamSessionCookie() throws Exception {
+        when(teamService.createTeam(any(CreateTeamRequest.class))).thenReturn(teamResponse());
+
+        mockMvc.perform(post("/api/teams")
+                        .cookie(steamSessionCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Ancient Stack"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.name").value("Ancient Stack"));
+    }
+
+    @Test
     void invalidCreatePayloadReturnsValidationError() throws Exception {
         mockMvc.perform(post("/api/teams")
                         .header("Authorization", bearerToken())
@@ -177,6 +207,27 @@ class TeamControllerTest {
                 AUTH_USER_ID,
                 "MidPulse",
                 ProfileRole.PLAYER);
+    }
+
+    private static AuthenticatedProfile steamAuthenticatedProfile() {
+        return new AuthenticatedProfile(
+                STEAM_PROFILE_ID,
+                null,
+                "steam_player",
+                ProfileRole.PLAYER);
+    }
+
+    private Cookie steamSessionCookie() {
+        return new Cookie("dotaops_steam_session", steamSessionTokenService.createToken(new SteamAuthResult(
+                STEAM_ID,
+                STEAM_PROFILE_ID,
+                UUID.fromString("99999999-9999-4999-8999-999999999999"),
+                false,
+                false,
+                "Steam Player",
+                null,
+                "https://steamcommunity.com/profiles/" + STEAM_ID + "/",
+                URI.create("http://localhost:3000/auth/steam/callback"))));
     }
 
     private static TeamResponse teamResponse() {

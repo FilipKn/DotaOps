@@ -18,6 +18,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import si.um.feri.dotaops.backend.auth.web.SupabaseJwtAuthenticationFilter;
 import si.um.feri.dotaops.backend.common.security.JsonAccessDeniedHandler;
 import si.um.feri.dotaops.backend.common.security.JsonAuthenticationEntryPoint;
+import si.um.feri.dotaops.backend.config.properties.CorsProperties;
 import si.um.feri.dotaops.backend.config.properties.SteamAuthProperties;
 import si.um.feri.dotaops.backend.config.properties.SteamSessionProperties;
 import si.um.feri.dotaops.backend.config.properties.SupabaseAuthProperties;
@@ -26,7 +27,8 @@ import si.um.feri.dotaops.backend.config.properties.SupabaseAuthProperties;
 @EnableConfigurationProperties({
         SupabaseAuthProperties.class,
         SteamAuthProperties.class,
-        SteamSessionProperties.class
+        SteamSessionProperties.class,
+        CorsProperties.class
 })
 public class SecurityConfig {
 
@@ -69,12 +71,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    CorsConfigurationSource corsConfigurationSource() {
+    CorsConfigurationSource corsConfigurationSource(CorsProperties corsProperties) {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of(
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-            "https://*.vercel.app"));
+        configuration.setAllowedOriginPatterns(corsProperties.allowedOriginPatterns());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
