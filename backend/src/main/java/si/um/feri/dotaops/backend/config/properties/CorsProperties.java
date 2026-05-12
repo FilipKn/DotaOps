@@ -26,7 +26,6 @@ public record CorsProperties(
     private static List<String> defaultAllowedOriginPatterns() {
         return List.of(
                 "http://localhost:3000",
-                "http://127.0.0.1:3000",
-                "https://*.vercel.app");
+                "http://127.0.0.1:3000");
     }
 }
