@@ -28,7 +28,7 @@ class MigrationIntegrationTest extends PostgresIntegrationTestSupport {
                 "select count(*) from public.flyway_schema_history where not success",
                 Integer.class);
 
-        assertThat(appliedVersions).containsExactly("1", "2", "3", "4", "5", "6", "7", "8", "9");
+        assertThat(appliedVersions).containsExactly("1", "2", "3", "4", "5", "6", "7", "8", "9", "10");
         assertThat(failedMigrations).isZero();
     }
 
@@ -88,6 +88,7 @@ class MigrationIntegrationTest extends PostgresIntegrationTestSupport {
                 from (
                     values
                       ('profile_external_accounts_one_primary_idx'),
+                      ('profiles_nickname_ci_unique_idx'),
                       ('profiles_opendota_account_id_unique_idx'),
                       ('steam_login_states_expires_idx'),
                       ('matches_tournament_stage_idx')
