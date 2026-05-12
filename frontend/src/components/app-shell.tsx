@@ -31,6 +31,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "mock data";
   const isRoleDashboard = pathname.startsWith("/dashboard");
+  const isPublicRoute = pathname === "/" || pathname === "/login" || pathname === "/register";
+
+  if (isPublicRoute) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="app-shell">

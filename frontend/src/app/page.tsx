@@ -1,5 +1,5 @@
-import { DashboardOverview } from "@/components/dashboard-overview";
+import { PublicHomepage } from "@/components/home/public-homepage";
 
 export default async function Home() {
-  return <DashboardOverview />;
+  return <PublicHomepage />;
 }
