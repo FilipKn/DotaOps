@@ -1,0 +1,204 @@
+package si.um.feri.dotaops.backend.team.service;
+
+import java.text.Normalizer;
+import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import si.um.feri.dotaops.backend.auth.domain.AuthenticatedProfile;
+import si.um.feri.dotaops.backend.auth.domain.ProfileRole;
+import si.um.feri.dotaops.backend.auth.service.CurrentUserProvider;
+import si.um.feri.dotaops.backend.common.error.BadRequestException;
+import si.um.feri.dotaops.backend.common.error.ResourceNotFoundException;
+import si.um.feri.dotaops.backend.common.pagination.PageResponse;
+import si.um.feri.dotaops.backend.team.domain.Team;
+import si.um.feri.dotaops.backend.team.repository.CreateTeamCommand;
+import si.um.feri.dotaops.backend.team.repository.TeamRepository;
+import si.um.feri.dotaops.backend.team.repository.UpdateTeamCommand;
+import si.um.feri.dotaops.backend.team.web.CreateTeamRequest;
+import si.um.feri.dotaops.backend.team.web.TeamResponse;
+import si.um.feri.dotaops.backend.team.web.UpdateTeamRequest;
+
+@Service
+public class TeamService {
+
+    private static final String SLUG_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
+    private static final int MAX_SLUG_LENGTH = 80;
+
+    private final TeamRepository teamRepository;
+    private final CurrentUserProvider currentUserProvider;
+
+    public TeamService(
+            TeamRepository teamRepository,
+            CurrentUserProvider currentUserProvider
+    ) {
+        this.teamRepository = teamRepository;
+        this.currentUserProvider = currentUserProvider;
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<TeamResponse> listTeams(String search, int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        long offset = (long) safePage * safeSize;
+
+        List<TeamResponse> teams = teamRepository.findTeams(search, safeSize, offset)
+                .stream()
+                .map(TeamResponse::from)
+                .toList();
+        long total = teamRepository.countTeams(search);
+
+        return PageResponse.from(new PageImpl<>(
+                teams,
+                PageRequest.of(safePage, safeSize),
+                total));
+    }
+
+    @Transactional(readOnly = true)
+    public TeamResponse getTeam(UUID teamId) {
+        return teamRepository.findById(teamId)
+                .map(TeamResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Team", "id", teamId));
+    }
+
+    @Transactional(readOnly = true)
+    public TeamResponse getTeamBySlug(String slug) {
+        String normalizedSlug = normalizeSlug(slug);
+
+        return teamRepository.findBySlug(normalizedSlug)
+                .map(TeamResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Team", "slug", normalizedSlug));
+    }
+
+    @Transactional
+    public TeamResponse createTeam(CreateTeamRequest request) {
+        UUID authUserId = currentUserProvider.requireAuthUserId();
+        AuthenticatedProfile profile = currentUserProvider.requireProfile();
+
+        try {
+            Team team = teamRepository.create(new CreateTeamCommand(
+                    normalizeRequired(request.name()),
+                    normalizeOptional(request.tag()),
+                    resolveSlug(request.slug(), request.name()),
+                    profile.profileId(),
+                    normalizeOptional(request.region()),
+                    normalizeOptional(request.logoUrl()),
+                    normalizeOptional(request.description()),
+                    authUserId));
+
+            return TeamResponse.from(team);
+        } catch (DataIntegrityViolationException exception) {
+            throw duplicateTeamException(exception);
+        }
+    }
+
+    @Transactional
+    public TeamResponse updateTeam(UUID teamId, UpdateTeamRequest request) {
+        if (!request.hasChanges()) {
+            throw new BadRequestException("At least one team field must be provided.");
+        }
+
+        AuthenticatedProfile profile = currentUserProvider.requireProfile();
+        Team existing = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team", "id", teamId));
+
+        if (!canUpdate(profile, existing)) {
+            throw new AccessDeniedException("Only the team captain or an organizer can update this team.");
+        }
+
+        try {
+            return teamRepository.update(
+                            teamId,
+                            new UpdateTeamCommand(
+                                    normalizeOptional(request.name()),
+                                    normalizeOptional(request.tag()),
+                                    request.slug() == null ? null : normalizeSlug(request.slug()),
+                                    normalizeOptional(request.region()),
+                                    normalizeOptional(request.logoUrl()),
+                                    normalizeOptional(request.description())))
+                    .map(TeamResponse::from)
+                    .orElseThrow(() -> new ResourceNotFoundException("Team", "id", teamId));
+        } catch (DataIntegrityViolationException exception) {
+            throw duplicateTeamException(exception);
+        }
+    }
+
+    private boolean canUpdate(AuthenticatedProfile profile, Team team) {
+        return profile.role() == ProfileRole.ORGANIZER
+                || profile.role() == ProfileRole.ADMIN
+                || profile.profileId().equals(team.captainProfileId());
+    }
+
+    private BadRequestException duplicateTeamException(DataIntegrityViolationException exception) {
+        String message = exception.getMostSpecificCause().getMessage();
+
+        if (message != null && message.contains("teams_name_key")) {
+            return new BadRequestException("Team name is already in use.");
+        }
+
+        if (message != null && message.contains("teams_slug_key")) {
+            return new BadRequestException("Team slug is already in use.");
+        }
+
+        return new BadRequestException("Team data violates a database constraint.");
+    }
+
+    private String resolveSlug(String requestedSlug, String name) {
+        if (requestedSlug != null && !requestedSlug.isBlank()) {
+            return normalizeSlug(requestedSlug);
+        }
+
+        return generateSlug(name);
+    }
+
+    private String generateSlug(String value) {
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-|-$)", "");
+
+        if (normalized.length() > MAX_SLUG_LENGTH) {
+            normalized = normalized.substring(0, MAX_SLUG_LENGTH).replaceAll("-+$", "");
+        }
+
+        return normalizeSlug(normalized);
+    }
+
+    private String normalizeSlug(String value) {
+        String normalized = normalizeRequired(value).toLowerCase(Locale.ROOT);
+
+        if (!normalized.matches(SLUG_PATTERN)) {
+            throw new BadRequestException("Team slug must contain lowercase letters, numbers and single hyphens only.");
+        }
+
+        if (normalized.length() > MAX_SLUG_LENGTH) {
+            throw new BadRequestException("Team slug must be at most 80 characters.");
+        }
+
+        return normalized;
+    }
+
+    private String normalizeRequired(String value) {
+        if (value == null || value.isBlank()) {
+            throw new BadRequestException("Required team field is blank.");
+        }
+
+        return value.trim();
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        return value.trim();
+    }
+}
