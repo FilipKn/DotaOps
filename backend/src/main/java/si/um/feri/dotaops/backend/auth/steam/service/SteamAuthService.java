@@ -123,7 +123,6 @@ public class SteamAuthService {
                 .toUri();
     }
 
-    @Transactional
     public SteamAuthResult completeCallback(MultiValueMap<String, String> callbackParams) {
         String rawState = requiredParam(callbackParams, "state");
         SteamLoginStateContext state = loginStateRepository.consume(hashState(rawState))

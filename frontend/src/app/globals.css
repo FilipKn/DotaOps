@@ -751,6 +751,7 @@ p {
 
 .status-live,
 .status-registration,
+.status-queued,
 .status-processing {
   background: var(--amber-soft);
   color: var(--amber);
@@ -1251,6 +1252,7 @@ textarea:focus {
 
 .status-badge.ops-badge.status-live,
 .status-badge.ops-badge.status-registration,
+.status-badge.ops-badge.status-queued,
 .status-badge.ops-badge.status-processing {
   background: var(--ops-secondary-soft);
   color: var(--ops-secondary);

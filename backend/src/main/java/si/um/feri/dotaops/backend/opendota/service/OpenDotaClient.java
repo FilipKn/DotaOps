@@ -53,6 +53,29 @@ public class OpenDotaClient {
         }
     }
 
+    public Optional<JsonNode> fetchMatch(long matchId) {
+        if (matchId <= 0) {
+            return Optional.empty();
+        }
+
+        try {
+            String body = restClient.get()
+                    .uri(uri("/matches/{matchId}", matchId))
+                    .retrieve()
+                    .body(String.class);
+            JsonNode match = objectMapper.readTree(body);
+            if (!match.isObject() || match.hasNonNull("error") || !match.hasNonNull("match_id")) {
+                return Optional.empty();
+            }
+
+            return Optional.of(match);
+        } catch (RestClientException exception) {
+            return Optional.empty();
+        } catch (Exception exception) {
+            return Optional.empty();
+        }
+    }
+
     public List<OpenDotaMatchSummary> fetchRecentMatches(long accountId, int limit) {
         try {
             UriComponentsBuilder builder = uriBuilder("/players/{accountId}/matches", accountId);
