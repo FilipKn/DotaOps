@@ -32,6 +32,7 @@ import si.um.feri.dotaops.backend.auth.steam.repository.SteamLoginStateRepositor
 import si.um.feri.dotaops.backend.auth.steam.repository.SteamProfileRepository;
 import si.um.feri.dotaops.backend.common.error.BadRequestException;
 import si.um.feri.dotaops.backend.config.properties.SteamAuthProperties;
+import si.um.feri.dotaops.backend.profile.service.SteamProfileBootstrapService;
 
 @Service
 public class SteamAuthService {
@@ -46,6 +47,7 @@ public class SteamAuthService {
     private final SteamProfileRepository profileRepository;
     private final SteamOpenIdClient openIdClient;
     private final CurrentUserProvider currentUserProvider;
+    private final SteamProfileBootstrapService profileBootstrapService;
     private final SecureRandom secureRandom;
     private final Clock clock;
 
@@ -55,7 +57,8 @@ public class SteamAuthService {
             SteamLoginStateRepository loginStateRepository,
             SteamProfileRepository profileRepository,
             SteamOpenIdClient openIdClient,
-            CurrentUserProvider currentUserProvider
+            CurrentUserProvider currentUserProvider,
+            SteamProfileBootstrapService profileBootstrapService
     ) {
         this(
                 properties,
@@ -63,6 +66,7 @@ public class SteamAuthService {
                 profileRepository,
                 openIdClient,
                 currentUserProvider,
+                profileBootstrapService,
                 new SecureRandom(),
                 Clock.systemUTC());
     }
@@ -73,6 +77,7 @@ public class SteamAuthService {
             SteamProfileRepository profileRepository,
             SteamOpenIdClient openIdClient,
             CurrentUserProvider currentUserProvider,
+            SteamProfileBootstrapService profileBootstrapService,
             SecureRandom secureRandom,
             Clock clock
     ) {
@@ -81,6 +86,7 @@ public class SteamAuthService {
         this.profileRepository = profileRepository;
         this.openIdClient = openIdClient;
         this.currentUserProvider = currentUserProvider;
+        this.profileBootstrapService = profileBootstrapService;
         this.secureRandom = secureRandom;
         this.clock = clock;
     }
@@ -144,6 +150,8 @@ public class SteamAuthService {
                 summary.avatarUrl(),
                 profileUrl,
                 claimedId);
+
+        profileBootstrapService.bootstrapAfterSteamLogin(upsertResult.profileId(), steamId, summary);
 
         return new SteamAuthResult(
                 steamId,

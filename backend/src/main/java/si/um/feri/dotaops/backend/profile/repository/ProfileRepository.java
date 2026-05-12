@@ -33,10 +33,13 @@ public class ProfileRepository {
                   nickname,
                   display_name,
                   steam_id,
+                  opendota_account_id,
                   role::text as role,
                   avatar_url,
                   bio,
                   country_code,
+                  steam_profile_synced_at,
+                  opendota_profile_synced_at,
                   created_at,
                   updated_at
                 from public.profiles
@@ -86,10 +89,13 @@ public class ProfileRepository {
                           nickname,
                           display_name,
                           steam_id,
+                          opendota_account_id,
                           role::text as role,
                           avatar_url,
                           bio,
                           country_code,
+                          steam_profile_synced_at,
+                          opendota_profile_synced_at,
                           created_at,
                           updated_at
                         from public.profiles
@@ -111,10 +117,13 @@ public class ProfileRepository {
                           nickname,
                           display_name,
                           steam_id,
+                          opendota_account_id,
                           role::text as role,
                           avatar_url,
                           bio,
                           country_code,
+                          steam_profile_synced_at,
+                          opendota_profile_synced_at,
                           created_at,
                           updated_at
                         from public.profiles
@@ -145,10 +154,13 @@ public class ProfileRepository {
                   nickname,
                   display_name,
                   steam_id,
+                  opendota_account_id,
                   role::text as role,
                   avatar_url,
                   bio,
                   country_code,
+                  steam_profile_synced_at,
+                  opendota_profile_synced_at,
                   created_at,
                   updated_at
                 """,
@@ -179,10 +191,13 @@ public class ProfileRepository {
                           nickname,
                           display_name,
                           steam_id,
+                          opendota_account_id,
                           role::text as role,
                           avatar_url,
                           bio,
                           country_code,
+                          steam_profile_synced_at,
+                          opendota_profile_synced_at,
                           created_at,
                           updated_at
                         """,
@@ -204,10 +219,13 @@ public class ProfileRepository {
                 resultSet.getString("nickname"),
                 resultSet.getString("display_name"),
                 resultSet.getString("steam_id"),
+                resultSet.getObject("opendota_account_id", Long.class),
                 ProfileRole.fromDatabaseValue(resultSet.getString("role")),
                 resultSet.getString("avatar_url"),
                 resultSet.getString("bio"),
                 resultSet.getString("country_code"),
+                resultSet.getObject("steam_profile_synced_at", OffsetDateTime.class),
+                resultSet.getObject("opendota_profile_synced_at", OffsetDateTime.class),
                 resultSet.getObject("created_at", OffsetDateTime.class),
                 resultSet.getObject("updated_at", OffsetDateTime.class));
     }

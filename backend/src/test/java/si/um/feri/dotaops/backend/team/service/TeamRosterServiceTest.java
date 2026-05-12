@@ -239,10 +239,13 @@ class TeamRosterServiceTest {
                 "CarryOne",
                 "Carry One",
                 null,
+                null,
                 ProfileRole.PLAYER,
                 null,
                 null,
                 "SI",
+                null,
+                null,
                 NOW,
                 NOW);
     }
