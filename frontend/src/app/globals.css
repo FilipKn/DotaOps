@@ -6209,3 +6209,902 @@ textarea:focus {
     display: none;
   }
 }
+
+.team-mgmt-page {
+  display: grid;
+  gap: 22px;
+  min-height: calc(100vh - 130px);
+  color: var(--ops-text);
+}
+
+.team-mgmt-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: fit-content;
+  padding: 6px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius);
+  background: rgba(16, 10, 10, 0.84);
+}
+
+.team-mgmt-tab {
+  min-height: 38px;
+  padding: 9px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--ops-radius-sm);
+  background: transparent;
+  color: var(--ops-muted);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.team-mgmt-tab.is-active,
+.team-mgmt-tab:hover {
+  border-color: rgba(255, 180, 171, 0.35);
+  background: rgba(255, 84, 78, 0.18);
+  color: var(--ops-text);
+}
+
+.team-mgmt-message {
+  padding: 12px 14px;
+  border-radius: var(--ops-radius);
+  font-weight: 800;
+}
+
+.team-mgmt-notice {
+  border: 1px solid rgba(233, 195, 73, 0.35);
+  background: rgba(233, 195, 73, 0.12);
+  color: #ffe5a3;
+}
+
+.team-mgmt-error {
+  border: 1px solid rgba(255, 180, 171, 0.42);
+  background: rgba(255, 84, 78, 0.12);
+  color: var(--ops-error);
+}
+
+.team-mgmt-state {
+  display: grid;
+  gap: 14px;
+  max-width: 760px;
+  padding: 34px;
+}
+
+.team-mgmt-state h1 {
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1;
+}
+
+.team-mgmt-state p {
+  max-width: 620px;
+  color: var(--ops-muted);
+  line-height: 1.7;
+}
+
+.team-mgmt-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.team-mgmt-empty-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.team-mgmt-empty-list article {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid var(--ops-line-soft);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.team-mgmt-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  min-height: 260px;
+  padding: 44px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(255, 84, 78, 0.15), transparent 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent),
+    #121111;
+}
+
+.team-mgmt-hero::before {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(176, 135, 131, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(176, 135, 131, 0.08) 1px, transparent 1px);
+  background-size: 44px 44px;
+  content: "";
+  opacity: 0.42;
+}
+
+.team-mgmt-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.team-mgmt-hero-compact {
+  min-height: 150px;
+  padding: 28px;
+}
+
+.team-mgmt-team-mark {
+  display: grid;
+  place-items: center;
+  width: 108px;
+  height: 108px;
+  border: 1px solid rgba(255, 180, 171, 0.35);
+  border-radius: var(--ops-radius);
+  background:
+    radial-gradient(circle at 50% 35%, rgba(0, 221, 221, 0.18), transparent 54%),
+    rgba(255, 255, 255, 0.05);
+  color: var(--ops-error);
+}
+
+.team-mgmt-hero-compact .team-mgmt-team-mark {
+  width: 84px;
+  height: 84px;
+}
+
+.team-mgmt-hero-tags,
+.team-mgmt-form-strip span,
+.team-mgmt-metric span,
+.team-mgmt-member-meta span,
+.team-mgmt-role-select span,
+.team-mgmt-recruitment label span {
+  color: var(--ops-muted);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.team-mgmt-hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.team-mgmt-hero-tags span {
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 180, 171, 0.22);
+  background: rgba(255, 84, 78, 0.12);
+}
+
+.team-mgmt-hero h1 {
+  max-width: 720px;
+  color: #ffe7e4;
+  font-size: clamp(2rem, 4.2vw, 4.3rem);
+  line-height: 0.96;
+  text-transform: uppercase;
+}
+
+.team-mgmt-hero-compact h1 {
+  font-size: clamp(1.5rem, 2.6vw, 2.35rem);
+}
+
+.team-mgmt-hero p {
+  max-width: 680px;
+  margin-top: 10px;
+  color: #e8c2bd;
+  font-size: 1.05rem;
+  line-height: 1.55;
+}
+
+.team-mgmt-hero-compact p {
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.team-mgmt-form-strip {
+  display: grid;
+  gap: 12px;
+  justify-items: end;
+  min-width: 210px;
+}
+
+.team-mgmt-form-strip div {
+  display: flex;
+  gap: 8px;
+}
+
+.team-mgmt-form-strip strong {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid currentColor;
+  color: var(--ops-green);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.78rem;
+}
+
+.team-mgmt-form-strip .is-loss {
+  color: var(--ops-primary);
+}
+
+.team-mgmt-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.team-mgmt-metric {
+  display: grid;
+  gap: 14px;
+  min-height: 138px;
+  padding: 28px;
+  background: #151111;
+}
+
+.team-mgmt-metric div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.team-mgmt-metric strong {
+  color: #ffe7e4;
+  font-size: clamp(2.25rem, 4vw, 4rem);
+  line-height: 0.9;
+}
+
+.team-mgmt-metric svg {
+  color: var(--ops-error);
+}
+
+.team-mgmt-metric em {
+  display: block;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.team-mgmt-metric em::before {
+  display: block;
+  width: 66%;
+  height: 100%;
+  background: var(--ops-error);
+  content: "";
+}
+
+.team-mgmt-tone-gold svg,
+.team-mgmt-tone-gold strong {
+  color: var(--ops-secondary);
+}
+
+.team-mgmt-tone-gold em::before {
+  background: var(--ops-secondary);
+}
+
+.team-mgmt-tone-cyan svg,
+.team-mgmt-tone-cyan strong {
+  color: #61d6ff;
+}
+
+.team-mgmt-tone-cyan em::before {
+  background: #61d6ff;
+}
+
+.team-mgmt-tone-green svg,
+.team-mgmt-tone-green strong {
+  color: var(--ops-green);
+}
+
+.team-mgmt-tone-green em::before {
+  background: var(--ops-green);
+}
+
+.team-mgmt-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 28px;
+  align-items: start;
+}
+
+.team-mgmt-main-stack,
+.team-mgmt-side-stack {
+  display: grid;
+  gap: 22px;
+  align-content: start;
+}
+
+.team-mgmt-section-heading,
+.team-mgmt-panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.team-mgmt-section-heading h2,
+.team-mgmt-panel-title h2,
+.team-mgmt-side-card h2,
+.team-mgmt-registry h2,
+.team-mgmt-recruitment h2,
+.team-mgmt-invite-list h2,
+.team-mgmt-join-placeholder h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #ffe7e4;
+  font-size: 1.45rem;
+  text-transform: uppercase;
+}
+
+.team-mgmt-section-heading > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ops-muted);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.team-mgmt-section-heading i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--ops-secondary);
+}
+
+.team-mgmt-section-heading .is-offline {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.team-mgmt-roster-preview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.team-mgmt-roster-tile {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  min-height: 130px;
+  padding: 22px;
+  background: #151111;
+}
+
+.team-mgmt-avatar,
+.team-mgmt-mini-avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  border: 1px solid rgba(255, 180, 171, 0.35);
+  background:
+    radial-gradient(circle at 50% 20%, rgba(0, 221, 221, 0.2), transparent 56%),
+    #090909;
+  background-position: center;
+  background-size: cover;
+  color: var(--ops-error);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-weight: 900;
+}
+
+.team-mgmt-avatar-large {
+  width: 78px;
+  height: 78px;
+}
+
+.team-mgmt-mini-avatar {
+  width: 44px;
+  height: 44px;
+  font-size: 0.72rem;
+}
+
+.team-mgmt-roster-tile strong,
+.team-mgmt-member-head strong,
+.team-mgmt-invite-card strong,
+.team-mgmt-invite-row strong,
+.team-mgmt-request strong,
+.team-mgmt-activity strong {
+  color: #ffe7e4;
+}
+
+.team-mgmt-roster-tile p,
+.team-mgmt-member-head p,
+.team-mgmt-invite-card p,
+.team-mgmt-invite-row p,
+.team-mgmt-request p,
+.team-mgmt-activity p,
+.team-mgmt-muted {
+  color: var(--ops-muted);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.team-mgmt-online-dot {
+  position: absolute;
+  top: 22px;
+  left: 86px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--ops-secondary);
+}
+
+.team-mgmt-online-dot.is-offline {
+  background: rgba(255, 255, 255, 0.36);
+}
+
+.team-mgmt-tile-actions,
+.team-mgmt-member-actions {
+  display: flex;
+  grid-column: 2;
+  gap: 8px;
+}
+
+.team-mgmt-tile-actions button,
+.team-mgmt-member-actions button,
+.team-mgmt-panel-title button,
+.team-mgmt-filter-bar button,
+.team-mgmt-invite-card button,
+.team-mgmt-join-placeholder button {
+  min-height: 32px;
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 180, 171, 0.32);
+  background: rgba(255, 84, 78, 0.08);
+  color: #ffe7e4;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.team-mgmt-invite-tile {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  min-height: 130px;
+  border-style: dashed;
+  color: #ffe7e4;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.team-mgmt-registry,
+.team-mgmt-recruitment,
+.team-mgmt-join-placeholder {
+  display: grid;
+  gap: 18px;
+  padding: 26px;
+  background: #151111;
+}
+
+.team-mgmt-invite-row,
+.team-mgmt-invite-card,
+.team-mgmt-join-placeholder article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid rgba(255, 180, 171, 0.13);
+  background: rgba(255, 84, 78, 0.08);
+}
+
+.team-mgmt-status {
+  padding: 6px 10px;
+  border: 1px solid currentColor;
+  color: var(--ops-secondary);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.team-mgmt-status-accepted {
+  color: var(--ops-green);
+}
+
+.team-mgmt-status-declined,
+.team-mgmt-status-cancelled,
+.team-mgmt-status-expired {
+  color: var(--ops-muted);
+}
+
+.team-mgmt-side-card {
+  display: grid;
+  gap: 14px;
+  padding: 26px;
+  background: #151111;
+}
+
+.team-mgmt-side-card h2 {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--ops-line);
+  font-size: 1rem;
+}
+
+.team-mgmt-side-card button,
+.team-mgmt-recruitment button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 180, 171, 0.35);
+  background: rgba(255, 84, 78, 0.12);
+  color: #ffe7e4;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.team-mgmt-side-card button:disabled,
+.team-mgmt-recruitment button:disabled,
+.team-mgmt-tab:disabled,
+.team-mgmt-invite-tile:disabled,
+.team-mgmt-member-actions button:disabled,
+.team-mgmt-invite-card button:disabled,
+.team-mgmt-join-placeholder button:disabled,
+.team-mgmt-role-select select:disabled,
+.team-mgmt-recruitment input:disabled,
+.team-mgmt-recruitment select:disabled,
+.team-mgmt-recruitment textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.team-mgmt-command-primary {
+  border-color: transparent !important;
+  background: var(--ops-primary) !important;
+  color: white !important;
+}
+
+.team-mgmt-danger,
+.team-mgmt-cancel {
+  color: var(--ops-primary) !important;
+}
+
+.team-mgmt-side-card hr {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--ops-line);
+}
+
+.team-mgmt-request,
+.team-mgmt-activity {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.team-mgmt-alert,
+.team-mgmt-note {
+  display: grid;
+  gap: 14px;
+  padding: 26px;
+  border-left: 4px solid var(--ops-error);
+  background: rgba(255, 84, 78, 0.13);
+}
+
+.team-mgmt-alert-gold {
+  border-left-color: var(--ops-secondary);
+  background: rgba(233, 195, 73, 0.08);
+}
+
+.team-mgmt-alert h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--ops-error);
+  font-size: 0.86rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.team-mgmt-alert strong {
+  color: #ffe7e4;
+}
+
+.team-mgmt-alert p,
+.team-mgmt-note p {
+  color: #e8c2bd;
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.team-mgmt-roster-header-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 28px;
+}
+
+.team-mgmt-countdown {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 150px;
+  padding: 26px;
+  border-color: var(--ops-primary);
+  text-align: center;
+}
+
+.team-mgmt-countdown span,
+.team-mgmt-countdown p {
+  color: var(--ops-muted);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.team-mgmt-countdown strong {
+  color: #ffe7e4;
+  font-size: clamp(2.6rem, 4.4vw, 4.7rem);
+  line-height: 0.95;
+}
+
+.team-mgmt-roster-management-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+}
+
+.team-mgmt-member-card {
+  position: relative;
+  display: grid;
+  gap: 18px;
+  min-height: 280px;
+  padding: 28px;
+  background: #151111;
+}
+
+.team-mgmt-member-card:first-child {
+  border-left: 4px solid var(--ops-error);
+}
+
+.team-mgmt-captain-badge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 6px 10px;
+  border-radius: var(--ops-radius-sm);
+  background: #ffb4ab;
+  color: #211;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.team-mgmt-member-head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.team-mgmt-member-head strong {
+  display: block;
+  font-size: 1.35rem;
+}
+
+.team-mgmt-member-meta {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 16px;
+}
+
+.team-mgmt-member-meta strong {
+  color: #ffe7e4;
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.team-mgmt-member-meta .is-online {
+  color: var(--ops-green);
+}
+
+.team-mgmt-member-meta .is-offline {
+  color: var(--ops-muted);
+}
+
+.team-mgmt-role-select {
+  display: grid;
+  gap: 8px;
+}
+
+.team-mgmt-role-select select,
+.team-mgmt-recruitment input,
+.team-mgmt-recruitment select,
+.team-mgmt-recruitment textarea {
+  width: 100%;
+  border: 1px solid rgba(255, 180, 171, 0.4);
+  border-radius: 0;
+  background: #050505;
+  color: #ffe7e4;
+  outline: none;
+}
+
+.team-mgmt-role-select select {
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
+.team-mgmt-member-actions {
+  grid-column: auto;
+}
+
+.team-mgmt-member-actions button:first-child {
+  flex: 1;
+}
+
+.team-mgmt-recruitment h2 {
+  font-size: 1.8rem;
+}
+
+.team-mgmt-recruitment-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px 34px;
+}
+
+.team-mgmt-recruitment label {
+  display: grid;
+  gap: 10px;
+}
+
+.team-mgmt-recruitment textarea {
+  min-height: 126px;
+  resize: vertical;
+}
+
+.team-mgmt-recruitment input,
+.team-mgmt-recruitment select,
+.team-mgmt-recruitment textarea {
+  padding: 14px 16px;
+}
+
+.team-mgmt-recruitment button {
+  align-self: end;
+  border-color: transparent;
+  background: var(--ops-primary);
+  color: #fff;
+}
+
+.team-mgmt-recruitment > p {
+  color: var(--ops-muted);
+  font-style: italic;
+}
+
+.team-mgmt-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding: 18px 22px;
+  background: #151111;
+}
+
+.team-mgmt-filter-bar button {
+  min-height: 44px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--ops-muted);
+}
+
+.team-mgmt-filter-bar button.is-active {
+  border-bottom-color: var(--ops-error);
+  color: #ffe7e4;
+}
+
+.team-mgmt-invite-list {
+  display: grid;
+  gap: 14px;
+}
+
+.team-mgmt-invite-list h2 {
+  font-size: 1rem;
+}
+
+.team-mgmt-invite-empty {
+  padding: 20px;
+  color: var(--ops-muted);
+}
+
+.team-mgmt-join-placeholder article {
+  grid-template-columns: auto minmax(0, 1fr) auto auto minmax(220px, 0.35fr);
+}
+
+.team-mgmt-join-placeholder article > p {
+  padding: 12px;
+  background: rgba(255, 180, 171, 0.12);
+  color: var(--ops-muted);
+}
+
+@media (max-width: 1320px) {
+  .team-mgmt-layout,
+  .team-mgmt-roster-header-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .team-mgmt-side-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .team-mgmt-roster-management-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .team-mgmt-hero,
+  .team-mgmt-hero-compact {
+    grid-template-columns: 1fr;
+    padding: 26px;
+  }
+
+  .team-mgmt-form-strip {
+    justify-items: start;
+  }
+
+  .team-mgmt-metrics,
+  .team-mgmt-roster-preview,
+  .team-mgmt-side-stack,
+  .team-mgmt-recruitment-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .team-mgmt-roster-management-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .team-mgmt-invite-card,
+  .team-mgmt-invite-row,
+  .team-mgmt-join-placeholder article {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .team-mgmt-status,
+  .team-mgmt-invite-card button,
+  .team-mgmt-join-placeholder button,
+  .team-mgmt-join-placeholder article > p {
+    grid-column: 1 / -1;
+  }
+}
