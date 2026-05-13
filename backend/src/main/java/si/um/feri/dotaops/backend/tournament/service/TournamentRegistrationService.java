@@ -94,6 +94,7 @@ public class TournamentRegistrationService {
         ensureCanRegisterTeam(actor, team);
         ensureRegistrationWindowOpen(tournament);
         int rosterSize = tournament.settings().teamSize();
+        ensureTeamNotAlreadyRegistered(tournament.id(), team.id());
         ensureRosterReady(team.id(), rosterSize);
         databaseActorContext.apply(actor);
 
@@ -204,6 +205,12 @@ public class TournamentRegistrationService {
         }
 
         throw new AccessDeniedException("Only active team members can view this team's tournament registrations.");
+    }
+
+    private void ensureTeamNotAlreadyRegistered(UUID tournamentId, UUID teamId) {
+        if (registrationRepository.existsByTournamentIdAndTeamId(tournamentId, teamId)) {
+            throw new ConflictException("Team is already registered for this tournament.");
+        }
     }
 
     private void ensureCanManage(AuthenticatedActor actor, UUID tournamentId) {

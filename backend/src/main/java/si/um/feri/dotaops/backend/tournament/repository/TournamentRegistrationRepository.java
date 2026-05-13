@@ -52,6 +52,23 @@ public class TournamentRegistrationRepository {
                 teamId);
     }
 
+    public boolean existsByTournamentIdAndTeamId(UUID tournamentId, UUID teamId) {
+        Boolean exists = jdbcTemplate.queryForObject(
+                """
+                select exists (
+                  select 1
+                  from public.tournament_registrations
+                  where tournament_id = ?
+                    and team_id = ?
+                )
+                """,
+                Boolean.class,
+                tournamentId,
+                teamId);
+
+        return Boolean.TRUE.equals(exists);
+    }
+
     public Optional<TournamentRegistration> findById(UUID registrationId) {
         return jdbcTemplate.query(
                         selectRegistrationSql() + """

@@ -107,6 +107,23 @@ class TournamentRegistrationServiceTest {
         when(currentUserProvider.requireActor()).thenReturn(actor(CAPTAIN_PROFILE_ID, ProfileRole.PLAYER));
         when(tournamentRepository.findById(TOURNAMENT_ID)).thenReturn(Optional.of(openTournament()));
         when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.of(team(CAPTAIN_PROFILE_ID)));
+        when(registrationRepository.existsByTournamentIdAndTeamId(TOURNAMENT_ID, TEAM_ID)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.registerTeam(TOURNAMENT_ID, new CreateTournamentRegistrationRequest(
+                TEAM_ID,
+                null,
+                null)))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Team is already registered for this tournament.");
+        verify(registrationRepository, never()).create(any(CreateTournamentRegistrationCommand.class), eq(5));
+    }
+
+    @Test
+    void duplicateRaceIsRejectedByDatabaseConstraint() {
+        when(currentUserProvider.requireActor()).thenReturn(actor(CAPTAIN_PROFILE_ID, ProfileRole.PLAYER));
+        when(tournamentRepository.findById(TOURNAMENT_ID)).thenReturn(Optional.of(openTournament()));
+        when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.of(team(CAPTAIN_PROFILE_ID)));
+        when(registrationRepository.existsByTournamentIdAndTeamId(TOURNAMENT_ID, TEAM_ID)).thenReturn(false);
         when(registrationRepository.countActiveRosterMembers(TEAM_ID)).thenReturn(5);
         when(registrationRepository.create(any(CreateTournamentRegistrationCommand.class), eq(5)))
                 .thenThrow(new DataIntegrityViolationException(
