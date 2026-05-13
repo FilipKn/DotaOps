@@ -198,5 +198,3 @@ grant execute on function private.ensure_profile_for_auth_user(uuid, text, jsonb
 
 comment on constraint profiles_role_no_global_captain on public.profiles is
   'Team captain is a team-specific capability from teams.captain_profile_id/team membership, not a global account role.';
-comment on trigger dotaops_create_profile_on_auth_user on auth.users is
-  'Creates a minimal DotaOps profile for each Supabase Auth user without trusting privileged user metadata.';
