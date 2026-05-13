@@ -25,7 +25,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/turnirji", label: "Tournaments", icon: Trophy },
   { href: "/organizator", label: "Organizer", icon: Brackets },
-  { href: "/ekipe", label: "Teams", icon: UsersRound },
+  { href: "/ekipe", label: "My Team", icon: UsersRound },
   { href: "/analitika", label: "Analytics", icon: BarChart3 },
   { href: "/profile", label: "Profile", icon: UserRound }
 ];

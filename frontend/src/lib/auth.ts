@@ -8,6 +8,7 @@ import {
 } from "@/lib/api";
 
 const PROFILE_SELECT_COLUMNS = [
+  "id",
   "avatar_url",
   "bio",
   "country_code",
@@ -56,6 +57,7 @@ export interface CurrentUserProfile {
   nickname: string;
   opendotaAccountId: number | null;
   opendotaProfileSyncedAt: string | null;
+  profileId: string | null;
   role: ProfileRole;
   steamId: string | null;
   steamProfileSyncedAt: string | null;
@@ -81,6 +83,7 @@ export interface ProfileSaveResult {
 }
 
 interface ProfileRow {
+  id?: string | null;
   avatar_url?: string | null;
   bio?: string | null;
   country_code?: string | null;
@@ -96,6 +99,7 @@ interface ProfileRow {
 }
 
 interface BackendProfileResponse {
+  id?: string | null;
   avatarUrl?: string | null;
   bio?: string | null;
   countryCode?: string | null;
@@ -210,6 +214,7 @@ function profileFromRow(row: ProfileRow | null, email: string | null): CurrentUs
     nickname: row.nickname,
     opendotaAccountId: row.opendota_account_id ?? null,
     opendotaProfileSyncedAt: row.opendota_profile_synced_at ?? null,
+    profileId: row.id ?? null,
     role: row.role ?? "player",
     steamId: row.steam_id ?? null,
     steamProfileSyncedAt: row.steam_profile_synced_at ?? null,
@@ -235,6 +240,7 @@ function profileFromBackend(
     nickname: profile.nickname,
     opendotaAccountId: profile.opendotaAccountId ?? null,
     opendotaProfileSyncedAt: profile.opendotaProfileSyncedAt ?? null,
+    profileId: profile.id ?? null,
     role: profile.role ?? "player",
     steamId: profile.steamId ?? null,
     steamProfileSyncedAt: profile.steamProfileSyncedAt ?? null,
@@ -288,6 +294,7 @@ export async function getCurrentUserProfile(): Promise<CurrentUserProfile | null
       "player",
     opendotaAccountId: null,
     opendotaProfileSyncedAt: null,
+    profileId: null,
     role:
       requestedRole === "captain" || requestedRole === "organizer" || requestedRole === "player"
         ? requestedRole
