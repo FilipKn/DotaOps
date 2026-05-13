@@ -526,6 +526,7 @@ export function TeamManagementPage() {
           incomingInvitations={filteredIncoming}
           incomingTotal={incomingInvitations.length}
           isMutating={isMutating}
+          members={members}
           onFilterChange={setFilter}
           onFocusInvite={focusInviteForm}
           onInvitationAction={invitationAction}
@@ -565,8 +566,8 @@ function TeamHero({
         </h1>
         {compact ? (
           <p>
-            Captain: <strong>{team.captainNickname ?? "Unassigned"}</strong> · Status:{" "}
-            <strong>Active</strong> · Roster: <strong>{Math.min(members.length, 5)} / 5</strong>
+            Captain: <strong>{team.captainNickname ?? "Unassigned"}</strong> - Status:{" "}
+            <strong>Active</strong> - Roster: <strong>{Math.min(members.length, 5)} / 5</strong>
           </p>
         ) : (
           <p>{team.description ?? "Elite European organization dominating the global circuit."}</p>
@@ -1098,6 +1099,7 @@ function InvitationsTab({
   incomingInvitations,
   incomingTotal,
   isMutating,
+  members,
   onFilterChange,
   onFocusInvite,
   onInvitationAction,
@@ -1113,6 +1115,7 @@ function InvitationsTab({
   incomingInvitations: TeamInvitation[];
   incomingTotal: number;
   isMutating: boolean;
+  members: TeamMember[];
   onFilterChange: (filter: InviteFilter) => void;
   onFocusInvite: () => void;
   onInvitationAction: (action: "accept" | "decline" | "cancel", invitationId: string) => void;
@@ -1124,7 +1127,7 @@ function InvitationsTab({
 }) {
   return (
     <>
-      <TeamHero compact members={[]} team={team} />
+      <TeamHero compact members={members} team={team} />
       <section className="team-mgmt-metrics team-mgmt-invite-metrics">
         <MetricCard icon={Mail} label="Incoming Invites" value={String(incomingTotal).padStart(2, "0")} />
         <MetricCard icon={UserPlus} label="Outgoing Invites" value={String(outgoingTotal).padStart(2, "0")} />
@@ -1232,8 +1235,8 @@ function InvitationList({
               <strong>{kind === "incoming" ? invitation.teamName ?? "Team invitation" : invitation.inviteeNickname || invitation.inviteeEmail || "Pending player"}</strong>
               <p>
                 {kind === "incoming"
-                  ? `Captain: ${invitation.inviterNickname ?? "Unknown"} · Role: ${roleLabel(invitation.proposedRole)}`
-                  : `Role: ${roleLabel(invitation.proposedRole)} · Sent: ${formatRelative(invitation.createdAt)}`}
+                  ? `Captain: ${invitation.inviterNickname ?? "Unknown"} - Role: ${roleLabel(invitation.proposedRole)}`
+                  : `Role: ${roleLabel(invitation.proposedRole)} - Sent: ${formatRelative(invitation.createdAt)}`}
               </p>
             </div>
             <span className={classNames("team-mgmt-status", statusClass(invitation.status))}>{invitation.status}</span>
