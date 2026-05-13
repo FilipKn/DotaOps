@@ -331,7 +331,7 @@ p {
   z-index: 10;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
   min-height: 74px;
   padding: 16px 28px;
@@ -432,9 +432,10 @@ p {
 }
 
 .page {
-  width: min(1480px, 100%);
-  margin: 0 auto;
-  padding: 28px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 28px clamp(24px, 3.4vw, 64px);
 }
 
 .page-stack {
@@ -5661,10 +5662,10 @@ textarea:focus {
 
 .profile-page {
   width: 100%;
-  max-width: 1440px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   display: grid;
-  gap: 32px;
+  gap: 28px;
   color: var(--text-primary);
 }
 
@@ -5849,7 +5850,7 @@ textarea:focus {
 .profile-stat-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 26px;
+  gap: 24px;
 }
 
 .profile-stat-card {
@@ -5879,9 +5880,9 @@ textarea:focus {
 
 .profile-content-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   align-items: start;
-  gap: 36px;
+  gap: 28px;
 }
 
 .profile-details-card {
@@ -6212,7 +6213,8 @@ textarea:focus {
 
 .team-mgmt-page {
   display: grid;
-  gap: 22px;
+  gap: 24px;
+  width: 100%;
   min-height: calc(100vh - 130px);
   color: var(--ops-text);
 }
@@ -6311,10 +6313,10 @@ textarea:focus {
   position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 24px;
+  gap: 32px;
   align-items: center;
-  min-height: 260px;
-  padding: 44px;
+  min-height: 280px;
+  padding: 48px;
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(255, 84, 78, 0.15), transparent 38%),
@@ -6520,7 +6522,7 @@ textarea:focus {
 
 .team-mgmt-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   gap: 28px;
   align-items: start;
 }
@@ -6848,7 +6850,7 @@ textarea:focus {
 
 .team-mgmt-roster-header-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   gap: 28px;
 }
 

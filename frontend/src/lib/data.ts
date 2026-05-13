@@ -3,10 +3,13 @@ import {
   heroMetrics,
   matches,
   roadmap,
-  teams,
-  tournaments
+  teams
 } from "@/lib/mock-data";
-import type { HeroMetric, Match, Player, RoadmapItem, Team, Tournament } from "@/lib/types";
+import {
+  getPublicTournamentBySlug,
+  getPublicTournaments
+} from "@/lib/tournament-data";
+import type { HeroMetric, Match, Player, RoadmapItem, Team } from "@/lib/types";
 
 export interface AnalyticsData {
   heroMetrics: HeroMetric[];
@@ -74,16 +77,11 @@ function toTeam(team: BackendTeamResponse, members: BackendTeamMemberResponse[])
 }
 
 export async function getTournaments() {
-  const result = await fetchApi<Tournament[]>("/tournaments", tournaments);
-
-  return result.data;
+  return getPublicTournaments();
 }
 
 export async function getTournamentBySlug(slug: string) {
-  const fallback = tournaments.find((tournament) => tournament.slug === slug) ?? null;
-  const result = await fetchApi<Tournament | null>(`/tournaments/${slug}`, fallback);
-
-  return result.data;
+  return getPublicTournamentBySlug(slug);
 }
 
 export async function getTeams() {
