@@ -1,6 +1,7 @@
 package si.um.feri.dotaops.backend.profile.web;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonAlias;
 
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -72,6 +73,7 @@ public class UpdateProfileRequest {
         return displayName;
     }
 
+    @JsonAlias("display_name")
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
         this.displayNamePresent = true;
@@ -81,6 +83,7 @@ public class UpdateProfileRequest {
         return avatarUrl;
     }
 
+    @JsonAlias("avatar_url")
     public void setAvatarUrl(String avatarUrl) {
         this.avatarUrl = avatarUrl;
         this.avatarUrlPresent = true;
@@ -99,6 +102,7 @@ public class UpdateProfileRequest {
         return countryCode;
     }
 
+    @JsonAlias("country_code")
     public void setCountryCode(String countryCode) {
         this.countryCode = countryCode;
         this.countryCodePresent = true;

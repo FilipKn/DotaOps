@@ -11,6 +11,7 @@ import jakarta.servlet.http.Cookie;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,11 +34,14 @@ import si.um.feri.dotaops.backend.auth.steam.service.SteamSessionTokenService;
 import si.um.feri.dotaops.backend.common.error.ResourceNotFoundException;
 import si.um.feri.dotaops.backend.common.pagination.PageMeta;
 import si.um.feri.dotaops.backend.common.pagination.PageResponse;
+import si.um.feri.dotaops.backend.profile.service.ProfileMutationResult;
 import si.um.feri.dotaops.backend.profile.service.ProfileService;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -162,7 +166,8 @@ class ProfileControllerTest {
 
     @Test
     void createCurrentProfileReturnsCreatedProfile() throws Exception {
-        when(profileService.createCurrentProfile(any(CreateProfileRequest.class))).thenReturn(profileResponse());
+        when(profileService.createCurrentProfile(any(CreateProfileRequest.class)))
+                .thenReturn(new ProfileMutationResult(profileResponse(), true));
 
         mockMvc.perform(post("/api/me/profile")
                         .header("Authorization", bearerToken())
@@ -176,6 +181,26 @@ class ProfileControllerTest {
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/api/profiles/" + PROFILE_ID))
+                .andExpect(jsonPath("$.data.nickname").value("MidPulse"));
+    }
+
+    @Test
+    void createCurrentProfileReturnsOkWhenProfileAlreadyExists() throws Exception {
+        when(profileService.createCurrentProfile(any(CreateProfileRequest.class)))
+                .thenReturn(new ProfileMutationResult(profileResponse(), false));
+
+        mockMvc.perform(post("/api/me/profile")
+                        .header("Authorization", bearerToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nickname": "MidPulse",
+                                  "display_name": "Mid Pulse",
+                                  "country_code": "si",
+                                  "desired_role": "organizer"
+                                }
+                                """))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.nickname").value("MidPulse"));
     }
 
@@ -209,6 +234,31 @@ class ProfileControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.displayName").value("Mid Pulse"));
+    }
+
+    @Test
+    void updateCurrentProfileAcceptsSnakeCaseFields() throws Exception {
+        when(profileService.updateCurrentProfile(any(UpdateProfileRequest.class))).thenReturn(profileResponse());
+
+        mockMvc.perform(patch("/api/me/profile")
+                        .header("Authorization", bearerToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "display_name": "Mid Pulse",
+                                  "country_code": "si"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.displayName").value("Mid Pulse"));
+
+        ArgumentCaptor<UpdateProfileRequest> captor = ArgumentCaptor.forClass(UpdateProfileRequest.class);
+        verify(profileService).updateCurrentProfile(captor.capture());
+
+        assertThat(captor.getValue().hasDisplayName()).isTrue();
+        assertThat(captor.getValue().displayName()).isEqualTo("Mid Pulse");
+        assertThat(captor.getValue().hasCountryCode()).isTrue();
+        assertThat(captor.getValue().countryCode()).isEqualTo("si");
     }
 
     @Test

@@ -2,6 +2,7 @@ package si.um.feri.dotaops.backend.profile.service;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -11,7 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import si.um.feri.dotaops.backend.auth.domain.AuthenticatedProfile;
+import si.um.feri.dotaops.backend.auth.domain.ProfileRole;
 import si.um.feri.dotaops.backend.auth.service.CurrentUserProvider;
+import si.um.feri.dotaops.backend.auth.service.SupabasePrincipal;
 import si.um.feri.dotaops.backend.common.error.BadRequestException;
 import si.um.feri.dotaops.backend.common.error.ResourceNotFoundException;
 import si.um.feri.dotaops.backend.common.pagination.PageResponse;
@@ -71,21 +74,22 @@ public class ProfileService {
                 .orElseThrow(() -> new ResourceNotFoundException("Profile", "nickname", normalizedNickname));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ProfileResponse getCurrentProfile() {
-        AuthenticatedProfile currentProfile = currentUserProvider.requireProfile();
-
-        return profileRepository.findById(currentProfile.profileId())
-                .map(ProfileResponse::from)
-                .orElseThrow(() -> new ResourceNotFoundException("Profile", "id", currentProfile.profileId()));
+        return ProfileResponse.from(ensureCurrentProfile());
     }
 
     @Transactional
-    public ProfileResponse createCurrentProfile(CreateProfileRequest request) {
+    public ProfileMutationResult createCurrentProfile(CreateProfileRequest request) {
         UUID authUserId = currentUserProvider.requireAuthUserId();
+        Optional<Profile> existingProfile = profileRepository.findByAuthUserId(authUserId);
+        ProfileRole requestedRole = resolveSelfSelectedRole(
+                request.desiredRole(),
+                existingProfile.map(Profile::role).orElse(ProfileRole.PLAYER));
 
-        if (profileRepository.findByAuthUserId(authUserId).isPresent()) {
-            throw new BadRequestException("Authenticated user already has a profile.");
+        if (existingProfile.isPresent()) {
+            Profile updatedProfile = updateExistingProfileFromCreate(existingProfile.orElseThrow(), request, requestedRole);
+            return new ProfileMutationResult(ProfileResponse.from(updatedProfile), false);
         }
 
         try {
@@ -95,9 +99,10 @@ public class ProfileService {
                     normalizeOptional(request.displayName()),
                     normalizeOptional(request.avatarUrl()),
                     normalizeOptional(request.bio()),
-                    normalizeCountryCode(request.countryCode())));
+                    normalizeCountryCode(request.countryCode()),
+                    requestedRole));
 
-            return ProfileResponse.from(profile);
+            return new ProfileMutationResult(ProfileResponse.from(profile), true);
         } catch (DataIntegrityViolationException exception) {
             throw profileConstraintException(exception);
         }
@@ -109,7 +114,7 @@ public class ProfileService {
             throw new BadRequestException("At least one profile field must be provided.");
         }
 
-        UUID profileId = currentUserProvider.requireProfileId();
+        UUID profileId = ensureCurrentProfile().id();
 
         try {
             return profileRepository.updateById(
@@ -156,6 +161,202 @@ public class ProfileService {
         }
 
         return normalized.toUpperCase(Locale.ROOT);
+    }
+
+    private Profile ensureCurrentProfile() {
+        Optional<SupabasePrincipal> currentUser = currentUserProvider.currentUser();
+        if (currentUser.isPresent()) {
+            return ensureProfileForPrincipal(currentUser.orElseThrow());
+        }
+
+        AuthenticatedProfile currentProfile = currentUserProvider.requireProfile();
+        return profileRepository.findById(currentProfile.profileId())
+                .orElseThrow(() -> new ResourceNotFoundException("Profile", "id", currentProfile.profileId()));
+    }
+
+    private Profile ensureProfileForPrincipal(SupabasePrincipal principal) {
+        if (principal.profile().isPresent()) {
+            UUID profileId = principal.profile().orElseThrow().profileId();
+            Optional<Profile> profile = profileRepository.findById(profileId);
+            if (profile.isPresent()) {
+                return profile.orElseThrow();
+            }
+        }
+
+        UUID authUserId = principal.authUserId();
+        if (authUserId == null) {
+            AuthenticatedProfile currentProfile = currentUserProvider.requireProfile();
+            return profileRepository.findById(currentProfile.profileId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Profile", "id", currentProfile.profileId()));
+        }
+
+        return profileRepository.findByAuthUserId(authUserId)
+                .orElseGet(() -> createDefaultProfile(principal));
+    }
+
+    private Profile createDefaultProfile(SupabasePrincipal principal) {
+        UUID authUserId = principal.authUserId();
+        ProfileRole role = resolveMetadataRole(desiredRoleFromClaims(principal));
+        String nickname = availableDefaultNickname(principal.email(), authUserId);
+
+        try {
+            return profileRepository.create(new CreateProfileCommand(
+                    authUserId,
+                    nickname,
+                    nickname,
+                    null,
+                    null,
+                    null,
+                    role));
+        } catch (DataIntegrityViolationException exception) {
+            throw profileConstraintException(exception);
+        }
+    }
+
+    private Profile updateExistingProfileFromCreate(
+            Profile existingProfile,
+            CreateProfileRequest request,
+            ProfileRole requestedRole
+    ) {
+        try {
+            Profile updatedProfile = profileRepository.updateById(
+                            existingProfile.id(),
+                            new UpdateProfileCommand(
+                                    true,
+                                    normalizeRequired(request.nickname()),
+                                    true,
+                                    normalizeOptional(request.displayName()),
+                                    true,
+                                    normalizeOptional(request.avatarUrl()),
+                                    true,
+                                    normalizeOptional(request.bio()),
+                                    true,
+                                    normalizeCountryCode(request.countryCode())))
+                    .orElseThrow(() -> new ResourceNotFoundException("Profile", "id", existingProfile.id()));
+
+            if (existingProfile.role() == ProfileRole.ADMIN) {
+                return updatedProfile;
+            }
+
+            if (requestedRole != updatedProfile.role()) {
+                return profileRepository.updateRoleById(updatedProfile.id(), requestedRole)
+                        .orElseThrow(() -> new ResourceNotFoundException("Profile", "id", updatedProfile.id()));
+            }
+
+            return updatedProfile;
+        } catch (DataIntegrityViolationException exception) {
+            throw profileConstraintException(exception);
+        }
+    }
+
+    private ProfileRole resolveSelfSelectedRole(String value, ProfileRole defaultRole) {
+        if (value == null || value.isBlank()) {
+            return defaultRole;
+        }
+
+        String normalized = value.trim()
+                .toLowerCase(Locale.ROOT)
+                .replace('-', '_');
+
+        return switch (normalized) {
+            case "player" -> ProfileRole.PLAYER;
+            case "organizer" -> ProfileRole.ORGANIZER;
+            case "admin" -> throw new BadRequestException("ADMIN role cannot be self-selected.");
+            case "captain", "team_captain" -> throw new BadRequestException(
+                    "Team captain is assigned through team ownership, not as a global account role.");
+            default -> throw new BadRequestException("Unsupported profile role.");
+        };
+    }
+
+    private ProfileRole resolveMetadataRole(String value) {
+        if (value == null || value.isBlank()) {
+            return ProfileRole.PLAYER;
+        }
+
+        String normalized = value.trim()
+                .toLowerCase(Locale.ROOT)
+                .replace('-', '_');
+
+        return "organizer".equals(normalized) ? ProfileRole.ORGANIZER : ProfileRole.PLAYER;
+    }
+
+    private String desiredRoleFromClaims(SupabasePrincipal principal) {
+        if (principal.token() == null || principal.token().claims() == null) {
+            return null;
+        }
+
+        Object appMetadata = principal.token().claims().get("app_metadata");
+        if (appMetadata instanceof java.util.Map<?, ?> metadata) {
+            Object desiredRole = metadata.get("desired_role");
+            if (desiredRole instanceof String desiredRoleValue) {
+                return desiredRoleValue;
+            }
+
+            Object accountType = metadata.get("account_type");
+            if (accountType instanceof String accountTypeValue) {
+                return accountTypeValue;
+            }
+        }
+
+        Object userMetadata = principal.token().claims().get("user_metadata");
+        if (userMetadata instanceof java.util.Map<?, ?> metadata) {
+            Object desiredRole = metadata.get("desired_role");
+            if (desiredRole instanceof String desiredRoleValue) {
+                return desiredRoleValue;
+            }
+
+            Object accountType = metadata.get("account_type");
+            if (accountType instanceof String accountTypeValue) {
+                return accountTypeValue;
+            }
+        }
+
+        return null;
+    }
+
+    private String availableDefaultNickname(String email, UUID authUserId) {
+        String suffix = authUserId.toString().replace("-", "").substring(0, 8);
+        String base = email == null ? null : email.split("@", 2)[0];
+        String normalized = normalizeDefaultNickname(base, suffix);
+
+        if (profileRepository.findByNickname(normalized).isEmpty()) {
+            return normalized;
+        }
+
+        String candidate = withSuffix(normalized, suffix);
+        int attempt = 1;
+        while (profileRepository.findByNickname(candidate).isPresent()) {
+            candidate = withSuffix(normalized, suffix + "_" + attempt);
+            attempt++;
+        }
+
+        return candidate;
+    }
+
+    private String normalizeDefaultNickname(String value, String suffix) {
+        String normalized = value == null ? "" : value.trim();
+        normalized = normalized
+                .replaceAll("\\s+", "_")
+                .replaceAll("[^A-Za-z0-9_-]", "_")
+                .replaceAll("(^_+|_+$)", "");
+
+        if (normalized.length() < 2) {
+            normalized = "player_" + suffix;
+        }
+
+        if (normalized.length() > 40) {
+            normalized = normalized.substring(0, 40);
+        }
+
+        return normalized;
+    }
+
+    private String withSuffix(String base, String suffix) {
+        String fullSuffix = "_" + suffix;
+        int maxBaseLength = Math.max(2, 40 - fullSuffix.length());
+        String trimmedBase = base.length() > maxBaseLength ? base.substring(0, maxBaseLength) : base;
+
+        return trimmedBase + fullSuffix;
     }
 
     private BadRequestException profileConstraintException(DataIntegrityViolationException exception) {

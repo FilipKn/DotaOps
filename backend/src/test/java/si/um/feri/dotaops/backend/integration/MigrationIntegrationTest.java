@@ -86,6 +86,7 @@ class MigrationIntegrationTest extends PostgresIntegrationTestSupport {
                 from (
                     values
                       ('profiles_steam_id_format'),
+                      ('profiles_role_no_global_captain'),
                       ('profiles_opendota_account_id_range'),
                       ('profile_external_accounts_steam_id64_format'),
                       ('matches_scores_fit_series'),
@@ -129,10 +130,23 @@ class MigrationIntegrationTest extends PostgresIntegrationTestSupport {
                   )
                 """,
                 Integer.class);
+        Integer profileCreationTrigger = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from pg_trigger t
+                join pg_class c on c.oid = t.tgrelid
+                join pg_namespace n on n.oid = c.relnamespace
+                where n.nspname = 'auth'
+                  and c.relname = 'users'
+                  and t.tgname = 'dotaops_create_profile_on_auth_user'
+                  and not t.tgisinternal
+                """,
+                Integer.class);
 
         assertThat(missingConstraints).isEmpty();
         assertThat(missingIndexes).isEmpty();
         assertThat(privateSteamHelpers).isEqualTo(4);
+        assertThat(profileCreationTrigger).isOne();
     }
 
     private List<String> currentMigrationVersions() throws IOException {

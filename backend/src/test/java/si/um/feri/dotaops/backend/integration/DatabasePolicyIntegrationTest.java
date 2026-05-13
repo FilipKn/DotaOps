@@ -18,23 +18,99 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class DatabasePolicyIntegrationTest extends PostgresIntegrationTestSupport {
 
     @Test
-    void authenticatedUserCanCreateOnlyOwnPlayerProfile() {
+    void authUserInsertCreatesDefaultPlayerProfile() {
+        UUID authUserId = UUID.randomUUID();
+        seedAuthUser(authUserId);
+
+        Map<String, Object> profile = jdbcTemplate.queryForMap(
+                """
+                select auth_user_id, role::text as role
+                from public.profiles
+                where auth_user_id = ?
+                """,
+                authUserId);
+
+        assertThat(profile.get("auth_user_id")).isEqualTo(authUserId);
+        assertThat(profile.get("role")).isEqualTo("player");
+    }
+
+    @Test
+    void authUserProfileTriggerDoesNotCreateDuplicateRows() {
+        UUID authUserId = UUID.randomUUID();
+        seedAuthUser(authUserId);
+        seedAuthUser(authUserId);
+
+        Integer profileCount = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from public.profiles
+                where auth_user_id = ?
+                """,
+                Integer.class,
+                authUserId);
+
+        assertThat(profileCount).isOne();
+    }
+
+    @Test
+    void serviceRoleProfileHelperAllowsOrganizerButNotGlobalCaptainFromMetadata() {
+        UUID organizerAuthUserId = UUID.randomUUID();
+        UUID captainAuthUserId = UUID.randomUUID();
+        seedAuthUser(organizerAuthUserId);
+        seedAuthUser(captainAuthUserId);
+
+        jdbcTemplate.update("delete from public.profiles where auth_user_id in (?, ?)",
+                organizerAuthUserId,
+                captainAuthUserId);
+
+        asServiceRole(() -> {
+            jdbcTemplate.queryForObject(
+                    """
+                    select private.ensure_profile_for_auth_user(
+                      ?,
+                      ?,
+                      ?::jsonb,
+                      '{}'::jsonb
+                    )
+                    """,
+                    UUID.class,
+                    organizerAuthUserId,
+                    "organizer@example.test",
+                    "{\"desired_role\":\"organizer\",\"nickname\":\"metadata_organizer\"}");
+            jdbcTemplate.queryForObject(
+                    """
+                    select private.ensure_profile_for_auth_user(
+                      ?,
+                      ?,
+                      ?::jsonb,
+                      '{}'::jsonb
+                    )
+                    """,
+                    UUID.class,
+                    captainAuthUserId,
+                    "captain@example.test",
+                    "{\"desired_role\":\"captain\",\"nickname\":\"metadata_captain\"}");
+
+            return null;
+        });
+
+        Map<String, Object> organizerProfile = jdbcTemplate.queryForMap(
+                "select role::text as role from public.profiles where auth_user_id = ?",
+                organizerAuthUserId);
+        Map<String, Object> captainProfile = jdbcTemplate.queryForMap(
+                "select role::text as role from public.profiles where auth_user_id = ?",
+                captainAuthUserId);
+
+        assertThat(organizerProfile.get("role")).isEqualTo("organizer");
+        assertThat(captainProfile.get("role")).isEqualTo("player");
+    }
+
+    @Test
+    void authenticatedUserCannotCreateProfileForAnotherUser() {
         UUID authUserId = UUID.randomUUID();
         UUID otherAuthUserId = UUID.randomUUID();
         seedAuthUser(authUserId);
         seedAuthUser(otherAuthUserId);
-
-        UUID profileId = asAuthenticated(authUserId, () -> jdbcTemplate.queryForObject(
-                """
-                insert into public.profiles (auth_user_id, nickname)
-                values (?, ?)
-                returning id
-                """,
-                UUID.class,
-                authUserId,
-                "player_" + uniqueSuffix()));
-
-        assertThat(profileId).isNotNull();
 
         assertThatThrownBy(() -> asAuthenticated(authUserId, () -> {
             jdbcTemplate.update(

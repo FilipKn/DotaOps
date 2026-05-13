@@ -173,9 +173,10 @@ public class ProfileRepository {
                   display_name,
                   avatar_url,
                   bio,
-                  country_code
+                  country_code,
+                  role
                 )
-                values (?, ?, ?, ?, ?, ?)
+                values (?, ?, ?, ?, ?, ?, cast(? as public.dotaops_user_role))
                 returning
                   id,
                   auth_user_id,
@@ -198,7 +199,8 @@ public class ProfileRepository {
                 command.displayName(),
                 command.avatarUrl(),
                 command.bio(),
-                command.countryCode());
+                command.countryCode(),
+                command.role().databaseValue());
     }
 
     public Optional<Profile> updateByAuthUserId(UUID authUserId, UpdateProfileCommand command) {
@@ -207,6 +209,37 @@ public class ProfileRepository {
 
     public Optional<Profile> updateById(UUID profileId, UpdateProfileCommand command) {
         return updateByColumn("id", profileId, command);
+    }
+
+    public Optional<Profile> updateRoleById(UUID profileId, ProfileRole role) {
+        return jdbcTemplate.query(
+                        """
+                        update public.profiles
+                        set
+                          role = cast(? as public.dotaops_user_role),
+                          updated_at = now()
+                        where id = ?
+                        returning
+                          id,
+                          auth_user_id,
+                          nickname,
+                          display_name,
+                          steam_id,
+                          opendota_account_id,
+                          role::text as role,
+                          avatar_url,
+                          bio,
+                          country_code,
+                          steam_profile_synced_at,
+                          opendota_profile_synced_at,
+                          created_at,
+                          updated_at
+                        """,
+                        this::mapProfile,
+                        role.databaseValue(),
+                        profileId)
+                .stream()
+                .findFirst();
     }
 
     private Optional<Profile> updateByColumn(String columnName, UUID value, UpdateProfileCommand command) {

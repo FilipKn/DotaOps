@@ -1,6 +1,7 @@
 package si.um.feri.dotaops.backend.profile.service;
 
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -10,7 +11,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 
 import si.um.feri.dotaops.backend.auth.domain.AuthenticatedProfile;
 import si.um.feri.dotaops.backend.auth.domain.ProfileRole;
+import si.um.feri.dotaops.backend.auth.domain.SupabaseJwtClaims;
 import si.um.feri.dotaops.backend.auth.service.CurrentUserProvider;
+import si.um.feri.dotaops.backend.auth.service.SupabasePrincipal;
 import si.um.feri.dotaops.backend.common.error.BadRequestException;
 import si.um.feri.dotaops.backend.profile.domain.Profile;
 import si.um.feri.dotaops.backend.profile.repository.CreateProfileCommand;
@@ -23,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class ProfileServiceTest {
@@ -70,21 +74,52 @@ class ProfileServiceTest {
         assertThat(captor.getValue().avatarUrl()).isEqualTo("https://cdn.example.test/avatar.png");
         assertThat(captor.getValue().bio()).isEqualTo("Position one player");
         assertThat(captor.getValue().countryCode()).isEqualTo("SI");
+        assertThat(captor.getValue().role()).isEqualTo(ProfileRole.PLAYER);
     }
 
     @Test
-    void createCurrentProfileRejectsDuplicateProfileForUser() {
+    void createCurrentProfileAllowsOrganizerSelfSelection() {
         when(currentUserProvider.requireAuthUserId()).thenReturn(AUTH_USER_ID);
-        when(profileRepository.findByAuthUserId(AUTH_USER_ID)).thenReturn(Optional.of(profile("CarryOne", "SI")));
+        when(profileRepository.findByAuthUserId(AUTH_USER_ID)).thenReturn(Optional.empty());
+        when(profileRepository.create(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(profile("OrganizerOne", "SI", ProfileRole.ORGANIZER));
 
-        assertThatThrownBy(() -> profileService.createCurrentProfile(new CreateProfileRequest(
-                "CarryOne",
+        var result = profileService.createCurrentProfile(new CreateProfileRequest(
+                "OrganizerOne",
+                "Organizer One",
+                null,
+                null,
+                "si",
+                "organizer"));
+
+        ArgumentCaptor<CreateProfileCommand> captor = ArgumentCaptor.forClass(CreateProfileCommand.class);
+        verify(profileRepository).create(captor.capture());
+
+        assertThat(result.created()).isTrue();
+        assertThat(captor.getValue().role()).isEqualTo(ProfileRole.ORGANIZER);
+    }
+
+    @Test
+    void createCurrentProfileUpdatesExistingProfileForOnboarding() {
+        when(currentUserProvider.requireAuthUserId()).thenReturn(AUTH_USER_ID);
+        when(profileRepository.findByAuthUserId(AUTH_USER_ID))
+                .thenReturn(Optional.of(profile("CarryOne", "SI")));
+        when(profileRepository.updateById(
+                org.mockito.ArgumentMatchers.eq(PROFILE_ID),
+                org.mockito.ArgumentMatchers.any())).thenReturn(Optional.of(profile("SupportTwo", "DE")));
+        when(profileRepository.updateRoleById(PROFILE_ID, ProfileRole.ORGANIZER))
+                .thenReturn(Optional.of(profile("SupportTwo", "DE", ProfileRole.ORGANIZER)));
+
+        var result = profileService.createCurrentProfile(new CreateProfileRequest(
+                "SupportTwo",
                 null,
                 null,
                 null,
-                null)))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessage("Authenticated user already has a profile.");
+                "de",
+                "organizer"));
+
+        assertThat(result.created()).isFalse();
+        assertThat(result.profile().role()).isEqualTo("organizer");
     }
 
     @Test
@@ -118,7 +153,8 @@ class ProfileServiceTest {
 
     @Test
     void updateCurrentProfileNormalizesPatchFields() {
-        when(currentUserProvider.requireProfileId()).thenReturn(PROFILE_ID);
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile());
+        when(profileRepository.findById(PROFILE_ID)).thenReturn(Optional.of(profile("CarryOne", "SI")));
         when(profileRepository.updateById(
                 org.mockito.ArgumentMatchers.eq(PROFILE_ID),
                 org.mockito.ArgumentMatchers.any())).thenReturn(Optional.of(profile("SupportTwo", "DE")));
@@ -145,7 +181,8 @@ class ProfileServiceTest {
 
     @Test
     void updateCurrentProfileSupportsSteamOnlyProfileIdWithoutAuthUserId() {
-        when(currentUserProvider.requireProfileId()).thenReturn(PROFILE_ID);
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile());
+        when(profileRepository.findById(PROFILE_ID)).thenReturn(Optional.of(profile("CarryOne", "SI")));
         when(profileRepository.updateById(
                 org.mockito.ArgumentMatchers.eq(PROFILE_ID),
                 org.mockito.ArgumentMatchers.any())).thenReturn(Optional.of(profile("SteamCarry", "SI")));
@@ -168,7 +205,8 @@ class ProfileServiceTest {
         request.setBio(null);
         request.setCountryCode(null);
 
-        when(currentUserProvider.requireProfileId()).thenReturn(PROFILE_ID);
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile());
+        when(profileRepository.findById(PROFILE_ID)).thenReturn(Optional.of(profile("CarryOne", "SI")));
         when(profileRepository.updateById(
                 org.mockito.ArgumentMatchers.eq(PROFILE_ID),
                 org.mockito.ArgumentMatchers.any())).thenReturn(Optional.of(profile("CarryOne", null)));
@@ -194,7 +232,8 @@ class ProfileServiceTest {
         UpdateProfileRequest request = new UpdateProfileRequest();
         request.setNickname(null);
 
-        when(currentUserProvider.requireProfileId()).thenReturn(PROFILE_ID);
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile());
+        when(profileRepository.findById(PROFILE_ID)).thenReturn(Optional.of(profile("CarryOne", "SI")));
 
         assertThatThrownBy(() -> profileService.updateCurrentProfile(request))
                 .isInstanceOf(BadRequestException.class)
@@ -203,7 +242,8 @@ class ProfileServiceTest {
 
     @Test
     void updateCurrentProfileMapsDuplicateNicknameConstraint() {
-        when(currentUserProvider.requireProfileId()).thenReturn(PROFILE_ID);
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile());
+        when(profileRepository.findById(PROFILE_ID)).thenReturn(Optional.of(profile("CarryOne", "SI")));
         when(profileRepository.updateById(
                 org.mockito.ArgumentMatchers.eq(PROFILE_ID),
                 org.mockito.ArgumentMatchers.any()))
@@ -217,6 +257,98 @@ class ProfileServiceTest {
                 null)))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Profile nickname is already in use.");
+    }
+
+    @Test
+    void getCurrentProfileCreatesMissingSupabaseProfile() {
+        SupabasePrincipal principal = new SupabasePrincipal(
+                AUTH_USER_ID,
+                "new.user@example.test",
+                Optional.empty(),
+                null);
+
+        when(currentUserProvider.currentUser()).thenReturn(Optional.of(principal));
+        when(profileRepository.findByAuthUserId(AUTH_USER_ID)).thenReturn(Optional.empty());
+        when(profileRepository.findByNickname("new_user")).thenReturn(Optional.empty());
+        when(profileRepository.create(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(profile("new_user", null));
+
+        var response = profileService.getCurrentProfile();
+
+        ArgumentCaptor<CreateProfileCommand> captor = ArgumentCaptor.forClass(CreateProfileCommand.class);
+        verify(profileRepository).create(captor.capture());
+
+        assertThat(response.nickname()).isEqualTo("new_user");
+        assertThat(captor.getValue().authUserId()).isEqualTo(AUTH_USER_ID);
+        assertThat(captor.getValue().role()).isEqualTo(ProfileRole.PLAYER);
+    }
+
+    @Test
+    void missingSupabaseProfileCanDefaultToOrganizerFromSignupMetadata() {
+        SupabaseJwtClaims claims = new SupabaseJwtClaims(
+                AUTH_USER_ID,
+                "organizer@example.test",
+                "issuer",
+                java.util.List.of("authenticated"),
+                null,
+                null,
+                Map.of("user_metadata", Map.of("desired_role", "organizer")));
+        SupabasePrincipal principal = new SupabasePrincipal(
+                AUTH_USER_ID,
+                "organizer@example.test",
+                Optional.empty(),
+                claims);
+
+        when(currentUserProvider.currentUser()).thenReturn(Optional.of(principal));
+        when(profileRepository.findByAuthUserId(AUTH_USER_ID)).thenReturn(Optional.empty());
+        when(profileRepository.findByNickname("organizer")).thenReturn(Optional.empty());
+        when(profileRepository.create(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(profile("organizer", null, ProfileRole.ORGANIZER));
+
+        profileService.getCurrentProfile();
+
+        ArgumentCaptor<CreateProfileCommand> captor = ArgumentCaptor.forClass(CreateProfileCommand.class);
+        verify(profileRepository).create(captor.capture());
+
+        assertThat(captor.getValue().role()).isEqualTo(ProfileRole.ORGANIZER);
+    }
+
+    @Test
+    void createCurrentProfileRejectsAdminSelfSelection() {
+        when(currentUserProvider.requireAuthUserId()).thenReturn(AUTH_USER_ID);
+        when(profileRepository.findByAuthUserId(AUTH_USER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> profileService.createCurrentProfile(new CreateProfileRequest(
+                "Admin",
+                null,
+                null,
+                null,
+                null,
+                "admin")))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("ADMIN role cannot be self-selected.");
+
+        verify(profileRepository).findByAuthUserId(AUTH_USER_ID);
+        verifyNoMoreInteractions(profileRepository);
+    }
+
+    @Test
+    void createCurrentProfileRejectsCaptainAsGlobalRole() {
+        when(currentUserProvider.requireAuthUserId()).thenReturn(AUTH_USER_ID);
+        when(profileRepository.findByAuthUserId(AUTH_USER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> profileService.createCurrentProfile(new CreateProfileRequest(
+                "Captain",
+                null,
+                null,
+                null,
+                null,
+                "team_captain")))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Team captain is assigned through team ownership, not as a global account role.");
+
+        verify(profileRepository).findByAuthUserId(AUTH_USER_ID);
+        verifyNoMoreInteractions(profileRepository);
     }
 
     @Test
@@ -238,6 +370,10 @@ class ProfileServiceTest {
     }
 
     private Profile profile(String nickname, String countryCode) {
+        return profile(nickname, countryCode, ProfileRole.PLAYER);
+    }
+
+    private Profile profile(String nickname, String countryCode, ProfileRole role) {
         OffsetDateTime now = OffsetDateTime.parse("2026-05-12T00:00:00Z");
 
         return new Profile(
@@ -247,7 +383,7 @@ class ProfileServiceTest {
                 nickname,
                 "76561190000000001",
                 39734273L,
-                ProfileRole.PLAYER,
+                role,
                 "https://cdn.example.test/avatar.png",
                 "Dota player",
                 countryCode,
