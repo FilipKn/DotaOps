@@ -5,6 +5,7 @@ public enum ApiErrorCode {
     VALIDATION_FAILED,
     UNAUTHORIZED,
     FORBIDDEN,
+    CONFLICT,
     RESOURCE_NOT_FOUND,
     INTERNAL_ERROR
 }
