@@ -1,8 +1,12 @@
 "use client";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase";
+import {
+  ApiRequestError,
+  patchApiAuthenticated,
+  postFormApiAuthenticated
+} from "@/lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
 const PROFILE_SELECT_COLUMNS = [
   "avatar_url",
   "bio",
@@ -71,6 +75,11 @@ export interface AvatarUploadResult {
   persisted: boolean;
 }
 
+export interface ProfileSaveResult {
+  message?: string;
+  profile: CurrentUserProfile;
+}
+
 interface ProfileRow {
   avatar_url?: string | null;
   bio?: string | null;
@@ -99,16 +108,6 @@ interface BackendProfileResponse {
   steamId?: string | null;
   steamProfileSyncedAt?: string | null;
   updatedAt?: string | null;
-}
-
-class BackendRequestError extends Error {
-  status: number;
-
-  constructor(message: string, status: number) {
-    super(message);
-    this.name = "BackendRequestError";
-    this.status = status;
-  }
 }
 
 function requireSupabaseClient() {
@@ -151,44 +150,14 @@ function editableProfilePayload(input: ProfileUpdateInput) {
 function backendProfilePayload(input: ProfileUpdateInput) {
   return {
     bio: input.bio?.trim() || null,
-    countryCode: normalizeCountryCode(input.countryCode),
-    displayName: input.displayName?.trim() || null,
+    country_code: normalizeCountryCode(input.countryCode),
+    display_name: input.displayName?.trim() || null,
     nickname: input.nickname?.trim() || "player"
   };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-async function readJson(response: Response) {
-  const text = await response.text();
-
-  if (!text) {
-    return null;
-  }
-
-  return JSON.parse(text) as unknown;
-}
-
-function unwrapApiData(value: unknown) {
-  if (isRecord(value) && "data" in value) {
-    return value.data;
-  }
-
-  return value;
-}
-
-function apiErrorMessage(value: unknown) {
-  if (isRecord(value) && typeof value.message === "string") {
-    return value.message;
-  }
-
-  if (isRecord(value) && isRecord(value.error) && typeof value.error.message === "string") {
-    return value.error.message;
-  }
-
-  return null;
 }
 
 function isPolicyError(value: unknown) {
@@ -334,31 +303,12 @@ async function updateProfileViaBackend(
   accessToken: string,
   email: string | null
 ) {
-  if (!API_URL) {
-    throw new Error("Backend API URL is not configured.");
-  }
-
-  const response = await fetch(`${API_URL}/me/profile`, {
-    body: JSON.stringify(backendProfilePayload(input)),
-    cache: "no-store",
-    credentials: "include",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json"
-    },
-    method: "PATCH"
-  });
-  const rawPayload = await readJson(response);
-
-  if (!response.ok) {
-    throw new BackendRequestError(
-      apiErrorMessage(rawPayload) ?? "Backend profile update failed.",
-      response.status
-    );
-  }
-
   const updatedProfile = profileFromBackend(
-    unwrapApiData(rawPayload) as BackendProfileResponse | null,
+    await patchApiAuthenticated<BackendProfileResponse>(
+      "/me/profile",
+      backendProfilePayload(input),
+      accessToken
+    ),
     email
   );
 
@@ -423,7 +373,19 @@ function profileSaveErrorMessage(backendError: unknown, supabaseError: unknown) 
     .join(" ");
 }
 
-export async function updateCurrentUserProfile(input: ProfileUpdateInput) {
+function backendFallbackMessage(error: unknown) {
+  if (error instanceof ApiRequestError && (error.status === 401 || error.status === 403)) {
+    return "Profile saved through Supabase fallback. Backend PATCH /api/me/profile rejected the bearer token.";
+  }
+
+  if (error instanceof ApiRequestError && error.status === 404) {
+    return "Profile saved through Supabase fallback. Backend PATCH /api/me/profile is not available.";
+  }
+
+  return "Profile saved through Supabase fallback.";
+}
+
+export async function updateCurrentUserProfile(input: ProfileUpdateInput): Promise<ProfileSaveResult> {
   const supabase = requireSupabaseClient();
   const [{ data: userData, error: userError }, { data: sessionData }] = await Promise.all([
     supabase.auth.getUser(),
@@ -440,18 +402,29 @@ export async function updateCurrentUserProfile(input: ProfileUpdateInput) {
     throw new Error("Login required before profile updates.");
   }
 
+  if (!sessionData.session?.access_token) {
+    throw new Error("Login session expired. Please log in again.");
+  }
+
   let backendError: unknown = null;
 
-  if (sessionData.session?.access_token && API_URL) {
-    try {
-      return await updateProfileViaBackend(input, sessionData.session.access_token, user.email ?? null);
-    } catch (caught) {
-      backendError = caught;
-    }
+  try {
+    return {
+      profile: await updateProfileViaBackend(
+        input,
+        sessionData.session.access_token,
+        user.email ?? null
+      )
+    };
+  } catch (caught) {
+    backendError = caught;
   }
 
   try {
-    return await updateProfileViaSupabase(input, user.id, user.email ?? null);
+    return {
+      message: backendFallbackMessage(backendError),
+      profile: await updateProfileViaSupabase(input, user.id, user.email ?? null)
+    };
   } catch (supabaseError) {
     throw new Error(profileSaveErrorMessage(backendError, supabaseError));
   }
@@ -461,7 +434,7 @@ export async function uploadCurrentUserAvatar(file: File): Promise<AvatarUploadR
   const supabase = requireSupabaseClient();
   const { data } = await supabase.auth.getSession();
 
-  if (!API_URL || !data.session?.access_token) {
+  if (!data.session?.access_token) {
     return {
       avatarUrl: null,
       message: "Avatar preview updated locally. Backend upload endpoint is not available yet.",
@@ -472,38 +445,42 @@ export async function uploadCurrentUserAvatar(file: File): Promise<AvatarUploadR
   const formData = new FormData();
   formData.append("avatar", file);
 
-  const response = await fetch(`${API_URL}/me/avatar`, {
-    body: formData,
-    cache: "no-store",
-    credentials: "include",
-    headers: {
-      Authorization: `Bearer ${data.session.access_token}`
-    },
-    method: "POST"
-  });
-  const rawPayload = await readJson(response);
+  let payload: unknown;
 
-  if (response.status === 404) {
-    return {
-      avatarUrl: null,
-      message: "Avatar preview updated locally. Backend upload endpoint is not available yet.",
-      persisted: false
-    };
+  try {
+    payload = await postFormApiAuthenticated<unknown>(
+      "/me/avatar",
+      formData,
+      data.session.access_token
+    );
+  } catch (caught) {
+    if (caught instanceof ApiRequestError && caught.status === 404) {
+      return {
+        avatarUrl: null,
+        message: "Avatar preview updated locally. Backend upload endpoint is not available yet.",
+        persisted: false
+      };
+    }
+
+    if (caught instanceof ApiRequestError && (caught.status === 401 || caught.status === 403)) {
+      return {
+        avatarUrl: null,
+        message: "Avatar preview updated locally. Backend avatar upload rejected authentication.",
+        persisted: false
+      };
+    }
+
+    if (caught instanceof Error && caught.message === "Backend API URL is not configured.") {
+      return {
+        avatarUrl: null,
+        message: "Avatar preview updated locally. Backend upload endpoint is not available yet.",
+        persisted: false
+      };
+    }
+
+    throw caught;
   }
 
-  if (response.status === 401 || response.status === 403) {
-    return {
-      avatarUrl: null,
-      message: "Avatar preview updated locally. Backend avatar upload rejected authentication.",
-      persisted: false
-    };
-  }
-
-  if (!response.ok) {
-    throw new BackendRequestError(apiErrorMessage(rawPayload) ?? "Avatar upload failed.", response.status);
-  }
-
-  const payload = unwrapApiData(rawPayload);
   const avatarUrl =
     isRecord(payload) && typeof payload.avatarUrl === "string"
       ? payload.avatarUrl
