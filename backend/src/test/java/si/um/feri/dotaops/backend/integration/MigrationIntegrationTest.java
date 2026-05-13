@@ -1,10 +1,18 @@
 package si.um.feri.dotaops.backend.integration;
 
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.flywaydb.core.api.MigrationVersion;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,13 +22,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "SUPABASE_DB_URL", matches = ".+")
 class MigrationIntegrationTest extends PostgresIntegrationTestSupport {
 
+    private static final Pattern VERSIONED_MIGRATION_FILENAME = Pattern.compile("^V(.+)__.+\\.sql$");
+
+    @Autowired
+    private ResourcePatternResolver resourcePatternResolver;
+
     @Test
-    void flywayAppliesAllCurrentMigrations() {
+    void flywayAppliesAllCurrentMigrations() throws IOException {
+        List<String> expectedVersions = currentMigrationVersions();
         List<String> appliedVersions = jdbcTemplate.queryForList(
                 """
                 select version
                 from public.flyway_schema_history
                 where success
+                  and version is not null
                 order by installed_rank
                 """,
                 String.class);
@@ -28,8 +43,8 @@ class MigrationIntegrationTest extends PostgresIntegrationTestSupport {
                 "select count(*) from public.flyway_schema_history where not success",
                 Integer.class);
 
-        assertThat(appliedVersions).containsExactly("1", "2", "3", "4", "5", "6", "7", "8", "9", "10");
         assertThat(failedMigrations).isZero();
+        assertThat(appliedVersions).containsExactlyElementsOf(expectedVersions);
     }
 
     @Test
@@ -118,5 +133,27 @@ class MigrationIntegrationTest extends PostgresIntegrationTestSupport {
         assertThat(missingConstraints).isEmpty();
         assertThat(missingIndexes).isEmpty();
         assertThat(privateSteamHelpers).isEqualTo(4);
+    }
+
+    private List<String> currentMigrationVersions() throws IOException {
+        Resource[] resources = resourcePatternResolver.getResources("classpath*:db/migration/V*.sql");
+
+        assertThat(resources).isNotEmpty();
+        return Arrays.stream(resources)
+                .map(Resource::getFilename)
+                .map(MigrationIntegrationTest::extractMigrationVersion)
+                .sorted((left, right) -> MigrationVersion.fromVersion(left)
+                        .compareTo(MigrationVersion.fromVersion(right)))
+                .toList();
+    }
+
+    private static String extractMigrationVersion(String filename) {
+        Matcher matcher = VERSIONED_MIGRATION_FILENAME.matcher(filename);
+
+        assertThat(matcher.matches())
+                .as("Versioned Flyway migration filename should match V<version>__<description>.sql: %s", filename)
+                .isTrue();
+
+        return matcher.group(1).replace('_', '.');
     }
 }

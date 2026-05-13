@@ -1,6 +1,7 @@
 package si.um.feri.dotaops.backend.team.service;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -204,7 +205,7 @@ class TeamRosterServiceTest {
             String inviteeEmail,
             OffsetDateTime acceptedAt
     ) {
-        return invitation(status, inviteeProfileId, inviteeEmail, acceptedAt, NOW.plusDays(1));
+        return invitation(status, inviteeProfileId, inviteeEmail, acceptedAt, OffsetDateTime.now(ZoneOffset.UTC).plusDays(1));
     }
 
     private static TeamInvitation invitation(
