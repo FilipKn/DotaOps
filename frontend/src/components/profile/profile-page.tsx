@@ -189,7 +189,8 @@ export function ProfilePage() {
     setIsSaving(true);
 
     try {
-      const updatedProfile = await updateCurrentUserProfile(form);
+      const result = await updateCurrentUserProfile(form);
+      const updatedProfile = result.profile;
 
       if (updatedProfile) {
         setProfile(updatedProfile);
@@ -198,7 +199,7 @@ export function ProfilePage() {
         setInitialForm(nextForm);
       }
 
-      setNotice("Profile saved successfully.");
+      setNotice(result.message ?? "Profile saved successfully.");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Profile update failed.");
     } finally {
