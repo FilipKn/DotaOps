@@ -15,8 +15,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
+import { getCurrentUserProfile, type CurrentUserProfile } from "@/lib/auth";
 import { classNames } from "@/lib/utils";
 
 const navItems = [
@@ -24,7 +26,8 @@ const navItems = [
   { href: "/turnirji", label: "Tournaments", icon: Trophy },
   { href: "/organizator", label: "Organizer", icon: Brackets },
   { href: "/ekipe", label: "Teams", icon: UsersRound },
-  { href: "/analitika", label: "Analytics", icon: BarChart3 }
+  { href: "/analitika", label: "Analytics", icon: BarChart3 },
+  { href: "/profile", label: "Profile", icon: UserRound }
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -32,6 +35,40 @@ export function AppShell({ children }: { children: ReactNode }) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "mock data";
   const isRoleDashboard = pathname.startsWith("/dashboard");
   const isPublicRoute = pathname === "/" || pathname === "/login" || pathname === "/register";
+  const [profile, setProfile] = useState<CurrentUserProfile | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getCurrentUserProfile()
+      .then((loadedProfile) => {
+        if (isMounted) {
+          setProfile(loadedProfile);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setProfile(null);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [pathname]);
+
+  const primaryAction = useMemo(() => {
+    if (profile?.role === "organizer" || profile?.role === "admin") {
+      return { href: "/organizator", icon: Plus, label: "New Tournament" };
+    }
+
+    if (profile?.role === "captain") {
+      return { href: "/turnirji", icon: Trophy, label: "Join Tournament" };
+    }
+
+    return { href: "/turnirji", icon: Trophy, label: "View Tournaments" };
+  }, [profile?.role]);
+  const PrimaryActionIcon = primaryAction.icon;
 
   if (isPublicRoute) {
     return <>{children}</>;
@@ -105,19 +142,26 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Bell size={17} />
               </button>
 
-              <div className="topbar-profile" aria-label="User profile">
+              <Link className="topbar-profile" href="/profile" aria-label="User profile">
                 <span className="topbar-avatar" aria-hidden="true">
-                  <UserRound size={16} />
+                  {profile?.avatarUrl ? (
+                    <span
+                      className="topbar-avatar-image"
+                      style={{ backgroundImage: `url(${profile.avatarUrl})` }}
+                    />
+                  ) : (
+                    <UserRound size={16} />
+                  )}
                 </span>
                 <span>
-                  <strong>SOLO_TACTICIAN</strong>
-                  <small>Organizer</small>
+                  <strong>{profile?.nickname ?? "SOLO_TACTICIAN"}</strong>
+                  <small>{profile?.role ?? "Profile"}</small>
                 </span>
-              </div>
+              </Link>
 
-              <Link className="button button-primary ops-button-primary topbar-primary-action" href="/organizator">
-                <Plus size={18} />
-                <span>New Tournament</span>
+              <Link className="button button-primary ops-button-primary topbar-primary-action" href={primaryAction.href}>
+                <PrimaryActionIcon size={18} />
+                <span>{primaryAction.label}</span>
               </Link>
             </div>
           </header>

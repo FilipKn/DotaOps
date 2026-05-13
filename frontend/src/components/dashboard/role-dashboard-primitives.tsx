@@ -49,9 +49,9 @@ export function DashboardTopbar({
           <Bell size={18} />
         </button>
         {action ? <RoleActionButton action={action} variant="primary" /> : null}
-        <div className="role-avatar" aria-label="User profile">
+        <Link className="role-avatar" href="/profile" aria-label="User profile">
           <UserRound size={18} />
-        </div>
+        </Link>
       </div>
     </header>
   );
