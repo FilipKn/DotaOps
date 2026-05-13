@@ -4,9 +4,20 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataAccessException;
 import org.springframework.test.context.ActiveProfiles;
+
+import si.um.feri.dotaops.backend.auth.domain.AuthenticatedActor;
+import si.um.feri.dotaops.backend.auth.domain.ProfileRole;
+import si.um.feri.dotaops.backend.common.security.DatabaseActorContext;
+import si.um.feri.dotaops.backend.tournament.domain.TournamentFormat;
+import si.um.feri.dotaops.backend.tournament.domain.TournamentSettings;
+import si.um.feri.dotaops.backend.tournament.mapper.TournamentSettingsMapper;
+import si.um.feri.dotaops.backend.tournament.repository.CreateTournamentCommand;
+import si.um.feri.dotaops.backend.tournament.repository.TournamentRepository;
+import si.um.feri.dotaops.backend.tournament.repository.UpdateTournamentCommand;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -15,6 +26,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @ActiveProfiles("integration")
 @EnabledIfEnvironmentVariable(named = "SUPABASE_DB_URL", matches = ".+")
 class TournamentDatabaseFlowIntegrationTest extends PostgresIntegrationTestSupport {
+
+    @Autowired
+    private TournamentRepository tournamentRepository;
+
+    @Autowired
+    private TournamentSettingsMapper tournamentSettingsMapper;
+
+    @Autowired
+    private DatabaseActorContext databaseActorContext;
 
     @Test
     void captainOrganizerAndResultFlowRespectsDatabasePolicies() {
@@ -131,6 +151,122 @@ class TournamentDatabaseFlowIntegrationTest extends PostgresIntegrationTestSuppo
                 "Player Owned Cup " + suffix,
                 null,
                 playerAuthUserId))).isInstanceOf(DataAccessException.class);
+    }
+
+    @Test
+    void tournamentRepositoryPersistsSettingsPublishesAndWritesAuditActorContext() {
+        UUID organizerAuthUserId = UUID.randomUUID();
+        UUID organizerProfileId = upsertProfile(organizerAuthUserId, "organizer");
+        String suffix = uniqueSuffix();
+
+        UUID tournamentId = asAuthenticated(organizerAuthUserId, () -> {
+            databaseActorContext.apply(new AuthenticatedActor(
+                    organizerAuthUserId,
+                    organizerProfileId,
+                    organizerAuthUserId + "@integration.test",
+                    null,
+                    ProfileRole.ORGANIZER));
+
+            TournamentSettings initialSettings = new TournamentSettings(
+                    8,
+                    2,
+                    5,
+                    1,
+                    TournamentFormat.SINGLE_ELIMINATION,
+                    false,
+                    true);
+
+            var created = tournamentRepository.create(new CreateTournamentCommand(
+                    "settings-audit-cup-" + suffix,
+                    "Settings Audit Cup " + suffix,
+                    TournamentFormat.SINGLE_ELIMINATION,
+                    organizerProfileId,
+                    "Integration settings and audit flow",
+                    "Default rules",
+                    "TBD",
+                    initialSettings.maxTeams(),
+                    java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).plusDays(14),
+                    null,
+                    java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).plusDays(1),
+                    java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).plusDays(7),
+                    organizerAuthUserId,
+                    "UTC",
+                    null,
+                    null,
+                    tournamentSettingsMapper.toJson(initialSettings)));
+
+            TournamentSettings updatedSettings = new TournamentSettings(
+                    16,
+                    4,
+                    5,
+                    3,
+                    TournamentFormat.SINGLE_ELIMINATION,
+                    false,
+                    true);
+
+            var updated = tournamentRepository.update(
+                            created.id(),
+                            new UpdateTournamentCommand(
+                                    false,
+                                    null,
+                                    false,
+                                    null,
+                                    false,
+                                    null,
+                                    false,
+                                    null,
+                                    false,
+                                    null,
+                                    false,
+                                    null,
+                                    true,
+                                    updatedSettings.maxTeams(),
+                                    false,
+                                    null,
+                                    false,
+                                    null,
+                                    false,
+                                    null,
+                                    false,
+                                    null,
+                                    false,
+                                    null,
+                                    false,
+                                    null,
+                                    false,
+                                    null,
+                                    true,
+                                    tournamentSettingsMapper.toJson(updatedSettings)))
+                    .orElseThrow();
+
+            assertThat(updated.settings().maxTeams()).isEqualTo(16);
+            assertThat(updated.settings().bestOf()).isEqualTo(3);
+
+            var published = tournamentRepository.publish(created.id()).orElseThrow();
+            assertThat(published.status().databaseValue()).isEqualTo("published");
+            assertThat(published.publishedAt()).isNotNull();
+
+            return created.id();
+        });
+
+        var auditRow = jdbcTemplate.queryForMap(
+                """
+                select
+                  actor_auth_user_id,
+                  actor_profile_id,
+                  action::text as action
+                from public.audit_log
+                where table_name = 'public.tournaments'
+                  and record_id = ?
+                  and action = 'update'::public.dotaops_audit_action
+                order by created_at desc
+                limit 1
+                """,
+                tournamentId);
+
+        assertThat(auditRow.get("actor_auth_user_id")).isEqualTo(organizerAuthUserId);
+        assertThat(auditRow.get("actor_profile_id")).isEqualTo(organizerProfileId);
+        assertThat(auditRow.get("action")).isEqualTo("update");
     }
 
     private UUID insertTeam(String name, String slug, UUID captainProfileId, UUID createdBy) {
