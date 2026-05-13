@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import si.um.feri.dotaops.backend.common.api.ApiResponse;
 import si.um.feri.dotaops.backend.common.pagination.PageResponse;
+import si.um.feri.dotaops.backend.profile.service.ProfileMutationResult;
 import si.um.feri.dotaops.backend.profile.service.ProfileService;
 
 @Validated
@@ -61,11 +62,16 @@ public class ProfileController {
     ResponseEntity<ApiResponse<ProfileResponse>> createCurrentProfile(
             @Valid @RequestBody CreateProfileRequest request
     ) {
-        ProfileResponse response = profileService.createCurrentProfile(request);
+        ProfileMutationResult result = profileService.createCurrentProfile(request);
+        ProfileResponse response = result.profile();
 
-        return ResponseEntity
-                .created(URI.create("/api/profiles/" + response.id()))
-                .body(ApiResponse.of(response));
+        if (result.created()) {
+            return ResponseEntity
+                    .created(URI.create("/api/profiles/" + response.id()))
+                    .body(ApiResponse.of(response));
+        }
+
+        return ResponseEntity.ok(ApiResponse.of(response));
     }
 
     @PatchMapping("/me/profile")

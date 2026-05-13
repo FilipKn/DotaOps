@@ -240,8 +240,6 @@ cd backend
 .\mvnw.cmd verify "-Dspring.profiles.active=test"
 ```
 
-V tej dokumentacijski nalogi backend testov nisem ponovno poganjal, ker aplikacijska koda ni bila spremenjena.
-
 # 10. Pregled nalog iz Kanban/GitHub
 
 Tabela vključuje naloge, ki so bile preverljive iz GitHub issues, Kanban project podatkov, PR-jev, commitov ali kode. Pri odprtih frontend issue-jih je status namenoma označen kot odprt oziroma delno izveden.

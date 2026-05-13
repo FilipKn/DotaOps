@@ -26,16 +26,6 @@ class SupabaseAuthoritiesTest {
     }
 
     @Test
-    void captainAlsoGetsPlayerAuthority() {
-        Set<String> authorities = authoritiesFor(ProfileRole.CAPTAIN);
-
-        assertThat(authorities).containsExactlyInAnyOrder(
-                "ROLE_AUTHENTICATED",
-                "ROLE_CAPTAIN",
-                "ROLE_PLAYER");
-    }
-
-    @Test
     void adminAlsoGetsOrganizerAuthority() {
         Set<String> authorities = authoritiesFor(ProfileRole.ADMIN);
 
@@ -43,6 +33,11 @@ class SupabaseAuthoritiesTest {
                 "ROLE_AUTHENTICATED",
                 "ROLE_ADMIN",
                 "ROLE_ORGANIZER");
+    }
+
+    @Test
+    void legacyCaptainDatabaseRoleIsTreatedAsPlayer() {
+        assertThat(ProfileRole.fromDatabaseValue("captain")).isEqualTo(ProfileRole.PLAYER);
     }
 
     private Set<String> authoritiesFor(ProfileRole role) {

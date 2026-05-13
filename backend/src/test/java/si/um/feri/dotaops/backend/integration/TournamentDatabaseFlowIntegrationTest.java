@@ -41,7 +41,7 @@ class TournamentDatabaseFlowIntegrationTest extends PostgresIntegrationTestSuppo
         UUID captainAuthUserId = UUID.randomUUID();
         UUID organizerAuthUserId = UUID.randomUUID();
         UUID playerAuthUserId = UUID.randomUUID();
-        UUID captainProfileId = upsertProfile(captainAuthUserId, "captain");
+        UUID captainProfileId = upsertProfile(captainAuthUserId, "player");
         UUID organizerProfileId = upsertProfile(organizerAuthUserId, "organizer");
         upsertProfile(playerAuthUserId, "player");
         String suffix = uniqueSuffix();

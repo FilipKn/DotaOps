@@ -5,7 +5,6 @@ import java.util.Locale;
 public enum ProfileRole {
     VISITOR("visitor"),
     PLAYER("player"),
-    CAPTAIN("captain"),
     ORGANIZER("organizer"),
     ADMIN("admin");
 
@@ -29,6 +28,10 @@ public enum ProfileRole {
         }
 
         String normalized = value.trim().toLowerCase(Locale.ROOT);
+        if ("captain".equals(normalized) || "team_captain".equals(normalized)) {
+            return PLAYER;
+        }
+
         for (ProfileRole role : values()) {
             if (role.databaseValue.equals(normalized)) {
                 return role;
