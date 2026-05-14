@@ -5,6 +5,7 @@ import {
   ApiRequestError,
   getApiAuthenticated,
   patchApiAuthenticated,
+  postApiAuthenticated,
   postFormApiAuthenticated
 } from "@/lib/api";
 
@@ -46,6 +47,17 @@ export interface RegisterInput {
 export interface AuthResult {
   dashboardPath: string;
   message?: string;
+  requiresEmailConfirmation?: boolean;
+}
+
+export class RegistrationRateLimitError extends Error {
+  retryAfterSeconds: number;
+
+  constructor(retryAfterSeconds = 60) {
+    super("Too many registration attempts. Please wait a few minutes before trying again.");
+    this.name = "RegistrationRateLimitError";
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
 }
 
 export interface CurrentUserProfile {
@@ -143,6 +155,36 @@ function normalizeCountryCode(value?: string) {
   return trimmed.slice(0, 2);
 }
 
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function normalizeOptionalText(value?: string) {
+  const trimmed = value?.trim();
+
+  return trimmed ? trimmed : null;
+}
+
+function normalizeRequiredText(value: string, fallback: string) {
+  const trimmed = value.trim();
+
+  return trimmed || fallback;
+}
+
+function profileRoleForRegistration(role: RequestedAuthRole) {
+  return role === "organizer" ? "organizer" : "player";
+}
+
+function createProfilePayload(input: RegisterInput) {
+  return {
+    bio: normalizeOptionalText(input.bio),
+    country_code: normalizeCountryCode(input.countryCode),
+    desired_role: profileRoleForRegistration(input.requestedRole),
+    display_name: normalizeOptionalText(input.displayName),
+    nickname: normalizeRequiredText(input.nickname, "player")
+  };
+}
+
 function editableProfilePayload(input: ProfileUpdateInput) {
   return {
     bio: input.bio?.trim() || null,
@@ -180,6 +222,23 @@ function isPolicyError(value: unknown) {
     message.includes("row-level security") ||
     message.includes("permission denied") ||
     message.includes("violates row-level security")
+  );
+}
+
+function isRegistrationRateLimitError(value: unknown) {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const code = typeof value.code === "string" ? value.code.toLowerCase() : "";
+  const message = typeof value.message === "string" ? value.message.toLowerCase() : "";
+  const status = typeof value.status === "number" ? value.status : null;
+
+  return (
+    status === 429 ||
+    code.includes("rate") ||
+    message.includes("rate limit") ||
+    message.includes("too many")
   );
 }
 
@@ -303,7 +362,7 @@ export async function getCurrentUserProfile(): Promise<CurrentUserProfile | null
   }
 
   const metadata = user.user_metadata ?? {};
-  const requestedRole = metadata.desired_role;
+  const requestedRole = metadata.desired_role ?? metadata.requested_role;
 
   return {
     avatarUrl: null,
@@ -546,7 +605,7 @@ export async function signOutCurrentUser() {
 export async function loginWithEmailPassword(input: LoginInput): Promise<AuthResult> {
   const supabase = requireSupabaseClient();
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: input.email,
+    email: normalizeEmail(input.email),
     password: input.password
   });
 
@@ -573,53 +632,123 @@ export async function loginWithEmailPassword(input: LoginInput): Promise<AuthRes
 
 export async function registerWithEmailPassword(input: RegisterInput): Promise<AuthResult> {
   const supabase = requireSupabaseClient();
+  const email = normalizeEmail(input.email);
+  const nickname = normalizeRequiredText(input.nickname, "player");
+  const displayName = normalizeOptionalText(input.displayName);
+  const safeProfileRole = profileRoleForRegistration(input.requestedRole);
   const { data, error } = await supabase.auth.signUp({
-    email: input.email,
+    email,
     password: input.password,
     options: {
       data: {
-        display_name: input.displayName,
-        desired_role: input.requestedRole,
-        nickname: input.nickname,
-        steam_id_or_profile: input.steamIdOrProfile?.trim() || null
+        bio: normalizeOptionalText(input.bio),
+        country_code: normalizeCountryCode(input.countryCode),
+        display_name: displayName,
+        desired_role: safeProfileRole,
+        nickname,
+        requested_role: input.requestedRole,
+        steam_id: normalizeOptionalText(input.steamIdOrProfile),
+        steam_id_or_profile: normalizeOptionalText(input.steamIdOrProfile)
       }
     }
   });
 
   if (error) {
-    throw error;
+    if (isRegistrationRateLimitError(error)) {
+      throw new RegistrationRateLimitError();
+    }
+
+    throw new Error(registrationErrorMessage(error.message, email));
   }
 
   if (!data.user?.id || !data.session) {
     return {
       dashboardPath: "/login",
-      message: "Registration started. Check email confirmation settings, then log in."
+      message: "Check your email to confirm your account. After confirmation, log in to finish profile setup.",
+      requiresEmailConfirmation: true
     };
   }
 
   const profilePayload = {
     auth_user_id: data.user.id,
-    bio: input.bio?.trim() || null,
+    bio: normalizeOptionalText(input.bio),
     country_code: normalizeCountryCode(input.countryCode),
-    display_name: input.displayName.trim(),
-    nickname: input.nickname.trim()
+    display_name: displayName,
+    nickname
   };
 
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .upsert(profilePayload, { onConflict: "auth_user_id" });
+  let profileCreated = false;
+  let profileSetupError: unknown = null;
 
-  if (profileError) {
-    throw profileError;
+  try {
+    await postApiAuthenticated<BackendProfileResponse>(
+      "/me/profile",
+      createProfilePayload(input),
+      data.session.access_token
+    );
+    profileCreated = true;
+  } catch (caught) {
+    profileSetupError = caught;
+
+    try {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert(profilePayload, { onConflict: "auth_user_id" });
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      profileCreated = true;
+    } catch (fallbackError) {
+      profileSetupError = fallbackError;
+    }
   }
 
   await supabase.auth.signOut();
+
+  if (!profileCreated) {
+    return {
+      dashboardPath: "/login",
+      message: [
+        "Account created, but profile setup could not be completed.",
+        "Log in and open Profile to finish setup.",
+        profileSetupError instanceof Error ? `Profile setup response: ${profileSetupError.message}` : null
+      ]
+        .filter(Boolean)
+        .join(" ")
+    };
+  }
 
   return {
     dashboardPath: "/login",
     message:
       input.requestedRole === "player"
         ? "Account created. Log in to enter your dashboard."
-        : "Account created. Log in after an admin/backend process promotes the requested role."
+        : input.requestedRole === "captain"
+          ? "Account created. Team captain access is assigned through team ownership after login."
+          : "Account created. Log in to enter your organizer dashboard."
   };
+}
+
+function registrationErrorMessage(message: string, email: string) {
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("invalid") && normalized.includes("email")) {
+    return `Supabase rejected "${email}" as an invalid email address. Check for hidden spaces or use a normal inbox address.`;
+  }
+
+  if (normalized.includes("already") || normalized.includes("registered")) {
+    return "An account with this email may already exist. Try logging in instead.";
+  }
+
+  if (normalized.includes("password")) {
+    return `Password was rejected by Supabase: ${message}`;
+  }
+
+  if (normalized.includes("rate") || normalized.includes("too many")) {
+    return "Too many registration attempts. Wait a moment, then try again.";
+  }
+
+  return message || "Supabase signup failed.";
 }

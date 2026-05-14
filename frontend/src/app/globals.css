@@ -5225,6 +5225,12 @@ textarea:focus {
   color: #7bd1f8;
 }
 
+.auth-cooldown {
+  border: 1px solid rgba(240, 202, 95, 0.45);
+  background: rgba(240, 202, 95, 0.12);
+  color: #f0ca5f;
+}
+
 .auth-card-secondary {
   display: grid;
   gap: 18px;
@@ -5381,6 +5387,22 @@ textarea:focus {
 .auth-form textarea {
   min-height: 92px;
   resize: vertical;
+}
+
+.auth-form input[aria-invalid="true"],
+.auth-form textarea[aria-invalid="true"] {
+  border-color: rgba(255, 179, 172, 0.72);
+  box-shadow: 0 0 0 1px rgba(211, 47, 47, 0.2);
+}
+
+.auth-field-error {
+  display: block;
+  margin-top: 7px;
+  color: #ffb3ac;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .auth-optional-section,
