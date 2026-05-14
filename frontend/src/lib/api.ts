@@ -2,6 +2,12 @@ import type { ApiResult } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+type ApiRequestInit = RequestInit & {
+  next?: {
+    revalidate?: number;
+  };
+};
+
 export class ApiRequestError extends Error {
   status: number;
 
@@ -69,6 +75,35 @@ function debugAuthFailure(path: string, response: Response, accessToken: string)
   });
 }
 
+async function freshAccessToken() {
+  if (typeof window === "undefined") {
+    throw new ApiRequestError("Login session expired. Please log in again.", 401);
+  }
+
+  const { getSupabaseBrowserClient } = await import("@/lib/supabase");
+  const supabase = getSupabaseBrowserClient();
+
+  if (!supabase) {
+    throw new ApiRequestError("Supabase frontend environment variables are missing.", 401);
+  }
+
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data.session?.access_token) {
+    throw new ApiRequestError("Login session expired. Please log in again.", 401);
+  }
+
+  return data.session.access_token;
+}
+
+async function resolveAccessToken(accessToken?: string) {
+  return accessToken ?? freshAccessToken();
+}
+
 function hasCompatibleShape<T>(value: unknown, fallback: T): value is T {
   if (Array.isArray(fallback)) {
     if (!Array.isArray(value)) {
@@ -105,6 +140,29 @@ function hasCompatibleShape<T>(value: unknown, fallback: T): value is T {
   return typeof value === typeof fallback;
 }
 
+export async function getApi<T>(path: string, init?: ApiRequestInit): Promise<T> {
+  if (!API_URL) {
+    throw new Error("Backend API URL is not configured.");
+  }
+
+  const response = await fetch(`${API_URL}${path}`, {
+    ...init,
+    cache: init?.cache ?? "no-store",
+    headers: {
+      "Content-Type": "application/json",
+      ...init?.headers
+    },
+    method: "GET"
+  });
+  const rawPayload = await readJson(response);
+
+  if (!response.ok) {
+    throw new ApiRequestError(apiErrorMessage(rawPayload) ?? "Backend request failed.", response.status);
+  }
+
+  return unwrapBackendPayload(rawPayload) as T;
+}
+
 export async function postApi<T>(path: string, body: unknown): Promise<T> {
   if (!API_URL) {
     throw new Error("Backend API URL is not configured.");
@@ -128,29 +186,30 @@ export async function postApi<T>(path: string, body: unknown): Promise<T> {
   return unwrapBackendPayload(rawPayload) as T;
 }
 
-export async function postApiAuthenticated<T>(
+export async function patchApiAuthenticated<T>(
   path: string,
   body: unknown,
-  accessToken: string
+  accessToken?: string
 ): Promise<T> {
   if (!API_URL) {
     throw new Error("Backend API URL is not configured.");
   }
 
+  const resolvedToken = await resolveAccessToken(accessToken);
   const response = await fetch(`${API_URL}${path}`, {
     body: JSON.stringify(body),
     cache: "no-store",
     credentials: "include",
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${resolvedToken}`,
       "Content-Type": "application/json"
     },
-    method: "POST"
+    method: "PATCH"
   });
   const rawPayload = await readJson(response);
 
   if (!response.ok) {
-    debugAuthFailure(path, response, accessToken);
+    debugAuthFailure(path, response, resolvedToken);
     throw new ApiRequestError(
       apiErrorMessage(rawPayload) ?? "Authenticated backend request failed.",
       response.status
@@ -160,29 +219,92 @@ export async function postApiAuthenticated<T>(
   return unwrapBackendPayload(rawPayload) as T;
 }
 
-export async function patchApiAuthenticated<T>(
+export async function getApiAuthenticated<T>(
   path: string,
-  body: unknown,
-  accessToken: string
+  accessToken?: string
 ): Promise<T> {
   if (!API_URL) {
     throw new Error("Backend API URL is not configured.");
   }
 
+  const resolvedToken = await resolveAccessToken(accessToken);
+  const response = await fetch(`${API_URL}${path}`, {
+    cache: "no-store",
+    credentials: "include",
+    headers: {
+      Authorization: `Bearer ${resolvedToken}`,
+      "Content-Type": "application/json"
+    },
+    method: "GET"
+  });
+  const rawPayload = await readJson(response);
+
+  if (!response.ok) {
+    debugAuthFailure(path, response, resolvedToken);
+    throw new ApiRequestError(
+      apiErrorMessage(rawPayload) ?? "Authenticated backend request failed.",
+      response.status
+    );
+  }
+
+  return unwrapBackendPayload(rawPayload) as T;
+}
+
+export async function postApiAuthenticated<T>(
+  path: string,
+  body: unknown,
+  accessToken?: string
+): Promise<T> {
+  if (!API_URL) {
+    throw new Error("Backend API URL is not configured.");
+  }
+
+  const resolvedToken = await resolveAccessToken(accessToken);
   const response = await fetch(`${API_URL}${path}`, {
     body: JSON.stringify(body),
     cache: "no-store",
     credentials: "include",
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${resolvedToken}`,
       "Content-Type": "application/json"
     },
-    method: "PATCH"
+    method: "POST"
   });
   const rawPayload = await readJson(response);
 
   if (!response.ok) {
-    debugAuthFailure(path, response, accessToken);
+    debugAuthFailure(path, response, resolvedToken);
+    throw new ApiRequestError(
+      apiErrorMessage(rawPayload) ?? "Authenticated backend request failed.",
+      response.status
+    );
+  }
+
+  return unwrapBackendPayload(rawPayload) as T;
+}
+
+export async function deleteApiAuthenticated<T>(
+  path: string,
+  accessToken?: string
+): Promise<T> {
+  if (!API_URL) {
+    throw new Error("Backend API URL is not configured.");
+  }
+
+  const resolvedToken = await resolveAccessToken(accessToken);
+  const response = await fetch(`${API_URL}${path}`, {
+    cache: "no-store",
+    credentials: "include",
+    headers: {
+      Authorization: `Bearer ${resolvedToken}`,
+      "Content-Type": "application/json"
+    },
+    method: "DELETE"
+  });
+  const rawPayload = await readJson(response);
+
+  if (!response.ok) {
+    debugAuthFailure(path, response, resolvedToken);
     throw new ApiRequestError(
       apiErrorMessage(rawPayload) ?? "Authenticated backend request failed.",
       response.status
@@ -195,25 +317,26 @@ export async function patchApiAuthenticated<T>(
 export async function postFormApiAuthenticated<T>(
   path: string,
   body: FormData,
-  accessToken: string
+  accessToken?: string
 ): Promise<T> {
   if (!API_URL) {
     throw new Error("Backend API URL is not configured.");
   }
 
+  const resolvedToken = await resolveAccessToken(accessToken);
   const response = await fetch(`${API_URL}${path}`, {
     body,
     cache: "no-store",
     credentials: "include",
     headers: {
-      Authorization: `Bearer ${accessToken}`
+      Authorization: `Bearer ${resolvedToken}`
     },
     method: "POST"
   });
   const rawPayload = await readJson(response);
 
   if (!response.ok) {
-    debugAuthFailure(path, response, accessToken);
+    debugAuthFailure(path, response, resolvedToken);
     throw new ApiRequestError(
       apiErrorMessage(rawPayload) ?? "Authenticated backend request failed.",
       response.status

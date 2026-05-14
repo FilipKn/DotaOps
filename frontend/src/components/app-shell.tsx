@@ -25,7 +25,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/turnirji", label: "Tournaments", icon: Trophy },
   { href: "/organizator", label: "Organizer", icon: Brackets },
-  { href: "/ekipe", label: "Teams", icon: UsersRound },
+  { href: "/ekipe", label: "My Team", icon: UsersRound },
   { href: "/analitika", label: "Analytics", icon: BarChart3 },
   { href: "/profile", label: "Profile", icon: UserRound }
 ];
@@ -120,11 +120,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="main-area">
         {isRoleDashboard ? null : (
           <header className="topbar ops-panel">
-            <div className="topbar-title">
-              <span className="topbar-kicker">DOTAOPS COMMAND CENTER</span>
-              <strong>Tournament operations and analytics platform</strong>
-            </div>
-
             <div className="topbar-actions" aria-label="Application status and actions">
               <div className="topbar-status-segment">
                 <RadioTower size={16} />

@@ -4,8 +4,7 @@ import { RefreshCw, UploadCloud } from "lucide-react";
 import { FormEvent, useState } from "react";
 
 import { StatusBadge } from "@/components/status-badge";
-import { postApiAuthenticated } from "@/lib/api";
-import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { ApiRequestError, postApiAuthenticated } from "@/lib/api";
 import type { ImportStatus, MatchImportResponse } from "@/lib/types";
 
 export function MatchImportPanel() {
@@ -27,33 +26,18 @@ export function MatchImportPanel() {
     setMessage(null);
 
     try {
-      const supabase = getSupabaseBrowserClient();
-
-      if (!supabase) {
-        throw new Error("Supabase frontend environment variables are missing.");
-      }
-
-      const { data, error } = await supabase.auth.getSession();
-
-      if (error) {
-        throw error;
-      }
-
-      if (!data.session?.access_token) {
-        throw new Error("Login as an organizer before importing match data.");
-      }
-
-      const response = await postApiAuthenticated<MatchImportResponse>(
-        "/match-imports",
-        {
-          dotaMatchId: trimmedMatchId
-        },
-        data.session.access_token
-      );
+      const response = await postApiAuthenticated<MatchImportResponse>("/match-imports", {
+        dotaMatchId: trimmedMatchId
+      });
       setStatus(response.status);
       setMessage(response.errorMessage ?? `match_id ${response.dotaMatchId}`);
     } catch (error) {
       setStatus("error");
+      if (error instanceof ApiRequestError && error.status === 401) {
+        setMessage("Login session expired. Please log in again.");
+        return;
+      }
+
       setMessage(error instanceof Error ? error.message : "Import failed.");
     }
   }
