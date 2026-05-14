@@ -1,5 +1,6 @@
 package si.um.feri.dotaops.backend.profile.service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -10,18 +11,26 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriUtils;
 
 import si.um.feri.dotaops.backend.auth.domain.AuthenticatedProfile;
 import si.um.feri.dotaops.backend.auth.domain.ProfileRole;
 import si.um.feri.dotaops.backend.auth.service.CurrentUserProvider;
 import si.um.feri.dotaops.backend.auth.service.SupabasePrincipal;
 import si.um.feri.dotaops.backend.common.error.BadRequestException;
+import si.um.feri.dotaops.backend.common.error.ConflictException;
 import si.um.feri.dotaops.backend.common.error.ResourceNotFoundException;
 import si.um.feri.dotaops.backend.common.pagination.PageResponse;
+import si.um.feri.dotaops.backend.opendota.domain.OpenDotaPlayerProfile;
+import si.um.feri.dotaops.backend.opendota.service.DotaAccountIdConverter;
+import si.um.feri.dotaops.backend.opendota.service.OpenDotaClient;
 import si.um.feri.dotaops.backend.profile.domain.Profile;
 import si.um.feri.dotaops.backend.profile.repository.CreateProfileCommand;
+import si.um.feri.dotaops.backend.profile.repository.ProfileBootstrapRepository;
 import si.um.feri.dotaops.backend.profile.repository.ProfileRepository;
 import si.um.feri.dotaops.backend.profile.repository.UpdateProfileCommand;
+import si.um.feri.dotaops.backend.profile.web.AvatarUploadResponse;
 import si.um.feri.dotaops.backend.profile.web.CreateProfileRequest;
 import si.um.feri.dotaops.backend.profile.web.ProfileResponse;
 import si.um.feri.dotaops.backend.profile.web.UpdateProfileRequest;
@@ -30,13 +39,22 @@ import si.um.feri.dotaops.backend.profile.web.UpdateProfileRequest;
 public class ProfileService {
 
     private final ProfileRepository profileRepository;
+    private final ProfileBootstrapRepository profileBootstrapRepository;
+    private final ProfileAvatarStorageService profileAvatarStorageService;
+    private final OpenDotaClient openDotaClient;
     private final CurrentUserProvider currentUserProvider;
 
     public ProfileService(
             ProfileRepository profileRepository,
+            ProfileBootstrapRepository profileBootstrapRepository,
+            ProfileAvatarStorageService profileAvatarStorageService,
+            OpenDotaClient openDotaClient,
             CurrentUserProvider currentUserProvider
     ) {
         this.profileRepository = profileRepository;
+        this.profileBootstrapRepository = profileBootstrapRepository;
+        this.profileAvatarStorageService = profileAvatarStorageService;
+        this.openDotaClient = openDotaClient;
         this.currentUserProvider = currentUserProvider;
     }
 
@@ -137,6 +155,56 @@ public class ProfileService {
         }
     }
 
+    @Transactional
+    public AvatarUploadResponse updateCurrentAvatar(
+            MultipartFile avatar,
+            String publicBaseUrl
+    ) {
+        Profile currentProfile = ensureCurrentProfile();
+        StoredProfileAvatar storedAvatar = profileAvatarStorageService.store(currentProfile.id(), avatar);
+        String avatarUrl = publicBaseUrl
+                + "/api/profiles/avatars/"
+                + UriUtils.encodePathSegment(storedAvatar.filename(), StandardCharsets.UTF_8);
+
+        try {
+            profileRepository.updateById(
+                            currentProfile.id(),
+                            new UpdateProfileCommand(
+                                    false,
+                                    null,
+                                    false,
+                                    null,
+                                    true,
+                                    avatarUrl,
+                                    false,
+                                    null,
+                                    false,
+                                    null))
+                    .orElseThrow(() -> new ResourceNotFoundException("Profile", "id", currentProfile.id()));
+        } catch (DataIntegrityViolationException exception) {
+            throw profileConstraintException(exception);
+        }
+
+        return new AvatarUploadResponse(avatarUrl, "Avatar uploaded successfully.", true);
+    }
+
+    public ProfileResponse syncCurrentOpenDotaProfile() {
+        Profile currentProfile = ensureCurrentProfile();
+        long accountId = currentOpenDotaAccountId(currentProfile);
+        Optional<OpenDotaPlayerProfile> playerProfile = openDotaClient.fetchPlayer(accountId);
+
+        if (playerProfile.isEmpty()) {
+            profileBootstrapRepository.markOpenDotaProfileSyncFailed(currentProfile.id(), accountId);
+            throw new ConflictException("OpenDota profile could not be synced for the current Steam account.");
+        }
+
+        profileBootstrapRepository.markOpenDotaProfileSynced(currentProfile.id(), playerProfile.orElseThrow());
+
+        return profileRepository.findById(currentProfile.id())
+                .map(ProfileResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile", "id", currentProfile.id()));
+    }
+
     private String normalizeRequired(String value) {
         if (value == null || value.isBlank()) {
             throw new BadRequestException("Required profile field is blank.");
@@ -161,6 +229,22 @@ public class ProfileService {
         }
 
         return normalized.toUpperCase(Locale.ROOT);
+    }
+
+    private long currentOpenDotaAccountId(Profile profile) {
+        if (profile.opendotaAccountId() != null) {
+            return profile.opendotaAccountId();
+        }
+
+        if (profile.steamId() == null || profile.steamId().isBlank()) {
+            throw new ConflictException("A Steam account must be connected before OpenDota sync.");
+        }
+
+        try {
+            return DotaAccountIdConverter.steamId64ToAccountId32(profile.steamId());
+        } catch (IllegalArgumentException exception) {
+            throw new ConflictException("Connected Steam account cannot be converted to an OpenDota account id.");
+        }
     }
 
     private Profile ensureCurrentProfile() {
