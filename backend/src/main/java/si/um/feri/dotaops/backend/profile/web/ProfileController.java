@@ -8,6 +8,9 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.core.io.Resource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -17,9 +20,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import si.um.feri.dotaops.backend.common.api.ApiResponse;
 import si.um.feri.dotaops.backend.common.pagination.PageResponse;
+import si.um.feri.dotaops.backend.profile.service.ProfileAvatarStorageService;
 import si.um.feri.dotaops.backend.profile.service.ProfileMutationResult;
 import si.um.feri.dotaops.backend.profile.service.ProfileService;
 
@@ -29,9 +35,14 @@ import si.um.feri.dotaops.backend.profile.service.ProfileService;
 public class ProfileController {
 
     private final ProfileService profileService;
+    private final ProfileAvatarStorageService profileAvatarStorageService;
 
-    public ProfileController(ProfileService profileService) {
+    public ProfileController(
+            ProfileService profileService,
+            ProfileAvatarStorageService profileAvatarStorageService
+    ) {
         this.profileService = profileService;
+        this.profileAvatarStorageService = profileAvatarStorageService;
     }
 
     @GetMapping("/profiles")
@@ -79,5 +90,29 @@ public class ProfileController {
             @Valid @RequestBody UpdateProfileRequest request
     ) {
         return ApiResponse.of(profileService.updateCurrentProfile(request));
+    }
+
+    @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ApiResponse<AvatarUploadResponse> uploadCurrentAvatar(@RequestParam("avatar") MultipartFile avatar) {
+        String publicBaseUrl = ServletUriComponentsBuilder
+                .fromCurrentContextPath()
+                .build()
+                .toUriString();
+
+        return ApiResponse.of(profileService.updateCurrentAvatar(avatar, publicBaseUrl));
+    }
+
+    @GetMapping("/profiles/avatars/{filename:.+}")
+    ResponseEntity<Resource> getProfileAvatar(@PathVariable String filename) {
+        Resource avatar = profileAvatarStorageService.load(filename);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, profileAvatarStorageService.contentTypeFor(filename))
+                .body(avatar);
+    }
+
+    @PostMapping({"/me/profile/opendota/sync", "/me/opendota/sync"})
+    ApiResponse<ProfileResponse> syncCurrentOpenDotaProfile() {
+        return ApiResponse.of(profileService.syncCurrentOpenDotaProfile());
     }
 }

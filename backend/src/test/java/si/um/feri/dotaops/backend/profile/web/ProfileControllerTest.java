@@ -39,11 +39,13 @@ import si.um.feri.dotaops.backend.profile.service.ProfileService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -288,6 +290,43 @@ class ProfileControllerTest {
                                 """))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void uploadCurrentAvatarReturnsPersistedAvatarUrl() throws Exception {
+        when(profileService.updateCurrentAvatar(any(), anyString())).thenReturn(new AvatarUploadResponse(
+                "http://localhost/api/profiles/avatars/" + PROFILE_ID + ".png",
+                "Avatar uploaded successfully.",
+                true));
+
+        mockMvc.perform(multipart("/api/me/avatar")
+                        .file("avatar", new byte[] {1, 2, 3})
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                        .header("Authorization", bearerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.avatarUrl").value(
+                        "http://localhost/api/profiles/avatars/" + PROFILE_ID + ".png"))
+                .andExpect(jsonPath("$.data.persisted").value(true));
+    }
+
+    @Test
+    void uploadCurrentAvatarRequiresAuthentication() throws Exception {
+        mockMvc.perform(multipart("/api/me/avatar")
+                        .file("avatar", new byte[] {1, 2, 3})
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void syncCurrentOpenDotaProfileReturnsUpdatedProfile() throws Exception {
+        when(profileService.syncCurrentOpenDotaProfile()).thenReturn(profileResponse());
+
+        mockMvc.perform(post("/api/me/profile/opendota/sync")
+                        .header("Authorization", bearerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(PROFILE_ID.toString()))
+                .andExpect(jsonPath("$.data.opendotaAccountId").value(39734273));
     }
 
     private static String bearerToken() throws Exception {
