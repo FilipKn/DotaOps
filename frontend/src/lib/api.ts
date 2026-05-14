@@ -8,12 +8,22 @@ type ApiRequestInit = RequestInit & {
   };
 };
 
+export interface ApiFieldError {
+  code?: string | null;
+  field?: string | null;
+  message?: string | null;
+}
+
 export class ApiRequestError extends Error {
+  errors: ApiFieldError[];
+  payload: unknown;
   status: number;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, payload?: unknown) {
     super(message);
     this.name = "ApiRequestError";
+    this.errors = apiFieldErrors(payload);
+    this.payload = payload;
     this.status = status;
   }
 }
@@ -60,6 +70,20 @@ function apiErrorMessage(value: unknown) {
   }
 
   return null;
+}
+
+function apiFieldErrors(value: unknown): ApiFieldError[] {
+  if (!isRecord(value) || !Array.isArray(value.errors)) {
+    return [];
+  }
+
+  return value.errors
+    .filter(isRecord)
+    .map((error) => ({
+      code: typeof error.code === "string" ? error.code : null,
+      field: typeof error.field === "string" ? error.field : null,
+      message: typeof error.message === "string" ? error.message : null
+    }));
 }
 
 function debugAuthFailure(path: string, response: Response, accessToken: string) {
@@ -157,7 +181,11 @@ export async function getApi<T>(path: string, init?: ApiRequestInit): Promise<T>
   const rawPayload = await readJson(response);
 
   if (!response.ok) {
-    throw new ApiRequestError(apiErrorMessage(rawPayload) ?? "Backend request failed.", response.status);
+    throw new ApiRequestError(
+      apiErrorMessage(rawPayload) ?? "Backend request failed.",
+      response.status,
+      rawPayload
+    );
   }
 
   return unwrapBackendPayload(rawPayload) as T;
@@ -212,7 +240,8 @@ export async function patchApiAuthenticated<T>(
     debugAuthFailure(path, response, resolvedToken);
     throw new ApiRequestError(
       apiErrorMessage(rawPayload) ?? "Authenticated backend request failed.",
-      response.status
+      response.status,
+      rawPayload
     );
   }
 
@@ -243,7 +272,8 @@ export async function getApiAuthenticated<T>(
     debugAuthFailure(path, response, resolvedToken);
     throw new ApiRequestError(
       apiErrorMessage(rawPayload) ?? "Authenticated backend request failed.",
-      response.status
+      response.status,
+      rawPayload
     );
   }
 
@@ -276,7 +306,8 @@ export async function postApiAuthenticated<T>(
     debugAuthFailure(path, response, resolvedToken);
     throw new ApiRequestError(
       apiErrorMessage(rawPayload) ?? "Authenticated backend request failed.",
-      response.status
+      response.status,
+      rawPayload
     );
   }
 
@@ -307,7 +338,8 @@ export async function deleteApiAuthenticated<T>(
     debugAuthFailure(path, response, resolvedToken);
     throw new ApiRequestError(
       apiErrorMessage(rawPayload) ?? "Authenticated backend request failed.",
-      response.status
+      response.status,
+      rawPayload
     );
   }
 
@@ -339,7 +371,8 @@ export async function postFormApiAuthenticated<T>(
     debugAuthFailure(path, response, resolvedToken);
     throw new ApiRequestError(
       apiErrorMessage(rawPayload) ?? "Authenticated backend request failed.",
-      response.status
+      response.status,
+      rawPayload
     );
   }
 

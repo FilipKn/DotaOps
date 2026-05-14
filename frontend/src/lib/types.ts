@@ -5,7 +5,8 @@ export type TournamentStatus =
   | "registration"
   | "published"
   | "live"
-  | "finished";
+  | "finished"
+  | "archived";
 
 export type MatchStatus =
   | "scheduled"

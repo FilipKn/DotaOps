@@ -57,7 +57,8 @@ const validStatuses: TournamentStatus[] = [
   "registration",
   "published",
   "live",
-  "finished"
+  "finished",
+  "archived"
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
