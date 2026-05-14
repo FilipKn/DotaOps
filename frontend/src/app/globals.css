@@ -331,7 +331,7 @@ p {
   z-index: 10;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
   min-height: 74px;
   padding: 16px 28px;
@@ -432,9 +432,10 @@ p {
 }
 
 .page {
-  width: min(1480px, 100%);
-  margin: 0 auto;
-  padding: 28px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 28px clamp(24px, 3.4vw, 64px);
 }
 
 .page-stack {
@@ -5661,10 +5662,10 @@ textarea:focus {
 
 .profile-page {
   width: 100%;
-  max-width: 1440px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   display: grid;
-  gap: 32px;
+  gap: 28px;
   color: var(--text-primary);
 }
 
@@ -5849,7 +5850,7 @@ textarea:focus {
 .profile-stat-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 26px;
+  gap: 24px;
 }
 
 .profile-stat-card {
@@ -5879,9 +5880,9 @@ textarea:focus {
 
 .profile-content-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   align-items: start;
-  gap: 36px;
+  gap: 28px;
 }
 
 .profile-details-card {
@@ -6212,7 +6213,8 @@ textarea:focus {
 
 .team-mgmt-page {
   display: grid;
-  gap: 22px;
+  gap: 24px;
+  width: 100%;
   min-height: calc(100vh - 130px);
   color: var(--ops-text);
 }
@@ -6311,10 +6313,10 @@ textarea:focus {
   position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 24px;
+  gap: 32px;
   align-items: center;
-  min-height: 260px;
-  padding: 44px;
+  min-height: 280px;
+  padding: 48px;
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(255, 84, 78, 0.15), transparent 38%),
@@ -6520,7 +6522,7 @@ textarea:focus {
 
 .team-mgmt-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   gap: 28px;
   align-items: start;
 }
@@ -6848,7 +6850,7 @@ textarea:focus {
 
 .team-mgmt-roster-header-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   gap: 28px;
 }
 
@@ -7054,6 +7056,717 @@ textarea:focus {
   padding: 12px;
   background: rgba(255, 180, 171, 0.12);
   color: var(--ops-muted);
+}
+
+/* Team management dashboard restyle */
+
+.team-mgmt-page {
+  position: relative;
+  gap: 24px;
+  padding-bottom: 44px;
+}
+
+.team-mgmt-page::before {
+  position: fixed;
+  inset: 74px 0 0 200px;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 72% 4%, rgba(0, 221, 221, 0.1), transparent 28%),
+    linear-gradient(180deg, rgba(117, 22, 19, 0.24), transparent 460px);
+  content: "";
+}
+
+.team-mgmt-tabs {
+  gap: 0;
+  width: max-content;
+  padding: 0;
+  overflow: hidden;
+  border-color: rgba(255, 180, 171, 0.28);
+  background: rgba(18, 11, 11, 0.92);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+}
+
+.team-mgmt-tab {
+  min-width: 112px;
+  min-height: 44px;
+  padding: 11px 18px;
+  border-width: 0 1px 0 0;
+  border-color: rgba(255, 180, 171, 0.18);
+  color: #e8c2bd;
+  background: transparent;
+}
+
+.team-mgmt-tab:last-child {
+  border-right: 0;
+}
+
+.team-mgmt-tab.is-active,
+.team-mgmt-tab:hover {
+  border-color: rgba(255, 180, 171, 0.28);
+  background:
+    linear-gradient(180deg, rgba(255, 84, 78, 0.26), rgba(255, 84, 78, 0.08)),
+    rgba(54, 30, 28, 0.72);
+  color: #fff2f0;
+}
+
+.team-mgmt-message {
+  border-radius: 0;
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.84rem;
+  letter-spacing: 0.02em;
+}
+
+.team-mgmt-hero {
+  grid-template-columns: 118px minmax(0, 1fr) minmax(220px, auto);
+  min-height: 300px;
+  padding: 48px 56px;
+  border-color: rgba(255, 180, 171, 0.28);
+  background:
+    linear-gradient(90deg, rgba(255, 84, 78, 0.22), transparent 42%),
+    radial-gradient(circle at 72% 22%, rgba(255, 84, 78, 0.15), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent),
+    #121010;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+}
+
+.team-mgmt-hero::before {
+  background:
+    linear-gradient(rgba(176, 135, 131, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(176, 135, 131, 0.07) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.58;
+}
+
+.team-mgmt-hero::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.42) 70%, rgba(0, 0, 0, 0.62));
+  content: "";
+}
+
+.team-mgmt-hero > * {
+  z-index: 2;
+}
+
+.team-mgmt-hero-body {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+
+.team-mgmt-team-mark {
+  width: 104px;
+  height: 104px;
+  border-color: rgba(255, 180, 171, 0.42);
+  background:
+    radial-gradient(circle at 50% 40%, rgba(0, 221, 221, 0.2), transparent 54%),
+    linear-gradient(135deg, rgba(255, 84, 78, 0.18), transparent),
+    rgba(255, 255, 255, 0.045);
+  box-shadow: 0 0 28px rgba(255, 84, 78, 0.12);
+}
+
+.team-mgmt-hero-tags span {
+  border-color: rgba(255, 180, 171, 0.36);
+  background: rgba(67, 48, 46, 0.72);
+  color: #ffd5d0;
+}
+
+.team-mgmt-hero h1 {
+  max-width: none;
+  color: #ffe7e4;
+  font-size: clamp(3rem, 4.8vw, 5.5rem);
+  letter-spacing: 0;
+  text-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
+}
+
+.team-mgmt-hero p {
+  max-width: 780px;
+  color: #f0c9c4;
+  font-size: 1.12rem;
+}
+
+.team-mgmt-hero-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 180, 171, 0.18);
+}
+
+.team-mgmt-hero-meta-row div {
+  min-width: 150px;
+  padding-right: 28px;
+  margin-right: 28px;
+  border-right: 1px solid rgba(255, 180, 171, 0.24);
+}
+
+.team-mgmt-hero-meta-row div:last-child {
+  border-right: 0;
+}
+
+.team-mgmt-hero-meta-row span {
+  display: block;
+  color: var(--ops-muted);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.team-mgmt-hero-meta-row strong {
+  display: block;
+  margin-top: 5px;
+  color: #ffe7e4;
+  font-size: 1.18rem;
+  text-transform: uppercase;
+}
+
+.team-mgmt-hero-status {
+  color: #ffdea5 !important;
+}
+
+.team-mgmt-form-strip {
+  align-self: center;
+  justify-items: end;
+  min-width: 230px;
+}
+
+.team-mgmt-form-strip strong {
+  width: 36px;
+  height: 36px;
+  background: rgba(0, 130, 62, 0.18);
+}
+
+.team-mgmt-metrics {
+  gap: 20px;
+}
+
+.team-mgmt-metric {
+  min-height: 128px;
+  padding: 24px 26px;
+  border-color: rgba(255, 180, 171, 0.22);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
+    #151111;
+}
+
+.team-mgmt-metric strong {
+  font-size: clamp(2.4rem, 3.8vw, 4.2rem);
+}
+
+.team-mgmt-layout {
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+}
+
+.team-mgmt-main-stack,
+.team-mgmt-side-stack {
+  gap: 20px;
+}
+
+.team-mgmt-section-heading {
+  margin-top: 2px;
+}
+
+.team-mgmt-section-heading h2,
+.team-mgmt-panel-title h2,
+.team-mgmt-side-card h2,
+.team-mgmt-registry h2,
+.team-mgmt-recruitment h2,
+.team-mgmt-invite-list h2,
+.team-mgmt-join-placeholder h2 {
+  color: #fff2f0;
+  font-size: 1.34rem;
+  letter-spacing: 0;
+}
+
+.team-mgmt-roster-preview {
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.team-mgmt-roster-tile,
+.team-mgmt-invite-tile,
+.team-mgmt-registry,
+.team-mgmt-recruitment,
+.team-mgmt-join-placeholder,
+.team-mgmt-side-card,
+.team-mgmt-member-card,
+.team-mgmt-invite-card,
+.team-mgmt-invite-empty,
+.team-mgmt-filter-bar {
+  border-color: rgba(255, 180, 171, 0.2);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent),
+    #121010;
+}
+
+.team-mgmt-roster-tile {
+  min-height: 118px;
+  border-radius: 0;
+}
+
+.team-mgmt-roster-tile:hover,
+.team-mgmt-member-card:hover,
+.team-mgmt-invite-card:hover {
+  border-color: rgba(255, 180, 171, 0.36);
+}
+
+.team-mgmt-avatar,
+.team-mgmt-mini-avatar {
+  border-color: rgba(255, 180, 171, 0.34);
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(0, 221, 221, 0.22), transparent 52%),
+    linear-gradient(135deg, rgba(255, 84, 78, 0.16), transparent),
+    #080808;
+}
+
+.team-mgmt-roster-tile strong,
+.team-mgmt-member-head strong,
+.team-mgmt-invite-card strong,
+.team-mgmt-invite-row strong {
+  font-size: 1.08rem;
+}
+
+.team-mgmt-tile-actions button,
+.team-mgmt-member-actions button,
+.team-mgmt-panel-title button,
+.team-mgmt-invite-card button,
+.team-mgmt-join-placeholder button {
+  border-color: rgba(255, 180, 171, 0.34);
+  background: rgba(67, 48, 46, 0.72);
+}
+
+.team-mgmt-invite-tile {
+  border-color: rgba(255, 180, 171, 0.26);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent),
+    rgba(15, 14, 14, 0.9);
+}
+
+.team-mgmt-registry {
+  padding: 28px 30px;
+}
+
+.team-mgmt-invite-row,
+.team-mgmt-invite-card,
+.team-mgmt-join-placeholder article {
+  border-color: rgba(255, 180, 171, 0.16);
+  background: rgba(67, 34, 32, 0.42);
+}
+
+.team-mgmt-side-card {
+  padding: 26px;
+}
+
+.team-mgmt-side-card button,
+.team-mgmt-recruitment button {
+  justify-content: space-between;
+  min-height: 60px;
+  border-color: rgba(255, 180, 171, 0.35);
+  background: rgba(67, 48, 46, 0.78);
+}
+
+.team-mgmt-command-primary {
+  justify-content: center !important;
+}
+
+.team-mgmt-alert,
+.team-mgmt-note {
+  border: 1px solid rgba(255, 180, 171, 0.2);
+  border-left: 4px solid var(--ops-error);
+  background: rgba(67, 34, 32, 0.62);
+}
+
+.team-mgmt-alert-gold {
+  border-left-color: var(--ops-secondary);
+}
+
+.team-mgmt-roster-header-grid {
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 24px;
+}
+
+.team-mgmt-hero-compact {
+  min-height: 176px;
+  padding: 28px 34px;
+}
+
+.team-mgmt-hero-compact .team-mgmt-team-mark {
+  width: 92px;
+  height: 92px;
+}
+
+.team-mgmt-hero-compact h1 {
+  font-size: clamp(1.9rem, 2.6vw, 3rem);
+}
+
+.team-mgmt-countdown {
+  min-height: 176px;
+  border-color: rgba(255, 84, 78, 0.82);
+  background:
+    linear-gradient(180deg, rgba(255, 84, 78, 0.1), transparent),
+    #121010;
+}
+
+.team-mgmt-roster-management-grid {
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.team-mgmt-member-card {
+  min-height: 268px;
+  padding: 24px;
+  border-radius: 0;
+}
+
+.team-mgmt-member-card:first-child {
+  border-left-color: #ffb4ab;
+}
+
+.team-mgmt-recruitment {
+  padding: 34px;
+}
+
+.team-mgmt-recruitment-grid {
+  align-items: end;
+}
+
+.team-mgmt-recruitment input,
+.team-mgmt-recruitment select,
+.team-mgmt-recruitment textarea,
+.team-mgmt-role-select select {
+  border-color: rgba(255, 180, 171, 0.36);
+  background: #050505;
+}
+
+.team-mgmt-filter-bar {
+  gap: 0;
+  padding: 0 18px;
+  border-color: rgba(255, 180, 171, 0.2);
+}
+
+.team-mgmt-filter-bar button {
+  min-height: 58px;
+  padding: 0 22px;
+}
+
+.team-mgmt-filter-bar button.is-active {
+  border-bottom-color: #ffb4ab;
+  color: #fff2f0;
+}
+
+.team-mgmt-invite-list {
+  gap: 16px;
+}
+
+.team-mgmt-invite-list h2 {
+  color: #fff2f0;
+  font-size: 1rem;
+  letter-spacing: 0.03em;
+}
+
+.team-mgmt-invite-card {
+  min-height: 104px;
+  padding: 18px 22px;
+}
+
+/* Refined Stitch direction for /ekipe */
+
+.team-mgmt-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  gap: 26px;
+}
+
+.team-mgmt-page::before {
+  inset: 0;
+  background:
+    radial-gradient(circle at 80% 6%, rgba(255, 180, 171, 0.08), transparent 25%),
+    linear-gradient(180deg, rgba(30, 15, 14, 0.94), rgba(10, 10, 10, 0.98) 560px);
+}
+
+.team-mgmt-tabs {
+  margin-bottom: 6px;
+  border-color: rgba(171, 137, 133, 0.45);
+  background: #180a09;
+}
+
+.team-mgmt-tab {
+  min-width: 126px;
+  color: #f9dcd9;
+  font-size: 0.72rem;
+}
+
+.team-mgmt-tab.is-active {
+  background: #d32f2f;
+  color: #fff2f0;
+}
+
+.team-mgmt-hero {
+  grid-template-columns: 168px minmax(0, 1fr) 248px;
+  gap: 34px;
+  min-height: 330px;
+  padding: 54px 58px;
+  background:
+    linear-gradient(90deg, rgba(255, 84, 78, 0.13), transparent 36%),
+    radial-gradient(circle at 78% 40%, rgba(123, 209, 248, 0.08), transparent 32%),
+    #121111;
+}
+
+.team-mgmt-team-mark {
+  width: 148px;
+  height: 148px;
+  align-self: center;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(123, 209, 248, 0.22), transparent 48%),
+    linear-gradient(135deg, rgba(67, 48, 46, 0.95), rgba(12, 12, 12, 0.95));
+}
+
+.team-mgmt-team-mark svg {
+  width: 54px;
+  height: 54px;
+}
+
+.team-mgmt-hero h1 {
+  font-size: clamp(3rem, 5vw, 5.7rem);
+  line-height: 0.9;
+}
+
+.team-mgmt-hero-copy {
+  align-self: center;
+}
+
+.team-mgmt-hero-meta-row {
+  max-width: 520px;
+}
+
+.team-mgmt-form-strip {
+  align-self: center;
+  justify-self: end;
+  min-width: 232px;
+}
+
+.team-mgmt-form-strip div {
+  justify-content: flex-end;
+}
+
+.team-mgmt-hero-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 58px;
+  margin-top: 18px;
+  border: 0;
+  border-radius: var(--ops-radius);
+  background: #d32f2f;
+  color: #fff2f0;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: 0 18px 34px rgba(211, 47, 47, 0.24);
+}
+
+.team-mgmt-hero-compact {
+  grid-template-columns: 116px minmax(0, 1fr) 180px;
+  min-height: 200px;
+  padding: 34px 42px;
+}
+
+.team-mgmt-hero-compact .team-mgmt-team-mark {
+  width: 96px;
+  height: 96px;
+}
+
+.team-mgmt-hero-compact .team-mgmt-team-mark svg {
+  width: 36px;
+  height: 36px;
+}
+
+.team-mgmt-hero-compact h1 {
+  font-size: clamp(2rem, 3vw, 3.5rem);
+}
+
+.team-mgmt-hero-compact .team-mgmt-form-strip {
+  min-width: 164px;
+}
+
+.team-mgmt-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.team-mgmt-metric {
+  min-height: 134px;
+  border-radius: var(--ops-radius);
+  background: #121111;
+}
+
+.team-mgmt-metric:first-child {
+  border-left: 4px solid #ffb3ac;
+}
+
+.team-mgmt-layout {
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
+}
+
+.team-mgmt-side-stack {
+  gap: 24px;
+}
+
+.team-mgmt-roster-preview {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.team-mgmt-roster-tile {
+  min-height: 150px;
+  padding: 24px;
+  border-left: 4px solid #7bd1f8;
+}
+
+.team-mgmt-roster-tile:first-child {
+  border-left-color: #ffb3ac;
+}
+
+.team-mgmt-invite-tile {
+  min-height: 150px;
+  border-color: rgba(255, 180, 171, 0.4);
+}
+
+.team-mgmt-side-card {
+  border-radius: var(--ops-radius);
+}
+
+.team-mgmt-side-card button {
+  background: #43302e;
+}
+
+.team-mgmt-side-card button:not(:disabled):hover,
+.team-mgmt-hero-action:hover {
+  filter: brightness(1.08);
+}
+
+.team-mgmt-registry {
+  padding: 0;
+  overflow: hidden;
+}
+
+.team-mgmt-registry .team-mgmt-panel-title {
+  padding: 26px 30px;
+}
+
+.team-mgmt-registry-table {
+  display: grid;
+  border-top: 1px solid rgba(171, 137, 133, 0.32);
+}
+
+.team-mgmt-registry-head,
+.team-mgmt-invite-row {
+  display: grid;
+  grid-template-columns: 52px minmax(160px, 1fr) minmax(120px, 0.72fr) minmax(100px, 0.56fr) auto auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.team-mgmt-registry-head {
+  padding: 16px 26px;
+  color: #e4beba;
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: #2c1b1a;
+}
+
+.team-mgmt-registry-head span:first-child {
+  grid-column: span 2;
+}
+
+.team-mgmt-invite-row {
+  padding: 18px 26px;
+  border-width: 1px 0 0;
+  background: #120f0f;
+}
+
+.team-mgmt-invite-row p {
+  margin: 0;
+}
+
+.team-mgmt-invite-row button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 180, 171, 0.34);
+  background: transparent;
+  color: #ffb3ac;
+}
+
+.team-mgmt-countdown {
+  min-height: 200px;
+  background: #121111;
+}
+
+.team-mgmt-roster-header-grid {
+  grid-template-columns: minmax(0, 1fr) 300px;
+}
+
+.team-mgmt-roster-management-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.team-mgmt-member-card {
+  min-height: 252px;
+  background: #121111;
+}
+
+.team-mgmt-member-card:first-child {
+  border-left-width: 4px;
+}
+
+.team-mgmt-recruitment {
+  border-radius: var(--ops-radius);
+  background: #121111;
+}
+
+.team-mgmt-invite-card {
+  border-radius: var(--ops-radius);
+  background: #271816;
+}
+
+.team-mgmt-filter-bar {
+  border-radius: var(--ops-radius) var(--ops-radius) 0 0;
+  background: #180a09;
+}
+
+.team-mgmt-filter-bar button.is-active {
+  border-bottom-width: 3px;
+}
+
+.team-mgmt-join-placeholder {
+  border-radius: var(--ops-radius);
+}
+
+.team-mgmt-note {
+  border-left-color: #ab8985;
+  background: #120f0f;
+}
+
+.team-mgmt-alert {
+  border-color: rgba(211, 47, 47, 0.55);
+  border-left-color: #ffb3ac;
+  background: #300b0b;
 }
 
 @media (max-width: 1320px) {

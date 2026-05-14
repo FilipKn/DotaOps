@@ -10,6 +10,7 @@ import {
   Lock,
   Mail,
   MoreVertical,
+  PlayCircle,
   RefreshCcw,
   Save,
   Shield,
@@ -544,10 +545,12 @@ export function TeamManagementPage() {
 function TeamHero({
   compact = false,
   members,
+  onPlaceholder,
   team
 }: {
   compact?: boolean;
   members: TeamMember[];
+  onPlaceholder?: (message: string) => void;
   team: NonNullable<TeamManagementViewModel["team"]>;
 }) {
   return (
@@ -555,23 +558,41 @@ function TeamHero({
       <div className="team-mgmt-team-mark">
         <Shield size={compact ? 30 : 42} />
       </div>
-      <div className="team-mgmt-hero-copy">
-        <div className="team-mgmt-hero-tags">
-          <span>{team.region ?? "EU West"}</span>
-          <span>Tag: {team.tag ?? "TL"}</span>
+      <div className="team-mgmt-hero-body">
+        <div className="team-mgmt-hero-copy">
+          <div className="team-mgmt-hero-tags">
+            <span>{team.region ?? "EU West"}</span>
+            <span>Tag: {team.tag ?? "TL"}</span>
+          </div>
+          <h1>
+            {team.name}
+            {team.tag ? ` (${team.tag})` : ""}
+          </h1>
+          {compact ? (
+            <p>
+              Captain: <strong>{team.captainNickname ?? "Unassigned"}</strong> - Status:{" "}
+              <strong>Active</strong> - Roster: <strong>{Math.min(members.length, 5)} / 5</strong>
+            </p>
+          ) : (
+            <p>{team.description ?? "Elite European organization dominating the global circuit."}</p>
+          )}
         </div>
-        <h1>
-          {team.name}
-          {team.tag ? ` (${team.tag})` : ""}
-        </h1>
-        {compact ? (
-          <p>
-            Captain: <strong>{team.captainNickname ?? "Unassigned"}</strong> - Status:{" "}
-            <strong>Active</strong> - Roster: <strong>{Math.min(members.length, 5)} / 5</strong>
-          </p>
-        ) : (
-          <p>{team.description ?? "Elite European organization dominating the global circuit."}</p>
-        )}
+        {!compact ? (
+          <div className="team-mgmt-hero-meta-row">
+            <div>
+              <span>Captain</span>
+              <strong>{team.captainNickname ?? "Unassigned"}</strong>
+            </div>
+            <div>
+              <span>Status</span>
+              <strong className="team-mgmt-hero-status">Active</strong>
+            </div>
+            <div>
+              <span>Roster</span>
+              <strong>{Math.min(members.length, 5)} / 5</strong>
+            </div>
+          </div>
+        ) : null}
       </div>
       <div className="team-mgmt-form-strip">
         <span>Recent performance</span>
@@ -582,6 +603,16 @@ function TeamHero({
             </strong>
           ))}
         </div>
+        {!compact ? (
+          <button
+            className="team-mgmt-hero-action"
+            onClick={() => onPlaceholder?.("Pre-match briefing workflow is not available yet.")}
+            type="button"
+          >
+            <PlayCircle size={18} />
+            Pre-Match Briefing
+          </button>
+        ) : null}
       </div>
     </section>
   );
@@ -733,7 +764,7 @@ function OverviewTab({
 }) {
   return (
     <>
-      <TeamHero members={members} team={team} />
+      <TeamHero members={members} onPlaceholder={onPlaceholder} team={team} />
       <section className="team-mgmt-metrics">
         <MetricCard icon={UsersRound} label="Members" value={`${String(rosterFilled).padStart(2, "0")} / 05`} />
         <MetricCard icon={Mail} label="Pending Invites" tone="gold" value={String(pendingInviteCount).padStart(2, "0")} />
@@ -809,16 +840,29 @@ function InviteRegistry({
       {invitations.length === 0 ? (
         <p className="team-mgmt-muted">No outgoing invitations are available for this team.</p>
       ) : (
-        invitations.slice(0, 3).map((invitation) => (
-          <article className="team-mgmt-invite-row" key={invitation.id}>
-            <span className="team-mgmt-mini-avatar">{initials(invitation.inviteeNickname || invitation.inviteeEmail || "PL")}</span>
-            <div>
-              <strong>{invitation.inviteeNickname || invitation.inviteeEmail || "Pending player"}</strong>
-              <p>{invitation.status === "declined" ? "Declined" : "Sent"} {formatRelative(invitation.createdAt)}</p>
-            </div>
-            <span className={classNames("team-mgmt-status", statusClass(invitation.status))}>{invitation.status}</span>
-          </article>
-        ))
+        <div className="team-mgmt-registry-table">
+          <div className="team-mgmt-registry-head">
+            <span>Invitee</span>
+            <span>Role</span>
+            <span>Time Sent</span>
+            <span>Status</span>
+            <span>Actions</span>
+          </div>
+          {invitations.slice(0, 3).map((invitation) => (
+            <article className="team-mgmt-invite-row" key={invitation.id}>
+              <span className="team-mgmt-mini-avatar">{initials(invitation.inviteeNickname || invitation.inviteeEmail || "PL")}</span>
+              <div>
+                <strong>{invitation.inviteeNickname || invitation.inviteeEmail || "Pending player"}</strong>
+              </div>
+              <p>{roleLabel(invitation.proposedRole)}</p>
+              <p>{formatRelative(invitation.createdAt)}</p>
+              <span className={classNames("team-mgmt-status", statusClass(invitation.status))}>{invitation.status}</span>
+              <button onClick={() => onPlaceholder("Invite row action endpoint is not available yet.")} type="button">
+                {invitation.status === "declined" ? <RefreshCcw size={15} /> : <X size={15} />}
+              </button>
+            </article>
+          ))}
+        </div>
       )}
     </section>
   );

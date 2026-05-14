@@ -4,7 +4,7 @@ import { RefreshCw, UploadCloud } from "lucide-react";
 import { FormEvent, useState } from "react";
 
 import { StatusBadge } from "@/components/status-badge";
-import { postApi } from "@/lib/api";
+import { ApiRequestError, postApiAuthenticated } from "@/lib/api";
 import type { ImportStatus, MatchImportResponse } from "@/lib/types";
 
 export function MatchImportPanel() {
@@ -26,13 +26,18 @@ export function MatchImportPanel() {
     setMessage(null);
 
     try {
-      const response = await postApi<MatchImportResponse>("/match-imports", {
+      const response = await postApiAuthenticated<MatchImportResponse>("/match-imports", {
         dotaMatchId: trimmedMatchId
       });
       setStatus(response.status);
       setMessage(response.errorMessage ?? `match_id ${response.dotaMatchId}`);
     } catch (error) {
       setStatus("error");
+      if (error instanceof ApiRequestError && error.status === 401) {
+        setMessage("Login session expired. Please log in again.");
+        return;
+      }
+
       setMessage(error instanceof Error ? error.message : "Import failed.");
     }
   }
