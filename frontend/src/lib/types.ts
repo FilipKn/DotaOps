@@ -46,11 +46,18 @@ export interface Tournament {
   status: TournamentStatus;
   format: string;
   startsAt: string;
+  endsAt?: string | null;
+  registrationOpensAt?: string | null;
+  registrationClosesAt?: string | null;
+  checkInOpensAt?: string | null;
+  checkInClosesAt?: string | null;
   teamsCount: number;
   registrationsCount: number;
   organizer: string;
   prizePool: string;
   description: string;
+  publicVisible?: boolean | null;
+  updatedAt?: string | null;
 }
 
 export interface Match {

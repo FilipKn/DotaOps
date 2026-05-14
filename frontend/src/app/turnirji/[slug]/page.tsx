@@ -15,6 +15,7 @@ import { MatchSchedule } from "@/components/match-schedule";
 import { SectionHeader } from "@/components/section-header";
 import { TournamentCommandHeader } from "@/components/tournament-command-header";
 import { TournamentMetaGrid } from "@/components/tournament-meta-grid";
+import { TournamentRegistrationPanel } from "@/components/tournament-registration-panel";
 import { TournamentStatusPanel } from "@/components/tournament-status-panel";
 import {
   getAnalytics,
@@ -104,6 +105,8 @@ export default async function TournamentDetailPage({
           ]}
         />
       </TournamentCommandHeader>
+
+      <TournamentRegistrationPanel tournament={tournament} />
 
       <section className="tournament-control-grid">
         <div className="tournament-control-main">

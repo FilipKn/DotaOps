@@ -29,21 +29,23 @@ import { ApiRequestError, type ApiFieldError } from "@/lib/api";
 import { getCurrentUserProfile, type ProfileRole } from "@/lib/auth";
 import {
   archiveOrganizerTournament,
-  approveOrganizerRegistration,
   createOrganizerTournament,
   getOrganizerTournament,
-  listOrganizerTournamentRegistrations,
   listOrganizerTournaments,
   publishOrganizerTournament,
-  rejectOrganizerRegistration,
   updateOrganizerTournament,
-  waitlistOrganizerRegistration,
   type OrganizerTournament,
   type OrganizerTournamentFormat,
   type OrganizerTournamentPayload,
-  type OrganizerTournamentRegistration,
   type OrganizerTournamentStatus
 } from "@/lib/organizer-tournament-data";
+import {
+  checkInTournamentRegistration,
+  listOrganizerTournamentRegistrations,
+  reviewTournamentRegistration,
+  type RegistrationStatus,
+  type TournamentRegistration
+} from "@/lib/tournament-registration-data";
 import { classNames } from "@/lib/utils";
 
 type OrganizerView = "dashboard" | "form" | "detail";
@@ -202,7 +204,7 @@ function payloadFromForm(form: TournamentFormState): OrganizerTournamentPayload 
 
 function statusLabel(status: string) {
   return status
-    .split("_")
+    .split(/[-_]/)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 }
@@ -254,6 +256,18 @@ function dashboardCounts(tournaments: OrganizerTournament[]) {
   };
 }
 
+function registrationCounts(registrations: TournamentRegistration[]) {
+  return {
+    approved: registrations.filter(
+      (registration) => registration.status === "approved" && registration.displayStatus !== "checked-in"
+    ).length,
+    checkedIn: registrations.filter((registration) => registration.displayStatus === "checked-in").length,
+    pending: registrations.filter((registration) => registration.status === "pending").length,
+    rejected: registrations.filter((registration) => registration.status === "rejected").length,
+    waitlisted: registrations.filter((registration) => registration.status === "waitlisted").length
+  };
+}
+
 function canAccessOrganizer(role?: ProfileRole | null) {
   return role === "organizer" || role === "admin";
 }
@@ -266,7 +280,7 @@ export function OrganizerCommandPage() {
   const [isMutating, setIsMutating] = useState(false);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [notice, setNotice] = useState<string | null>(null);
-  const [registrations, setRegistrations] = useState<OrganizerTournamentRegistration[]>([]);
+  const [registrations, setRegistrations] = useState<TournamentRegistration[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<OrganizerTournament | null>(null);
   const [tournaments, setTournaments] = useState<OrganizerTournament[]>([]);
   const [view, setView] = useState<OrganizerView>("dashboard");
@@ -449,8 +463,8 @@ export function OrganizerCommandPage() {
   }
 
   async function reviewRegistration(
-    registration: OrganizerTournamentRegistration,
-    action: "approve" | "reject" | "waitlist"
+    registration: TournamentRegistration,
+    action: "approve" | "check-in" | "reject" | "waitlist"
   ) {
     if (!selectedTournament) {
       return;
@@ -460,17 +474,17 @@ export function OrganizerCommandPage() {
     setIsMutating(true);
 
     try {
-      if (action === "approve") {
-        await approveOrganizerRegistration(selectedTournament.id, registration.id);
-      } else if (action === "reject") {
-        await rejectOrganizerRegistration(selectedTournament.id, registration.id);
+      if (action === "check-in") {
+        await checkInTournamentRegistration(selectedTournament.id, registration.id);
       } else {
-        await waitlistOrganizerRegistration(selectedTournament.id, registration.id);
+        await reviewTournamentRegistration(selectedTournament.id, registration.id, action);
       }
 
       setNotice(
         action === "approve"
           ? "Registration approved."
+          : action === "check-in"
+            ? "Registration checked in."
           : action === "reject"
             ? "Registration rejected."
             : "Registration waitlisted."
@@ -863,10 +877,17 @@ function TournamentDetail({
   onEdit: () => void;
   onPublish: () => void;
   onRefresh: () => void;
-  onReviewRegistration: (registration: OrganizerTournamentRegistration, action: "approve" | "reject" | "waitlist") => void;
-  registrations: OrganizerTournamentRegistration[];
+  onReviewRegistration: (registration: TournamentRegistration, action: "approve" | "check-in" | "reject" | "waitlist") => void;
+  registrations: TournamentRegistration[];
   tournament: OrganizerTournament;
 }) {
+  const [filter, setFilter] = useState<RegistrationStatus | "all">("all");
+  const counts = useMemo(() => registrationCounts(registrations), [registrations]);
+  const filteredRegistrations = useMemo(
+    () => registrations.filter((registration) => filter === "all" || registration.displayStatus === filter),
+    [filter, registrations]
+  );
+
   return (
     <>
       <section className="org-tournament-detail-hero ops-panel">
@@ -918,29 +939,57 @@ function TournamentDetail({
                 Refresh
               </button>
             </div>
+            <div className="org-registration-review-summary">
+              <RegistrationCount label="Total" value={registrations.length} />
+              <RegistrationCount label="Pending" value={counts.pending} />
+              <RegistrationCount label="Approved" value={counts.approved} />
+              <RegistrationCount label="Rejected" value={counts.rejected} />
+              <RegistrationCount label="Waitlisted" value={counts.waitlisted} />
+              <RegistrationCount label="Checked-in" value={counts.checkedIn} />
+            </div>
+            <div className="org-registration-filters">
+              {(["all", "pending", "approved", "rejected", "waitlisted", "checked-in"] as const).map((status) => (
+                <button
+                  className={classNames(filter === status && "is-active")}
+                  key={status}
+                  onClick={() => setFilter(status)}
+                  type="button"
+                >
+                  {statusLabel(status)}
+                </button>
+              ))}
+            </div>
             {registrations.length === 0 ? (
               <p className="org-tournament-muted">No registrations are available for this tournament yet.</p>
             ) : (
               <div className="org-tournament-registration-list">
-                {registrations.map((registration) => (
+                {filteredRegistrations.map((registration) => (
                   <article className="org-tournament-registration-card" key={registration.id}>
                     <div>
                       <strong>{registration.teamName}</strong>
-                      <span>{registration.teamTag ?? registration.teamSlug ?? "No team tag"} - Captain: {registration.captainNickname ?? "Unknown"}</span>
+                      <span>
+                        {registration.teamTag ?? registration.teamSlug ?? "No team tag"} - Captain: {registration.captainNickname ?? "Unknown"} - Roster {registration.members.length || "?"}
+                      </span>
                     </div>
-                    <StatusBadge status={registration.status} />
+                    <StatusBadge status={registration.displayStatus} />
                     <span>{formatDate(registration.createdAt)}</span>
                     <div className="org-tournament-actions">
-                      <button disabled={isMutating || registration.status !== "pending"} onClick={() => onReviewRegistration(registration, "approve")} type="button">
+                      <button disabled={isMutating || registration.displayStatus === "checked-in" || registration.status === "approved"} onClick={() => onReviewRegistration(registration, "approve")} type="button">
                         <Check size={15} />
                         Approve
                       </button>
-                      <button disabled={isMutating || registration.status !== "pending"} onClick={() => onReviewRegistration(registration, "waitlist")} type="button">
+                      <button disabled={isMutating || registration.displayStatus === "checked-in" || registration.status === "waitlisted"} onClick={() => onReviewRegistration(registration, "waitlist")} type="button">
                         Waitlist
                       </button>
-                      <button disabled={isMutating || registration.status !== "pending"} onClick={() => onReviewRegistration(registration, "reject")} type="button">
+                      <button disabled={isMutating || registration.displayStatus === "checked-in" || registration.status === "rejected"} onClick={() => onReviewRegistration(registration, "reject")} type="button">
                         <X size={15} />
                         Reject
+                      </button>
+                      <button disabled={isMutating || registration.status !== "approved" || registration.displayStatus === "checked-in"} onClick={() => onReviewRegistration(registration, "check-in")} type="button">
+                        Check-in
+                      </button>
+                      <button disabled type="button">
+                        View Team
                       </button>
                     </div>
                   </article>
@@ -977,9 +1026,17 @@ function TournamentDetail({
 
           <section className="org-tournament-panel ops-panel">
             <div className="org-tournament-panel-title">
-              <h2>Activity / Audit</h2>
+              <h2>Registration Commands</h2>
             </div>
-            <p className="org-tournament-muted">Audit log endpoint is not available yet. Latest status changes are reflected by tournament updated_at.</p>
+            <p className="org-tournament-muted">Export, close registration, and bulk action endpoints are not available yet.</p>
+            <div className="org-tournament-side-actions">
+              <button className="org-tournament-secondary" disabled={isMutating} onClick={onRefresh} type="button">
+                Refresh Registrations
+              </button>
+              <button disabled type="button">Export List unavailable</button>
+              <button disabled type="button">Close Registration unavailable</button>
+              <button disabled type="button">Bulk Actions unavailable</button>
+            </div>
             <div className="org-tournament-audit-row">
               <span>Last Update</span>
               <strong>{formatDate(tournament.updatedAt)}</strong>
@@ -1012,6 +1069,15 @@ function SummaryCard({
         <span>{label}</span>
         <Icon size={18} />
       </div>
+      <strong>{String(value).padStart(2, "0")}</strong>
+    </article>
+  );
+}
+
+function RegistrationCount({ label, value }: { label: string; value: number }) {
+  return (
+    <article>
+      <span>{label}</span>
       <strong>{String(value).padStart(2, "0")}</strong>
     </article>
   );
