@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.mock.web.MockMultipartFile;
 
 import si.um.feri.dotaops.backend.auth.domain.AuthenticatedProfile;
 import si.um.feri.dotaops.backend.auth.domain.ProfileRole;
@@ -15,8 +16,12 @@ import si.um.feri.dotaops.backend.auth.domain.SupabaseJwtClaims;
 import si.um.feri.dotaops.backend.auth.service.CurrentUserProvider;
 import si.um.feri.dotaops.backend.auth.service.SupabasePrincipal;
 import si.um.feri.dotaops.backend.common.error.BadRequestException;
+import si.um.feri.dotaops.backend.common.error.ConflictException;
+import si.um.feri.dotaops.backend.opendota.domain.OpenDotaPlayerProfile;
+import si.um.feri.dotaops.backend.opendota.service.OpenDotaClient;
 import si.um.feri.dotaops.backend.profile.domain.Profile;
 import si.um.feri.dotaops.backend.profile.repository.CreateProfileCommand;
+import si.um.feri.dotaops.backend.profile.repository.ProfileBootstrapRepository;
 import si.um.feri.dotaops.backend.profile.repository.ProfileRepository;
 import si.um.feri.dotaops.backend.profile.repository.UpdateProfileCommand;
 import si.um.feri.dotaops.backend.profile.web.CreateProfileRequest;
@@ -35,8 +40,16 @@ class ProfileServiceTest {
     private static final UUID PROFILE_ID = UUID.fromString("22222222-2222-4222-8222-222222222222");
 
     private final ProfileRepository profileRepository = mock(ProfileRepository.class);
+    private final ProfileBootstrapRepository profileBootstrapRepository = mock(ProfileBootstrapRepository.class);
+    private final ProfileAvatarStorageService profileAvatarStorageService = mock(ProfileAvatarStorageService.class);
+    private final OpenDotaClient openDotaClient = mock(OpenDotaClient.class);
     private final CurrentUserProvider currentUserProvider = mock(CurrentUserProvider.class);
-    private final ProfileService profileService = new ProfileService(profileRepository, currentUserProvider);
+    private final ProfileService profileService = new ProfileService(
+            profileRepository,
+            profileBootstrapRepository,
+            profileAvatarStorageService,
+            openDotaClient,
+            currentUserProvider);
 
     @Test
     void getCurrentProfileUsesAuthenticatedProfileId() {
@@ -260,6 +273,93 @@ class ProfileServiceTest {
     }
 
     @Test
+    void updateCurrentAvatarStoresFileAndPersistsPublicUrl() {
+        MockMultipartFile avatar = new MockMultipartFile(
+                "avatar",
+                "avatar.png",
+                "image/png",
+                new byte[] {1, 2, 3});
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile());
+        when(profileRepository.findById(PROFILE_ID)).thenReturn(Optional.of(profile("CarryOne", "SI")));
+        when(profileAvatarStorageService.store(PROFILE_ID, avatar))
+                .thenReturn(new StoredProfileAvatar(PROFILE_ID + ".png", "image/png"));
+        when(profileRepository.updateById(
+                org.mockito.ArgumentMatchers.eq(PROFILE_ID),
+                org.mockito.ArgumentMatchers.any()))
+                .thenReturn(Optional.of(profile("CarryOne", "SI")));
+
+        var response = profileService.updateCurrentAvatar(avatar, "http://localhost:8080");
+
+        assertThat(response.avatarUrl())
+                .isEqualTo("http://localhost:8080/api/profiles/avatars/" + PROFILE_ID + ".png");
+        assertThat(response.persisted()).isTrue();
+
+        ArgumentCaptor<UpdateProfileCommand> captor = ArgumentCaptor.forClass(UpdateProfileCommand.class);
+        verify(profileRepository).updateById(org.mockito.ArgumentMatchers.eq(PROFILE_ID), captor.capture());
+        assertThat(captor.getValue().avatarUrlPresent()).isTrue();
+        assertThat(captor.getValue().avatarUrl()).isEqualTo(response.avatarUrl());
+    }
+
+    @Test
+    void syncCurrentOpenDotaProfileUsesExistingOpenDotaAccountId() {
+        OpenDotaPlayerProfile playerProfile = new OpenDotaPlayerProfile(
+                39734273L,
+                "CarryOne",
+                "https://cdn.example.test/avatar.png",
+                "https://steamcommunity.com/profiles/76561190000000001/");
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile());
+        when(profileRepository.findById(PROFILE_ID)).thenReturn(Optional.of(profile("CarryOne", "SI")));
+        when(openDotaClient.fetchPlayer(39734273L)).thenReturn(Optional.of(playerProfile));
+
+        var response = profileService.syncCurrentOpenDotaProfile();
+
+        assertThat(response.id()).isEqualTo(PROFILE_ID);
+        verify(profileBootstrapRepository).markOpenDotaProfileSynced(PROFILE_ID, playerProfile);
+    }
+
+    @Test
+    void syncCurrentOpenDotaProfileDerivesAccountIdFromSteamIdWhenMissing() {
+        OpenDotaPlayerProfile playerProfile = new OpenDotaPlayerProfile(
+                39734273L,
+                "CarryOne",
+                "https://cdn.example.test/avatar.png",
+                "https://steamcommunity.com/profiles/76561198000000001/");
+        Profile profile = profile("CarryOne", "SI", ProfileRole.PLAYER, "76561198000000001", null);
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile());
+        when(profileRepository.findById(PROFILE_ID)).thenReturn(Optional.of(profile));
+        when(openDotaClient.fetchPlayer(39734273L)).thenReturn(Optional.of(playerProfile));
+
+        profileService.syncCurrentOpenDotaProfile();
+
+        verify(openDotaClient).fetchPlayer(39734273L);
+        verify(profileBootstrapRepository).markOpenDotaProfileSynced(PROFILE_ID, playerProfile);
+    }
+
+    @Test
+    void syncCurrentOpenDotaProfileRequiresSteamOrOpenDotaIdentity() {
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile());
+        when(profileRepository.findById(PROFILE_ID))
+                .thenReturn(Optional.of(profile("CarryOne", "SI", ProfileRole.PLAYER, null, null)));
+
+        assertThatThrownBy(profileService::syncCurrentOpenDotaProfile)
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("A Steam account must be connected before OpenDota sync.");
+    }
+
+    @Test
+    void syncCurrentOpenDotaProfileRecordsOpenDotaFailure() {
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile());
+        when(profileRepository.findById(PROFILE_ID)).thenReturn(Optional.of(profile("CarryOne", "SI")));
+        when(openDotaClient.fetchPlayer(39734273L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(profileService::syncCurrentOpenDotaProfile)
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("OpenDota profile could not be synced for the current Steam account.");
+
+        verify(profileBootstrapRepository).markOpenDotaProfileSyncFailed(PROFILE_ID, 39734273L);
+    }
+
+    @Test
     void getCurrentProfileCreatesMissingSupabaseProfile() {
         SupabasePrincipal principal = new SupabasePrincipal(
                 AUTH_USER_ID,
@@ -374,6 +474,16 @@ class ProfileServiceTest {
     }
 
     private Profile profile(String nickname, String countryCode, ProfileRole role) {
+        return profile(nickname, countryCode, role, "76561190000000001", 39734273L);
+    }
+
+    private Profile profile(
+            String nickname,
+            String countryCode,
+            ProfileRole role,
+            String steamId,
+            Long opendotaAccountId
+    ) {
         OffsetDateTime now = OffsetDateTime.parse("2026-05-12T00:00:00Z");
 
         return new Profile(
@@ -381,8 +491,8 @@ class ProfileServiceTest {
                 AUTH_USER_ID,
                 nickname,
                 nickname,
-                "76561190000000001",
-                39734273L,
+                steamId,
+                opendotaAccountId,
                 role,
                 "https://cdn.example.test/avatar.png",
                 "Dota player",
