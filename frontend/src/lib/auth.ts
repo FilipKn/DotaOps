@@ -3,6 +3,7 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import {
   ApiRequestError,
+  getApiAuthenticated,
   patchApiAuthenticated,
   postFormApiAuthenticated
 } from "@/lib/api";
@@ -250,7 +251,10 @@ function profileFromBackend(
 
 export async function getCurrentUserProfile(): Promise<CurrentUserProfile | null> {
   const supabase = requireSupabaseClient();
-  const { data: userData, error: userError } = await supabase.auth.getUser();
+  const [{ data: userData, error: userError }, { data: sessionData }] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase.auth.getSession()
+  ]);
 
   if (userError) {
     throw userError;
@@ -260,6 +264,26 @@ export async function getCurrentUserProfile(): Promise<CurrentUserProfile | null
 
   if (!user) {
     return null;
+  }
+
+  if (sessionData.session?.access_token) {
+    try {
+      const backendProfile = profileFromBackend(
+        await getApiAuthenticated<BackendProfileResponse>(
+          "/me/profile",
+          sessionData.session.access_token
+        ),
+        user.email ?? null
+      );
+
+      if (backendProfile) {
+        return backendProfile;
+      }
+    } catch (error) {
+      if (!(error instanceof ApiRequestError && (error.status === 401 || error.status === 403 || error.status === 404))) {
+        console.warn("Backend current profile API unavailable; falling back to Supabase profile row.", error);
+      }
+    }
   }
 
   const { data, error } = await supabase

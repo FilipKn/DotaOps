@@ -172,9 +172,13 @@ function LoginRequired() {
 
 function NoTeamState({
   incomingInvitations,
+  isMutating,
+  onInvitationAction,
   onRefresh
 }: {
   incomingInvitations: TeamInvitation[];
+  isMutating: boolean;
+  onInvitationAction: (action: "accept" | "decline", invitationId: string) => void;
   onRefresh: () => void;
 }) {
   return (
@@ -201,6 +205,24 @@ function NoTeamState({
             <article key={invitation.id}>
               <strong>{invitation.teamName ?? "Team invitation"}</strong>
               <span>{invitation.status}</span>
+              {invitation.status === "pending" ? (
+                <div className="team-mgmt-empty-invite-actions">
+                  <button
+                    disabled={isMutating}
+                    onClick={() => onInvitationAction("accept", invitation.id)}
+                    type="button"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    disabled={isMutating}
+                    onClick={() => onInvitationAction("decline", invitation.id)}
+                    type="button"
+                  >
+                    Decline
+                  </button>
+                </div>
+              ) : null}
             </article>
           ))}
         </div>
@@ -458,7 +480,14 @@ export function TeamManagementPage() {
   }
 
   if (!team) {
-    return <NoTeamState incomingInvitations={incomingInvitations} onRefresh={load} />;
+    return (
+      <NoTeamState
+        incomingInvitations={incomingInvitations}
+        isMutating={isMutating}
+        onInvitationAction={(action, invitationId) => invitationAction(action, invitationId)}
+        onRefresh={load}
+      />
+    );
   }
 
   return (
@@ -672,16 +701,16 @@ function CommandCenter({
           <Mail size={18} />
           Send Invite
         </button>
-        <button disabled onClick={() => onPlaceholder("Roster lock endpoint is not available yet.")} type="button">
+        <button disabled={!canManageRoster} onClick={() => onPlaceholder("Roster lock endpoint is not available yet.")} type="button">
           <Lock size={18} />
           Lock Roster
         </button>
         <hr />
-        <button disabled onClick={() => onPlaceholder("Transfer captaincy endpoint is not available yet.")} type="button">
+        <button disabled={!canManageRoster} onClick={() => onPlaceholder("Transfer captaincy endpoint is not available yet.")} type="button">
           <RefreshCcw size={18} />
           Transfer Captaincy
         </button>
-        <button disabled onClick={() => onPlaceholder("Leave team endpoint is not available yet.")} type="button">
+        <button disabled={!canManageRoster} onClick={() => onPlaceholder("Leave team endpoint is not available yet.")} type="button">
           <UserMinus size={18} />
           Leave Team
         </button>
@@ -706,7 +735,7 @@ function CommandCenter({
         <button onClick={() => onPlaceholder("Invite history endpoint is not available yet.")} type="button">
           View Invite History
         </button>
-        <button disabled onClick={() => onPlaceholder("Clear declined endpoint is not available yet.")} type="button">
+        <button disabled={!canManageRoster} onClick={() => onPlaceholder("Clear declined endpoint is not available yet.")} type="button">
           Clear Declined
         </button>
       </aside>
@@ -723,16 +752,16 @@ function CommandCenter({
         Edit Roster
         <ChevronRight size={16} />
       </button>
-      <button disabled onClick={() => onPlaceholder("Transfer captaincy endpoint is not available yet.")} type="button">
+      <button disabled={!canManageRoster} onClick={() => onPlaceholder("Transfer captaincy endpoint is not available yet.")} type="button">
         Transfer Captaincy
         <ChevronRight size={16} />
       </button>
-      <button disabled onClick={() => onPlaceholder("Audit logs endpoint is not available yet.")} type="button">
+      <button onClick={() => onPlaceholder("Audit logs endpoint is not available yet.")} type="button">
         Audit Logs
         <ChevronRight size={16} />
       </button>
       <hr />
-      <button className="team-mgmt-danger" disabled onClick={() => onPlaceholder("Disband organization endpoint is not available yet.")} type="button">
+      <button className="team-mgmt-danger" disabled={!canManageRoster} onClick={() => onPlaceholder("Disband organization endpoint is not available yet.")} type="button">
         Disband Organization
       </button>
     </aside>
