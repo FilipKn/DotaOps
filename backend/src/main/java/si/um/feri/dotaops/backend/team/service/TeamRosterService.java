@@ -177,6 +177,10 @@ public class TeamRosterService {
             profileRepository.findById(inviteeProfileId)
                     .orElseThrow(() -> new ResourceNotFoundException("Profile", "id", inviteeProfileId));
 
+            if (inviteeEmail != null && !profileRepository.emailMatchesProfileAuthUser(inviteeProfileId, inviteeEmail)) {
+                throw new BadRequestException("Invitee profile id and invitee email must reference the same user.");
+            }
+
             if (teamMemberRepository.existsActive(teamId, inviteeProfileId)) {
                 throw new BadRequestException("Profile is already an active team member.");
             }
@@ -296,6 +300,14 @@ public class TeamRosterService {
         boolean emailMatches = currentEmail != null
                 && invitation.inviteeEmail() != null
                 && currentEmail.equals(invitation.inviteeEmail().trim().toLowerCase(Locale.ROOT));
+
+        if (invitation.inviteeProfileId() != null && invitation.inviteeEmail() != null) {
+            if (!profileMatches || !emailMatches) {
+                throw new AccessDeniedException("Only the invited user can respond to this invitation.");
+            }
+
+            return;
+        }
 
         if (!profileMatches && !emailMatches) {
             throw new AccessDeniedException("Only the invited user can respond to this invitation.");

@@ -44,9 +44,22 @@ public class TeamInvitationRepository {
         return jdbcTemplate.query(
                 selectTeamInvitationSql() + """
                 where (
-                  ti.invitee_profile_id = ?
+                  (
+                    ti.invitee_profile_id is not null
+                    and ti.invitee_email is not null
+                    and ti.invitee_profile_id = ?
+                    and cast(? as text) is not null
+                    and lower(ti.invitee_email) = cast(? as text)
+                  )
                   or (
-                    cast(? as text) is not null
+                    ti.invitee_profile_id is not null
+                    and ti.invitee_email is null
+                    and ti.invitee_profile_id = ?
+                  )
+                  or (
+                    ti.invitee_profile_id is null
+                    and ti.invitee_email is not null
+                    and cast(? as text) is not null
                     and lower(ti.invitee_email) = cast(? as text)
                   )
                 )
@@ -58,6 +71,9 @@ public class TeamInvitationRepository {
                 limit 100
                 """,
                 this::mapTeamInvitation,
+                profileId,
+                normalizedEmail,
+                normalizedEmail,
                 profileId,
                 normalizedEmail,
                 normalizedEmail,
