@@ -149,6 +149,42 @@ class TeamRosterServiceTest {
     }
 
     @Test
+    void createInvitationAllowsMatchingProfileAndEmail() {
+        when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.of(team()));
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile(CAPTAIN_PROFILE_ID, ProfileRole.PLAYER));
+        when(profileRepository.findById(INVITEE_PROFILE_ID)).thenReturn(Optional.of(profile(INVITEE_PROFILE_ID)));
+        when(profileRepository.emailMatchesProfileAuthUser(INVITEE_PROFILE_ID, "player@example.com")).thenReturn(true);
+        when(teamInvitationRepository.create(any()))
+                .thenReturn(invitation(TeamInvitationStatus.PENDING, INVITEE_PROFILE_ID, "player@example.com", null));
+
+        teamRosterService.createInvitation(
+                TEAM_ID,
+                new CreateTeamInvitationRequest(INVITEE_PROFILE_ID, "Player@Example.com", TeamMemberRole.CARRY, null));
+
+        ArgumentCaptor<CreateTeamInvitationCommand> captor = ArgumentCaptor.forClass(CreateTeamInvitationCommand.class);
+        verify(teamInvitationRepository).create(captor.capture());
+
+        assertThat(captor.getValue().inviteeProfileId()).isEqualTo(INVITEE_PROFILE_ID);
+        assertThat(captor.getValue().inviteeEmail()).isEqualTo("player@example.com");
+    }
+
+    @Test
+    void createInvitationRejectsProfileAndEmailForDifferentUsers() {
+        when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.of(team()));
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile(CAPTAIN_PROFILE_ID, ProfileRole.PLAYER));
+        when(profileRepository.findById(INVITEE_PROFILE_ID)).thenReturn(Optional.of(profile(INVITEE_PROFILE_ID)));
+        when(profileRepository.emailMatchesProfileAuthUser(INVITEE_PROFILE_ID, "other@example.com")).thenReturn(false);
+
+        assertThatThrownBy(() -> teamRosterService.createInvitation(
+                TEAM_ID,
+                new CreateTeamInvitationRequest(INVITEE_PROFILE_ID, "other@example.com", TeamMemberRole.CARRY, null)))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Invitee profile id and invitee email must reference the same user.");
+
+        verify(teamInvitationRepository, never()).create(any(CreateTeamInvitationCommand.class));
+    }
+
+    @Test
     void invitedUserAcceptsInvitationAndBecomesMember() {
         when(teamInvitationRepository.findById(INVITATION_ID))
                 .thenReturn(Optional.of(invitation(TeamInvitationStatus.PENDING, INVITEE_PROFILE_ID, null, null)));
@@ -178,6 +214,42 @@ class TeamRosterServiceTest {
         assertThatThrownBy(() -> teamRosterService.acceptInvitation(INVITATION_ID))
                 .isInstanceOf(AccessDeniedException.class);
 
+        verify(teamMemberRepository, never()).create(any());
+    }
+
+    @Test
+    void matchingProfileCannotAcceptInvitationWithDifferentEmailWhenBothAreSet() {
+        when(teamInvitationRepository.findById(INVITATION_ID))
+                .thenReturn(Optional.of(invitation(
+                        TeamInvitationStatus.PENDING,
+                        INVITEE_PROFILE_ID,
+                        "player@example.com",
+                        null)));
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile(INVITEE_PROFILE_ID, ProfileRole.PLAYER));
+        when(currentUserProvider.currentUser()).thenReturn(Optional.of(principal(INVITEE_PROFILE_ID, "other@example.com")));
+
+        assertThatThrownBy(() -> teamRosterService.acceptInvitation(INVITATION_ID))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(teamInvitationRepository, never()).accept(eq(INVITATION_ID), any());
+        verify(teamMemberRepository, never()).create(any());
+    }
+
+    @Test
+    void matchingEmailCannotAcceptInvitationForDifferentProfileWhenBothAreSet() {
+        when(teamInvitationRepository.findById(INVITATION_ID))
+                .thenReturn(Optional.of(invitation(
+                        TeamInvitationStatus.PENDING,
+                        INVITEE_PROFILE_ID,
+                        "player@example.com",
+                        null)));
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile(OTHER_PROFILE_ID, ProfileRole.PLAYER));
+        when(currentUserProvider.currentUser()).thenReturn(Optional.of(principal(OTHER_PROFILE_ID, "player@example.com")));
+
+        assertThatThrownBy(() -> teamRosterService.acceptInvitation(INVITATION_ID))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(teamInvitationRepository, never()).accept(eq(INVITATION_ID), any());
         verify(teamMemberRepository, never()).create(any());
     }
 

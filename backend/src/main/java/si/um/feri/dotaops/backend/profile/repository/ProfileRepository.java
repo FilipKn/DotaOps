@@ -136,6 +136,24 @@ public class ProfileRepository {
                 .findFirst();
     }
 
+    public boolean emailMatchesProfileAuthUser(UUID profileId, String normalizedEmail) {
+        Boolean matches = jdbcTemplate.queryForObject(
+                """
+                select exists (
+                  select 1
+                  from public.profiles p
+                  join auth.users u on u.id = p.auth_user_id
+                  where p.id = ?
+                    and lower(u.email) = ?
+                )
+                """,
+                Boolean.class,
+                profileId,
+                normalizedEmail);
+
+        return Boolean.TRUE.equals(matches);
+    }
+
     public Optional<Profile> findByNickname(String nickname) {
         return jdbcTemplate.query(
                         """
