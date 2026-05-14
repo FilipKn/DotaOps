@@ -21,11 +21,12 @@ import {
   X
 } from "lucide-react";
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
 import { ApiRequestError, type ApiFieldError } from "@/lib/api";
+import { getCurrentUserProfile, type ProfileRole } from "@/lib/auth";
 import {
   archiveOrganizerTournament,
   approveOrganizerRegistration,
@@ -253,6 +254,10 @@ function dashboardCounts(tournaments: OrganizerTournament[]) {
   };
 }
 
+function canAccessOrganizer(role?: ProfileRole | null) {
+  return role === "organizer" || role === "admin";
+}
+
 export function OrganizerCommandPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<ApiFieldError[]>([]);
@@ -266,7 +271,7 @@ export function OrganizerCommandPage() {
   const [tournaments, setTournaments] = useState<OrganizerTournament[]>([]);
   const [view, setView] = useState<OrganizerView>("dashboard");
 
-  async function loadTournaments() {
+  const loadTournaments = useCallback(async () => {
     setLoadState("loading");
     setActionError(null);
 
@@ -290,7 +295,38 @@ export function OrganizerCommandPage() {
       setLoadState("error");
       setActionError(errorMessage(error));
     }
-  }
+  }, []);
+
+  const loadOrganizerAccess = useCallback(async () => {
+    setLoadState("loading");
+    setActionError(null);
+    setFieldErrors([]);
+    setNotice(null);
+
+    try {
+      const profile = await getCurrentUserProfile();
+
+      if (!profile) {
+        setTournaments([]);
+        setLoadState("login");
+        setActionError("Login is required before opening organizer tournament controls.");
+        return;
+      }
+
+      if (!canAccessOrganizer(profile.role)) {
+        setTournaments([]);
+        setLoadState("permission");
+        setActionError("This section is only available to tournament organizers.");
+        return;
+      }
+
+      await loadTournaments();
+    } catch (error) {
+      setTournaments([]);
+      setLoadState("error");
+      setActionError(errorMessage(error));
+    }
+  }, [loadTournaments]);
 
   async function loadDetail(tournamentId: string) {
     setIsMutating(true);
@@ -314,10 +350,10 @@ export function OrganizerCommandPage() {
   }
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => void loadTournaments(), 0);
+    const timeout = window.setTimeout(() => void loadOrganizerAccess(), 0);
 
     return () => window.clearTimeout(timeout);
-  }, []);
+  }, [loadOrganizerAccess]);
 
   const counts = useMemo(() => dashboardCounts(tournaments), [tournaments]);
 
@@ -465,9 +501,19 @@ export function OrganizerCommandPage() {
               Login
             </Link>
           ) : null}
-          <button className="button ops-button-secondary" onClick={loadTournaments} type="button">
-            Retry
-          </button>
+          {loadState === "permission" ? (
+            <Link className="button ops-button-primary" href="/dashboard">
+              Back to Dashboard
+            </Link>
+          ) : null}
+          {loadState === "error" ? (
+            <button className="button ops-button-secondary" onClick={loadOrganizerAccess} type="button">
+              Retry
+            </button>
+          ) : null}
+          <Link className="button ops-button-secondary" href="/turnirji">
+            View Tournaments
+          </Link>
         </div>
       </section>
     );
