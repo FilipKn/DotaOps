@@ -5,60 +5,115 @@ import {
   Bell,
   Brackets,
   LayoutDashboard,
+  LogIn,
   Plus,
   RadioTower,
   Shield,
   Swords,
   Trophy,
+  UserPlus,
   UserRound,
   UsersRound
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 import { getCurrentUserProfile, type CurrentUserProfile } from "@/lib/auth";
+import { isOrganizerRole, routeAccessForPath } from "@/lib/route-access";
 import { classNames } from "@/lib/utils";
 
-const navItems = [
+const navItems: Array<{
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  organizerOnly?: boolean;
+}> = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/turnirji", label: "Tournaments", icon: Trophy },
-  { href: "/organizator", label: "Organizer", icon: Brackets },
+  { href: "/organizator", label: "Organizer", icon: Brackets, organizerOnly: true },
   { href: "/ekipe", label: "My Team", icon: UsersRound },
   { href: "/analitika", label: "Analytics", icon: BarChart3 },
   { href: "/profile", label: "Profile", icon: UserRound }
 ];
 
+const publicContentNavItems: Array<{
+  href: string;
+  icon: LucideIcon;
+  label: string;
+}> = [
+  { href: "/turnirji", label: "Tournaments", icon: Trophy },
+  { href: "/login", label: "Login", icon: LogIn },
+  { href: "/register", label: "Register", icon: UserPlus }
+];
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "mock data";
   const isRoleDashboard = pathname.startsWith("/dashboard");
-  const isPublicRoute = pathname === "/" || pathname === "/login" || pathname === "/register";
+  const access = routeAccessForPath(pathname);
   const [profile, setProfile] = useState<CurrentUserProfile | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(access !== "public");
+  const canUseOrganizer = isOrganizerRole(profile?.role);
+  const isPublicContentGuest = access === "public-content" && !profile;
 
   useEffect(() => {
     let isMounted = true;
 
-    getCurrentUserProfile()
-      .then((loadedProfile) => {
-        if (isMounted) {
-          setProfile(loadedProfile);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setProfile(null);
-        }
-      });
+    if (access === "public") {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    const timeout = window.setTimeout(() => {
+      if (!isMounted) {
+        return;
+      }
+
+      setIsCheckingAuth(true);
+
+      getCurrentUserProfile()
+        .then((loadedProfile) => {
+          if (isMounted) {
+            setProfile(loadedProfile);
+          }
+        })
+        .catch(() => {
+          if (isMounted) {
+            setProfile(null);
+          }
+        })
+        .finally(() => {
+          if (isMounted) {
+            setIsCheckingAuth(false);
+          }
+        });
+    }, 0);
 
     return () => {
       isMounted = false;
+      window.clearTimeout(timeout);
     };
-  }, [pathname]);
+  }, [access, pathname]);
+
+  useEffect(() => {
+    if (isCheckingAuth || profile || access === "public" || access === "public-content") {
+      return;
+    }
+
+    router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+  }, [access, isCheckingAuth, pathname, profile, router]);
 
   const primaryAction = useMemo(() => {
-    if (profile?.role === "organizer" || profile?.role === "admin") {
+    if (isPublicContentGuest) {
+      return { href: "/login", icon: LogIn, label: "Login" };
+    }
+
+    if (isOrganizerRole(profile?.role)) {
       return { href: "/organizator", icon: Plus, label: "New Tournament" };
     }
 
@@ -67,11 +122,55 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
 
     return { href: "/turnirji", icon: Trophy, label: "View Tournaments" };
-  }, [profile?.role]);
+  }, [isPublicContentGuest, profile?.role]);
   const PrimaryActionIcon = primaryAction.icon;
+  const visibleNavItems = useMemo(() => {
+    if (isPublicContentGuest) {
+      return publicContentNavItems;
+    }
 
-  if (isPublicRoute) {
+    return navItems.filter((item) => !item.organizerOnly || canUseOrganizer);
+  }, [canUseOrganizer, isPublicContentGuest]);
+  const profileHref = isPublicContentGuest ? "/login" : "/profile";
+  const profileLabel = isPublicContentGuest ? "PUBLIC OPS" : profile?.nickname ?? "SOLO_TACTICIAN";
+  const profileRoleLabel = isPublicContentGuest ? "Visitor" : profile?.role ?? "Profile";
+
+  if (access === "public") {
     return <>{children}</>;
+  }
+
+  if (isCheckingAuth && access !== "public-content") {
+    return (
+      <RouteState
+        detail="Checking your DotaOps session before opening this private workspace."
+        title="Loading session"
+      />
+    );
+  }
+
+  if (!isCheckingAuth && !profile && access !== "public-content") {
+    return (
+      <RouteState
+        action={<Link className="button ops-button-primary" href="/login">Login</Link>}
+        detail="This page requires an authenticated DotaOps account."
+        title="Login required"
+      />
+    );
+  }
+
+  if (access === "organizer" && !canUseOrganizer) {
+    return (
+      <RouteState
+        action={
+          <>
+            <Link className="button ops-button-primary" href="/dashboard">Back to Dashboard</Link>
+            <Link className="button ops-button-secondary" href="/turnirji">View Tournaments</Link>
+          </>
+        }
+        detail="This section is only available to tournament organizers and admins."
+        title="Organizer access required"
+      />
+    );
   }
 
   return (
@@ -88,7 +187,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Link>
 
         <nav className="nav-list" aria-label="Main navigation">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive =
               item.href === "/dashboard"
                 ? pathname === "/" || pathname.startsWith(item.href)
@@ -137,9 +236,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Bell size={17} />
               </button>
 
-              <Link className="topbar-profile" href="/profile" aria-label="User profile">
+              <Link className="topbar-profile" href={profileHref} aria-label="User profile">
                 <span className="topbar-avatar" aria-hidden="true">
-                  {profile?.avatarUrl ? (
+                  {!isPublicContentGuest && profile?.avatarUrl ? (
                     <span
                       className="topbar-avatar-image"
                       style={{ backgroundImage: `url(${profile.avatarUrl})` }}
@@ -149,8 +248,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                   )}
                 </span>
                 <span>
-                  <strong>{profile?.nickname ?? "SOLO_TACTICIAN"}</strong>
-                  <small>{profile?.role ?? "Profile"}</small>
+                  <strong>{profileLabel}</strong>
+                  <small>{profileRoleLabel}</small>
                 </span>
               </Link>
 
@@ -167,5 +266,26 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
     </div>
+  );
+}
+
+function RouteState({
+  action,
+  detail,
+  title
+}: {
+  action?: ReactNode;
+  detail: string;
+  title: string;
+}) {
+  return (
+    <main className="route-access-state">
+      <section className="route-access-panel ops-panel">
+        <p className="ops-label">DotaOps access control</p>
+        <h1>{title}</h1>
+        <p>{detail}</p>
+        {action ? <div>{action}</div> : null}
+      </section>
+    </main>
   );
 }

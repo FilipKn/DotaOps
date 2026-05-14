@@ -87,16 +87,23 @@ export function mapTournamentDto(value: BackendTournamentDto): Tournament {
 
   return {
     description: value.description ?? "Tournament details are being prepared.",
+    checkInClosesAt: value.checkInClosesAt ?? null,
+    checkInOpensAt: value.checkInOpensAt ?? null,
+    endsAt: value.endsAt ?? null,
     format: value.format ?? "Dota 2",
     id,
     organizer: value.organizerNickname ?? value.organizer ?? "DotaOps",
     prizePool: value.prizePool ?? "TBD",
+    publicVisible: value.publicVisible ?? null,
+    registrationClosesAt: value.registrationClosesAt ?? null,
+    registrationOpensAt: value.registrationOpensAt ?? null,
     registrationsCount: value.registrationsCount ?? 0,
     slug: fallbackSlug(value),
     startsAt: value.startsAt ?? fallbackDate,
     status: normalizeStatus(value.status),
     teamsCount: value.maxTeams ?? 0,
-    title: value.title ?? "Untitled Tournament"
+    title: value.title ?? "Untitled Tournament",
+    updatedAt: value.updatedAt ?? null
   };
 }
 

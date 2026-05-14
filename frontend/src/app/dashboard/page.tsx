@@ -9,7 +9,7 @@ interface DashboardPageProps {
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const params = await searchParams;
-  const role = normalizeDashboardRole(params?.role);
+  const role = params?.role ? normalizeDashboardRole(params.role) : undefined;
 
   return <RoleDashboard role={role} />;
 }
