@@ -4635,9 +4635,10 @@ textarea:focus {
 .public-ticker {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 38px;
   overflow-x: auto;
-  padding: 11px 0;
+  padding: 11px 64px;
   border-top: 1px solid rgba(171, 137, 133, 0.34);
   border-bottom: 1px solid rgba(171, 137, 133, 0.34);
   background: #180a09;
@@ -4656,7 +4657,6 @@ textarea:focus {
 }
 
 .public-ticker span:first-child {
-  margin-left: 64px;
   color: #7bd1f8;
 }
 
@@ -5479,6 +5479,12 @@ textarea:focus {
 
   .public-hero {
     min-height: 680px;
+  }
+
+  .public-ticker {
+    justify-content: flex-start;
+    padding-right: 20px;
+    padding-left: 20px;
   }
 
   .public-match-row,
