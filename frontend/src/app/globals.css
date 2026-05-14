@@ -6302,11 +6302,35 @@ textarea:focus {
 
 .team-mgmt-empty-list article {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 16px;
   padding: 12px;
   border: 1px solid var(--ops-line-soft);
   background: rgba(255, 255, 255, 0.04);
+}
+
+.team-mgmt-empty-invite-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.team-mgmt-empty-invite-actions button {
+  border: 1px solid rgba(255, 180, 171, 0.38);
+  background: rgba(255, 180, 171, 0.08);
+  color: var(--ops-text);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  padding: 8px 12px;
+  text-transform: uppercase;
+}
+
+.team-mgmt-empty-invite-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .team-mgmt-hero {
