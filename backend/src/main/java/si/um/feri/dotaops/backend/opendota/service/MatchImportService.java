@@ -11,9 +11,11 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import si.um.feri.dotaops.backend.auth.domain.AuthenticatedActor;
 import si.um.feri.dotaops.backend.auth.service.CurrentUserProvider;
 import si.um.feri.dotaops.backend.common.error.BadRequestException;
 import si.um.feri.dotaops.backend.common.error.ResourceNotFoundException;
@@ -47,7 +49,11 @@ public class MatchImportService {
     public MatchImportResponse importMatch(CreateMatchImportRequest request) {
         String dotaMatchId = normalizeDotaMatchId(request.dotaMatchId());
         long parsedMatchId = parseDotaMatchId(dotaMatchId);
-        UUID requestedBy = currentUserProvider.requireProfileId();
+        AuthenticatedActor actor = currentUserProvider.requireActor();
+        if (!actor.isOrganizer()) {
+            throw new AccessDeniedException("Only organizers or admins can import matches.");
+        }
+        UUID requestedBy = actor.requireProfileId();
 
         Optional<MatchImport> existing = matchImportRepository.findByDotaMatchId(dotaMatchId);
         if (existing.isPresent()

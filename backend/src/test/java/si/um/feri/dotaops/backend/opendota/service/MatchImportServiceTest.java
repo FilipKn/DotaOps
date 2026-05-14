@@ -9,7 +9,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.security.access.AccessDeniedException;
 
+import si.um.feri.dotaops.backend.auth.domain.AuthenticatedActor;
+import si.um.feri.dotaops.backend.auth.domain.ProfileRole;
 import si.um.feri.dotaops.backend.auth.service.CurrentUserProvider;
 import si.um.feri.dotaops.backend.common.error.BadRequestException;
 import si.um.feri.dotaops.backend.opendota.domain.MatchImport;
@@ -47,7 +50,7 @@ class MatchImportServiceTest {
     void importMatchCreatesProcessingRecordFetchesOpenDotaAndStoresReadyPayload() throws Exception {
         MatchImport processing = matchImport(MatchImportStatus.PROCESSING, null);
         MatchImport ready = matchImport(MatchImportStatus.READY, null);
-        when(currentUserProvider.requireProfileId()).thenReturn(REQUESTED_BY);
+        when(currentUserProvider.requireActor()).thenReturn(actor(ProfileRole.ORGANIZER));
         when(matchImportRepository.findByDotaMatchId(DOTA_MATCH_ID)).thenReturn(Optional.empty());
         when(matchImportRepository.createProcessing(DOTA_MATCH_ID, REQUESTED_BY)).thenReturn(processing);
         when(openDotaClient.fetchMatch(Long.parseLong(DOTA_MATCH_ID))).thenReturn(Optional.of(objectMapper.readTree("""
@@ -85,7 +88,7 @@ class MatchImportServiceTest {
     @Test
     void importMatchReturnsExistingReadyImportWithoutFetchingAgain() {
         MatchImport ready = matchImport(MatchImportStatus.READY, null);
-        when(currentUserProvider.requireProfileId()).thenReturn(REQUESTED_BY);
+        when(currentUserProvider.requireActor()).thenReturn(actor(ProfileRole.ORGANIZER));
         when(matchImportRepository.findByDotaMatchId(DOTA_MATCH_ID)).thenReturn(Optional.of(ready));
 
         var response = service.importMatch(new CreateMatchImportRequest(DOTA_MATCH_ID));
@@ -98,7 +101,7 @@ class MatchImportServiceTest {
     void importMatchMarksImportAsErrorWhenOpenDotaCannotFetchMatch() {
         MatchImport processing = matchImport(MatchImportStatus.PROCESSING, null);
         MatchImport error = matchImport(MatchImportStatus.ERROR, "OpenDota match was not found or could not be fetched.");
-        when(currentUserProvider.requireProfileId()).thenReturn(REQUESTED_BY);
+        when(currentUserProvider.requireActor()).thenReturn(actor(ProfileRole.ORGANIZER));
         when(matchImportRepository.findByDotaMatchId(DOTA_MATCH_ID)).thenReturn(Optional.empty());
         when(matchImportRepository.createProcessing(DOTA_MATCH_ID, REQUESTED_BY)).thenReturn(processing);
         when(openDotaClient.fetchMatch(Long.parseLong(DOTA_MATCH_ID))).thenReturn(Optional.empty());
@@ -116,6 +119,27 @@ class MatchImportServiceTest {
         assertThatThrownBy(() -> service.importMatch(new CreateMatchImportRequest("99999999999999999999")))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Dota match id is too large.");
+    }
+
+    @Test
+    void importMatchRejectsNonOrganizer() {
+        when(currentUserProvider.requireActor()).thenReturn(actor(ProfileRole.PLAYER));
+
+        assertThatThrownBy(() -> service.importMatch(new CreateMatchImportRequest(DOTA_MATCH_ID)))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Only organizers or admins can import matches.");
+
+        verify(matchImportRepository, never()).findByDotaMatchId(DOTA_MATCH_ID);
+        verify(openDotaClient, never()).fetchMatch(Long.parseLong(DOTA_MATCH_ID));
+    }
+
+    private static AuthenticatedActor actor(ProfileRole role) {
+        return new AuthenticatedActor(
+                UUID.fromString("33333333-3333-4333-8333-333333333333"),
+                REQUESTED_BY,
+                "organizer@example.com",
+                null,
+                role);
     }
 
     private static MatchImport matchImport(MatchImportStatus status, String errorMessage) {
