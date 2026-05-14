@@ -128,6 +128,14 @@ interface BackendTeamMemberResponse {
   updatedAt?: string | null;
 }
 
+interface BackendCurrentTeamResponse {
+  canManageRoster?: boolean;
+  captain?: boolean;
+  members?: BackendTeamMemberResponse[] | null;
+  team?: BackendTeamResponse | null;
+  teamResolution?: string | null;
+}
+
 interface BackendTeamInvitationResponse {
   acceptedAt?: string | null;
   createdAt?: string | null;
@@ -330,10 +338,20 @@ export async function loadTeamManagementData(): Promise<TeamManagementViewModel 
   }
 
   const accessToken = await getFreshAccessToken();
+  let protectedDataError: string | null = null;
+  let currentTeamAggregate: BackendCurrentTeamResponse | null = null;
+
+  try {
+    currentTeamAggregate = await getApiAuthenticated<BackendCurrentTeamResponse>("/me/team", accessToken);
+  } catch (error) {
+    protectedDataError = protectedErrorMessage(error);
+  }
+
   const teamsResult = await fetchApi<BackendTeamResponse[]>("/teams", []);
   let dataSource: "api" | "mock" = teamsResult.source;
   let teams = teamsResult.data.map(asTeam);
   let membersByTeam = new Map<string, TeamMember[]>();
+  const aggregateTeam = currentTeamAggregate?.team ? asTeam(currentTeamAggregate.team) : null;
 
   if (teams.length > 0) {
     const memberPairs = await Promise.all(
@@ -352,25 +370,45 @@ export async function loadTeamManagementData(): Promise<TeamManagementViewModel 
     membersByTeam = new Map([[fallback.team.id, fallback.members]]);
   }
 
-  // TODO: replace this resolution with GET /api/me/team when the backend aggregate endpoint exists.
-  const membershipTeam = currentProfile.profileId
-    ? teams.find((team) =>
-        (membersByTeam.get(team.id) ?? []).some((member) => member.profileId === currentProfile.profileId)
-      )
-    : null;
-  const selectedTeam = membershipTeam ?? teams[0] ?? null;
+  if (aggregateTeam) {
+    dataSource = "api";
+    teams = [aggregateTeam, ...teams.filter((team) => team.id !== aggregateTeam.id)];
+    membersByTeam.set(
+      aggregateTeam.id,
+      (currentTeamAggregate?.members ?? []).map(asMember)
+    );
+  }
+
+  const membershipTeam =
+    !aggregateTeam && currentProfile.profileId
+      ? teams.find((team) =>
+          (membersByTeam.get(team.id) ?? []).some((member) => member.profileId === currentProfile.profileId)
+        )
+      : null;
+  const selectedTeam = aggregateTeam ?? membershipTeam ?? (dataSource === "mock" ? teams[0] ?? null : null);
   const members = selectedTeam ? membersByTeam.get(selectedTeam.id) ?? [] : [];
-  const isCaptain = Boolean(
-    selectedTeam?.captainProfileId &&
-      currentProfile.profileId &&
-      selectedTeam.captainProfileId === currentProfile.profileId
-  );
-  const canManageRoster =
-    isCaptain || (dataSource === "mock" && currentProfile.role === "captain");
+  const isCaptain = aggregateTeam
+    ? Boolean(currentTeamAggregate?.captain)
+    : Boolean(
+        selectedTeam?.captainProfileId &&
+          currentProfile.profileId &&
+          selectedTeam.captainProfileId === currentProfile.profileId
+      );
+  const canManageRoster = aggregateTeam
+    ? Boolean(currentTeamAggregate?.canManageRoster)
+    : isCaptain || (dataSource === "mock" && currentProfile.role === "captain");
+  const teamResolution = aggregateTeam
+    ? currentTeamAggregate?.teamResolution ?? "Resolved from GET /api/me/team."
+    : membershipTeam
+      ? "Resolved from current profile membership."
+      : selectedTeam
+        ? "Mock fallback selected the first available team."
+        : currentTeamAggregate
+          ? currentTeamAggregate.teamResolution ?? "No team found for the current profile."
+          : "No team found for the current profile.";
   let outgoingInvitations: TeamInvitation[] = [];
   let incomingInvitations: TeamInvitation[] = [];
   let activeEvents: TournamentRegistration[] = [];
-  let protectedDataError: string | null = null;
 
   try {
     incomingInvitations = (
@@ -446,11 +484,7 @@ export async function loadTeamManagementData(): Promise<TeamManagementViewModel 
     outgoingInvitations,
     protectedDataError,
     team: selectedTeam,
-    teamResolution: membershipTeam
-      ? "Resolved from current profile membership."
-      : selectedTeam
-        ? "Temporary fallback selected the first available team until GET /api/me/team exists."
-        : "No team found for the current profile."
+    teamResolution
   };
 }
 

@@ -29,8 +29,10 @@ import si.um.feri.dotaops.backend.team.repository.TeamMemberRepository;
 import si.um.feri.dotaops.backend.team.repository.TeamRepository;
 import si.um.feri.dotaops.backend.team.web.AddTeamMemberRequest;
 import si.um.feri.dotaops.backend.team.web.CreateTeamInvitationRequest;
+import si.um.feri.dotaops.backend.team.web.CurrentTeamResponse;
 import si.um.feri.dotaops.backend.team.web.TeamInvitationResponse;
 import si.um.feri.dotaops.backend.team.web.TeamMemberResponse;
+import si.um.feri.dotaops.backend.team.web.TeamResponse;
 import si.um.feri.dotaops.backend.team.web.UpdateTeamMemberRequest;
 
 @Service
@@ -76,6 +78,15 @@ public class TeamRosterService {
                 .stream()
                 .map(TeamMemberResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public CurrentTeamResponse getCurrentTeam() {
+        AuthenticatedProfile currentProfile = currentUserProvider.requireProfile();
+
+        return teamRepository.findCurrentTeamForProfile(currentProfile.profileId())
+                .map(team -> currentTeamResponse(currentProfile, team))
+                .orElseGet(CurrentTeamResponse::none);
     }
 
     @Transactional
@@ -251,13 +262,32 @@ public class TeamRosterService {
     }
 
     private void ensureCanManageTeam(AuthenticatedProfile profile, Team team) {
-        if (profile.role() == ProfileRole.ORGANIZER
-                || profile.role() == ProfileRole.ADMIN
-                || profile.profileId().equals(team.captainProfileId())) {
+        if (canManageTeam(profile, team)) {
             return;
         }
 
         throw new AccessDeniedException("Only the team captain or an organizer can manage this team.");
+    }
+
+    private CurrentTeamResponse currentTeamResponse(AuthenticatedProfile profile, Team team) {
+        List<TeamMemberResponse> members = teamMemberRepository.findActiveByTeamId(team.id())
+                .stream()
+                .map(TeamMemberResponse::from)
+                .toList();
+        boolean captain = profile.profileId().equals(team.captainProfileId());
+
+        return new CurrentTeamResponse(
+                TeamResponse.from(team),
+                members,
+                captain,
+                canManageTeam(profile, team),
+                captain ? "Resolved from current captain ownership." : "Resolved from active team membership.");
+    }
+
+    private boolean canManageTeam(AuthenticatedProfile profile, Team team) {
+        return profile.role() == ProfileRole.ORGANIZER
+                || profile.role() == ProfileRole.ADMIN
+                || profile.profileId().equals(team.captainProfileId());
     }
 
     private void ensureCanRespondToInvitation(AuthenticatedProfile profile, TeamInvitation invitation) {

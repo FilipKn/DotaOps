@@ -56,7 +56,7 @@ public class SecurityConfig {
                                 "/api/teams/*/invitations",
                                 "/api/teams/*/tournament-registrations",
                                 "/api/teams/*/invitations/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/match-imports").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/match-imports").hasAnyRole("ORGANIZER", "ADMIN")
                         .requestMatchers(HttpMethod.GET,
                                 "/api/profiles/**",
                                 "/api/tournaments/**",

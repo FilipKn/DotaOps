@@ -41,6 +41,7 @@ import si.um.feri.dotaops.backend.auth.steam.service.SteamSessionTokenService;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -148,6 +149,16 @@ class SecurityConfigTest {
                         .header("Authorization", bearerToken(ORGANIZER_AUTH_USER_ID)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result").value("organizer"));
+    }
+
+    @Test
+    void matchImportRequiresOrganizerRole() throws Exception {
+        mockMvc.perform(post("/api/match-imports")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"dotaMatchId\":\"7894561230\"}")
+                        .header("Authorization", bearerToken(PLAYER_AUTH_USER_ID)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }
 
     @Test

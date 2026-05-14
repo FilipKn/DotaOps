@@ -40,6 +40,11 @@ public class TeamRosterController {
         return ApiResponse.of(teamRosterService.listActiveMembersByTeamSlug(slug));
     }
 
+    @GetMapping("/me/team")
+    ApiResponse<CurrentTeamResponse> getCurrentTeam() {
+        return ApiResponse.of(teamRosterService.getCurrentTeam());
+    }
+
     @PostMapping("/teams/{teamId}/members")
     ResponseEntity<ApiResponse<TeamMemberResponse>> addMember(
             @PathVariable UUID teamId,

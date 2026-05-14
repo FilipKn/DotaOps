@@ -84,6 +84,32 @@ public class TeamRepository {
                 .findFirst();
     }
 
+    public Optional<Team> findCurrentTeamForProfile(UUID profileId) {
+        return jdbcTemplate.query(
+                        selectTeamSql() + """
+                        where t.captain_profile_id = ?
+                           or exists (
+                             select 1
+                             from public.team_members tm
+                             where tm.team_id = t.id
+                               and tm.profile_id = ?
+                               and tm.is_active = true
+                           )
+                        order by
+                          case when t.captain_profile_id = ? then 0 else 1 end,
+                          t.updated_at desc nulls last,
+                          t.created_at desc,
+                          t.id desc
+                        limit 1
+                        """,
+                        this::mapTeam,
+                        profileId,
+                        profileId,
+                        profileId)
+                .stream()
+                .findFirst();
+    }
+
     public Team create(CreateTeamCommand command) {
         return jdbcTemplate.queryForObject(
                 """

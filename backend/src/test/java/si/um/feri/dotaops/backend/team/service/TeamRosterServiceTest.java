@@ -2,6 +2,7 @@ package si.um.feri.dotaops.backend.team.service;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -60,6 +61,33 @@ class TeamRosterServiceTest {
             teamInvitationRepository,
             profileRepository,
             currentUserProvider);
+
+    @Test
+    void currentTeamUsesCurrentProfileAndReturnsRosterPermissions() {
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile(CAPTAIN_PROFILE_ID, ProfileRole.PLAYER));
+        when(teamRepository.findCurrentTeamForProfile(CAPTAIN_PROFILE_ID)).thenReturn(Optional.of(team()));
+        when(teamMemberRepository.findActiveByTeamId(TEAM_ID)).thenReturn(List.of(member(true, TeamMemberRole.MID)));
+
+        var response = teamRosterService.getCurrentTeam();
+
+        assertThat(response.team().id()).isEqualTo(TEAM_ID);
+        assertThat(response.members()).hasSize(1);
+        assertThat(response.captain()).isTrue();
+        assertThat(response.canManageRoster()).isTrue();
+    }
+
+    @Test
+    void currentTeamReturnsEmptyResponseWhenProfileHasNoTeam() {
+        when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile(OTHER_PROFILE_ID, ProfileRole.PLAYER));
+        when(teamRepository.findCurrentTeamForProfile(OTHER_PROFILE_ID)).thenReturn(Optional.empty());
+
+        var response = teamRosterService.getCurrentTeam();
+
+        assertThat(response.team()).isNull();
+        assertThat(response.members()).isEmpty();
+        assertThat(response.captain()).isFalse();
+        assertThat(response.canManageRoster()).isFalse();
+    }
 
     @Test
     void captainCanAddMemberToOwnTeam() {

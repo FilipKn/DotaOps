@@ -96,6 +96,7 @@ class TournamentControllerTest {
                 .andExpect(jsonPath("$.data.items[0].id").value(TOURNAMENT_ID.toString()))
                 .andExpect(jsonPath("$.data.items[0].slug").value("mid-wars-open"))
                 .andExpect(jsonPath("$.data.items[0].status").value("published"))
+                .andExpect(jsonPath("$.data.items[0].teamsCount").value(8))
                 .andExpect(jsonPath("$.data.items[0].settings.teamSize").value(5))
                 .andExpect(jsonPath("$.data.page.totalElements").value(1));
     }
@@ -250,6 +251,7 @@ class TournamentControllerTest {
                 null,
                 "UTC",
                 8,
+                8,
                 3,
                 "Organizer",
                 "TBD",
@@ -272,6 +274,7 @@ class TournamentControllerTest {
                 null,
                 "UTC",
                 8,
+                8,
                 3,
                 "Organizer",
                 "TBD",
@@ -292,6 +295,7 @@ class TournamentControllerTest {
                 "Public qualifier",
                 "Default Dota 2 rules",
                 "TBD",
+                8,
                 8,
                 3,
                 STARTS_AT,

@@ -73,6 +73,13 @@ class TeamRosterApiIntegrationTest extends PostgresIntegrationTestSupport {
                 .andExpect(status().isCreated())
                 .andReturn());
 
+        mockMvc.perform(get("/api/me/team")
+                        .header("Authorization", bearerToken(captainAuthUserId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.team.id").value(teamId.toString()))
+                .andExpect(jsonPath("$.data.captain").value(true))
+                .andExpect(jsonPath("$.data.canManageRoster").value(true));
+
         UUID memberId = extractDataId(mockMvc.perform(post("/api/teams/" + teamId + "/members")
                         .header("Authorization", bearerToken(captainAuthUserId))
                         .contentType(MediaType.APPLICATION_JSON)

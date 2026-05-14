@@ -129,6 +129,31 @@ class TeamRosterControllerTest {
     }
 
     @Test
+    void currentTeamRequiresJwt() throws Exception {
+        mockMvc.perform(get("/api/me/team"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void currentTeamReturnsAggregate() throws Exception {
+        when(teamRosterService.getCurrentTeam()).thenReturn(new CurrentTeamResponse(
+                teamResponse(),
+                List.of(memberResponse(true)),
+                true,
+                true,
+                "Resolved from current captain ownership."));
+
+        mockMvc.perform(get("/api/me/team")
+                        .header("Authorization", bearerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.team.id").value(TEAM_ID.toString()))
+                .andExpect(jsonPath("$.data.members[0].id").value(MEMBER_ID.toString()))
+                .andExpect(jsonPath("$.data.captain").value(true))
+                .andExpect(jsonPath("$.data.canManageRoster").value(true));
+    }
+
+    @Test
     void listCurrentUserInvitationsReturnsInvites() throws Exception {
         when(teamRosterService.listCurrentUserInvitations("pending")).thenReturn(List.of(invitationResponse(
                 TeamInvitationStatus.PENDING,
@@ -181,6 +206,21 @@ class TeamRosterControllerTest {
                 active,
                 NOW,
                 active ? null : NOW,
+                NOW);
+    }
+
+    private static TeamResponse teamResponse() {
+        return new TeamResponse(
+                TEAM_ID,
+                "Ancient Stack",
+                "AS",
+                "ancient-stack",
+                PROFILE_ID,
+                "MidPulse",
+                "EU",
+                null,
+                null,
+                NOW,
                 NOW);
     }
 
