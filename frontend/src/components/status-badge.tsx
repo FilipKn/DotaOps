@@ -5,6 +5,7 @@ type Status = TournamentStatus | MatchStatus | ImportStatus;
 
 const labels: Record<Status, string> = {
   draft: "Draft",
+  archived: "Archived",
   registration: "Registration",
   published: "Published",
   live: "Live",
