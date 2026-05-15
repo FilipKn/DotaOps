@@ -23,6 +23,13 @@ const topTeams = [
   { name: "Gaimin Gladiators", rating: "1,865", tags: ["Global #5", "Winrate 62%"] }
 ];
 
+const platformStats = [
+  { icon: Trophy, label: "Active Tournaments", value: "14" },
+  { icon: Activity, label: "Live Matches", value: "42" },
+  { icon: RadioTower, label: "API Latency", value: "24ms" },
+  { icon: DatabaseZap, label: "Data Points/sec", value: "1,240,492" }
+];
+
 export function PublicHomepage() {
   return (
     <div className="public-home">
@@ -40,6 +47,9 @@ export function PublicHomepage() {
       <main>
         <section className="public-hero">
           <div className="public-hero-backdrop" />
+          <div className="public-hero-map" aria-hidden="true" />
+          <div className="public-hero-radar" aria-hidden="true" />
+          <div className="public-hero-particles" aria-hidden="true" />
           <div className="public-hero-copy">
             <span>Dominate the Draft</span>
             <h1>
@@ -62,18 +72,21 @@ export function PublicHomepage() {
         </section>
 
         <section className="public-ticker" aria-label="Public platform statistics">
-          <span>
-            <Trophy size={14} /> Active Tournaments: 14
-          </span>
-          <span>
-            <Activity size={14} /> Live Matches: 42
-          </span>
-          <span>
-            <RadioTower size={14} /> API Latency: 24ms
-          </span>
-          <span>
-            <DatabaseZap size={14} /> Data Points/sec: 1,240,492
-          </span>
+          <div className="public-ticker-track">
+            {[0, 1].map((group) => (
+              <div className="public-ticker-group" aria-hidden={group > 0} key={group}>
+                {platformStats.map((stat) => {
+                  const Icon = stat.icon;
+
+                  return (
+                    <span key={`${group}-${stat.label}`}>
+                      <Icon size={14} /> {stat.label}: {stat.value}
+                    </span>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </section>
 
         <section className="public-section public-spotlight">
