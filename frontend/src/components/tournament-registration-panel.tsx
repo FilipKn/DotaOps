@@ -13,9 +13,10 @@ import {
   XCircle
 } from "lucide-react";
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 
 import { ApiRequestError } from "@/lib/api";
+import { isOrganizerRole } from "@/lib/route-access";
 import { loadTeamManagementData, type TeamManagementViewModel } from "@/lib/team-data";
 import {
   checkInTournamentRegistration,
@@ -127,8 +128,10 @@ export function TournamentRegistrationPanel({ tournament }: TournamentRegistrati
     [data?.members]
   );
   const hasRealTournamentId = uuidPattern.test(tournament.id);
-  const isCaptain = Boolean(data?.isCaptain && data.team && data.dataSource === "api");
-  const canSubmit = Boolean(isCaptain && data?.team && !registration && hasRealTournamentId);
+  const hasBackendTeam = Boolean(data?.team && data.dataSource === "api");
+  const isCaptain = Boolean(data?.isCaptain && hasBackendTeam);
+  const isOrganizer = isOrganizerRole(data?.currentProfile.role);
+  const canSubmit = Boolean(isCaptain && !registration && hasRealTournamentId);
   const validationItems = [
     {
       ok: Boolean(data?.team),
@@ -234,12 +237,17 @@ export function TournamentRegistrationPanel({ tournament }: TournamentRegistrati
         <div>
           <p className="ops-label">Registration protocol</p>
           <h2>Login required</h2>
-          <p>Log in as a team captain to submit a squad registration or view team status.</p>
+          <p>Log in to register your team for this tournament.</p>
         </div>
-        <Link className="ops-button-primary button" href="/login">
-          <LogIn size={17} />
-          Login
-        </Link>
+        <div className="tournament-registration-actions">
+          <Link className="ops-button-primary button" href="/login">
+            <LogIn size={17} />
+            Login
+          </Link>
+          <Link className="ops-button-secondary button" href="/register">
+            Register
+          </Link>
+        </div>
       </section>
     );
   }
@@ -271,6 +279,40 @@ export function TournamentRegistrationPanel({ tournament }: TournamentRegistrati
           onCheckIn={checkIn}
           registration={registration}
           tournament={tournament}
+        />
+      ) : isOrganizer && !isCaptain ? (
+        <RegistrationInfoCard
+          actions={
+            <Link className="ops-button-primary button" href="/organizator">
+              Open Organizer
+            </Link>
+          }
+          detail="Organizer accounts manage tournament submissions from the protected organizer workspace. Captain-only team submission is hidden here unless this account is also the team's captain."
+          eyebrow="Organizer controls"
+          title="Manage registrations in Organizer"
+        />
+      ) : !hasBackendTeam ? (
+        <RegistrationInfoCard
+          actions={
+            <Link className="ops-button-primary button" href="/ekipe">
+              View My Team
+            </Link>
+          }
+          detail="You need to join or create a team before registering for tournaments."
+          eyebrow="Team required"
+          title="No team found"
+        />
+      ) : !isCaptain ? (
+        <RegistrationInfoCard
+          actions={
+            <Link className="ops-button-primary button" href="/ekipe">
+              View My Team
+            </Link>
+          }
+          detail="Only the team captain can submit this team to a tournament."
+          eyebrow="Captain permission required"
+          teamName={data?.team?.name}
+          title="Team registration is captain-only"
         />
       ) : (
         <section className="tournament-registration-grid">
@@ -353,6 +395,34 @@ export function TournamentRegistrationPanel({ tournament }: TournamentRegistrati
           </aside>
         </section>
       )}
+    </section>
+  );
+}
+
+function RegistrationInfoCard({
+  actions,
+  detail,
+  eyebrow,
+  teamName,
+  title
+}: {
+  actions: ReactNode;
+  detail: string;
+  eyebrow: string;
+  teamName?: string | null;
+  title: string;
+}) {
+  return (
+    <section className="tournament-registration-shell ops-panel">
+      <div>
+        <p className="ops-label">{eyebrow}</p>
+        <h2>{title}</h2>
+        {teamName ? <p>Current team: <strong>{teamName}</strong></p> : null}
+        <p>{detail}</p>
+      </div>
+      <div className="tournament-registration-actions">
+        {actions}
+      </div>
     </section>
   );
 }
