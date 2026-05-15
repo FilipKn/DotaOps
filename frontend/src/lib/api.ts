@@ -1,6 +1,7 @@
 import type { ApiResult } from "@/lib/types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL;
+const SERVER_API_URL = process.env.NEXT_SERVER_API_URL ?? process.env.INTERNAL_API_URL;
 
 type ApiRequestInit = RequestInit & {
   next?: {
@@ -30,6 +31,12 @@ export class ApiRequestError extends Error {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function resolveApiUrl() {
+  return typeof window === "undefined"
+    ? SERVER_API_URL ?? PUBLIC_API_URL
+    : PUBLIC_API_URL;
 }
 
 function unwrapBackendPayload(value: unknown) {
@@ -165,11 +172,13 @@ function hasCompatibleShape<T>(value: unknown, fallback: T): value is T {
 }
 
 export async function getApi<T>(path: string, init?: ApiRequestInit): Promise<T> {
-  if (!API_URL) {
+  const apiUrl = resolveApiUrl();
+
+  if (!apiUrl) {
     throw new Error("Backend API URL is not configured.");
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${apiUrl}${path}`, {
     ...init,
     cache: init?.cache ?? "no-store",
     headers: {
@@ -192,11 +201,13 @@ export async function getApi<T>(path: string, init?: ApiRequestInit): Promise<T>
 }
 
 export async function postApi<T>(path: string, body: unknown): Promise<T> {
-  if (!API_URL) {
+  const apiUrl = resolveApiUrl();
+
+  if (!apiUrl) {
     throw new Error("Backend API URL is not configured.");
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${apiUrl}${path}`, {
     body: JSON.stringify(body),
     cache: "no-store",
     credentials: "include",
@@ -219,12 +230,14 @@ export async function patchApiAuthenticated<T>(
   body: unknown,
   accessToken?: string
 ): Promise<T> {
-  if (!API_URL) {
+  const apiUrl = resolveApiUrl();
+
+  if (!apiUrl) {
     throw new Error("Backend API URL is not configured.");
   }
 
   const resolvedToken = await resolveAccessToken(accessToken);
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${apiUrl}${path}`, {
     body: JSON.stringify(body),
     cache: "no-store",
     credentials: "include",
@@ -252,12 +265,14 @@ export async function getApiAuthenticated<T>(
   path: string,
   accessToken?: string
 ): Promise<T> {
-  if (!API_URL) {
+  const apiUrl = resolveApiUrl();
+
+  if (!apiUrl) {
     throw new Error("Backend API URL is not configured.");
   }
 
   const resolvedToken = await resolveAccessToken(accessToken);
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${apiUrl}${path}`, {
     cache: "no-store",
     credentials: "include",
     headers: {
@@ -285,12 +300,14 @@ export async function postApiAuthenticated<T>(
   body: unknown,
   accessToken?: string
 ): Promise<T> {
-  if (!API_URL) {
+  const apiUrl = resolveApiUrl();
+
+  if (!apiUrl) {
     throw new Error("Backend API URL is not configured.");
   }
 
   const resolvedToken = await resolveAccessToken(accessToken);
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${apiUrl}${path}`, {
     body: JSON.stringify(body),
     cache: "no-store",
     credentials: "include",
@@ -318,12 +335,14 @@ export async function deleteApiAuthenticated<T>(
   path: string,
   accessToken?: string
 ): Promise<T> {
-  if (!API_URL) {
+  const apiUrl = resolveApiUrl();
+
+  if (!apiUrl) {
     throw new Error("Backend API URL is not configured.");
   }
 
   const resolvedToken = await resolveAccessToken(accessToken);
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${apiUrl}${path}`, {
     cache: "no-store",
     credentials: "include",
     headers: {
@@ -351,12 +370,14 @@ export async function postFormApiAuthenticated<T>(
   body: FormData,
   accessToken?: string
 ): Promise<T> {
-  if (!API_URL) {
+  const apiUrl = resolveApiUrl();
+
+  if (!apiUrl) {
     throw new Error("Backend API URL is not configured.");
   }
 
   const resolvedToken = await resolveAccessToken(accessToken);
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${apiUrl}${path}`, {
     body,
     cache: "no-store",
     credentials: "include",
@@ -384,12 +405,14 @@ export async function fetchApi<T>(
   fallback: T,
   init?: RequestInit
 ): Promise<ApiResult<T>> {
-  if (!API_URL) {
+  const apiUrl = resolveApiUrl();
+
+  if (!apiUrl) {
     return { data: fallback, source: "mock" };
   }
 
   try {
-    const response = await fetch(`${API_URL}${path}`, {
+    const response = await fetch(`${apiUrl}${path}`, {
       ...init,
       headers: {
         "Content-Type": "application/json",

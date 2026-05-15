@@ -7,6 +7,8 @@ import { TournamentCard } from "@/components/tournament-card";
 import { TournamentMetaGrid } from "@/components/tournament-meta-grid";
 import { getTournaments } from "@/lib/data";
 
+export const dynamic = "force-dynamic";
+
 export default async function TournamentsPage() {
   const tournaments = await getTournaments();
   const liveTournaments = tournaments.filter((tournament) => tournament.status === "live").length;

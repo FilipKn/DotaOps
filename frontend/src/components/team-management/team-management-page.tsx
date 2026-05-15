@@ -24,10 +24,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { FormEvent } from "react";
 import type { RefObject } from "react";
 import type { LucideIcon } from "lucide-react";
 
 import {
+  createTeam,
   acceptTeamInvitation,
   cancelTeamInvitation,
   declineTeamInvitation,
@@ -39,9 +41,11 @@ import {
   type TeamInvitationStatus,
   type TeamManagementViewModel,
   type TeamMember,
-  type TeamMemberRole
+  type TeamMemberRole,
+  type CreateTeamInput
 } from "@/lib/team-data";
 import { classNames } from "@/lib/utils";
+import { ApiRequestError } from "@/lib/api";
 
 type TeamTab = "overview" | "roster" | "invitations";
 type InviteFilter = "all" | TeamInvitationStatus;
@@ -170,24 +174,68 @@ function LoginRequired() {
   );
 }
 
+function readableError(caught: unknown, fallback: string) {
+  if (caught instanceof ApiRequestError && caught.errors.length > 0) {
+    const details = caught.errors
+      .map((fieldError) => [fieldError.field, fieldError.message].filter(Boolean).join(": "))
+      .filter(Boolean)
+      .join(" ");
+
+    return details ? `${caught.message} ${details}` : caught.message;
+  }
+
+  return caught instanceof Error ? caught.message : fallback;
+}
+
 function NoTeamState({
   incomingInvitations,
   isMutating,
+  message,
   onInvitationAction,
+  onCreateTeam,
   onRefresh
 }: {
   incomingInvitations: TeamInvitation[];
   isMutating: boolean;
+  message: string | null;
   onInvitationAction: (action: "accept" | "decline", invitationId: string) => void;
+  onCreateTeam: (input: CreateTeamInput) => Promise<void>;
   onRefresh: () => void;
 }) {
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [teamInput, setTeamInput] = useState<CreateTeamInput>({
+    description: "",
+    name: "",
+    region: "",
+    slug: "",
+    tag: ""
+  });
+
+  async function submitCreateTeam(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFormError(null);
+
+    if (teamInput.name.trim().length < 2) {
+      setFormError("Team name must be at least 2 characters.");
+      return;
+    }
+
+    await onCreateTeam(teamInput);
+  }
+
   return (
     <section className="team-mgmt-state ops-panel">
       <p className="ops-label">No active squad</p>
       <h1>You are not currently in a team</h1>
-      <p>Accept an invitation to join a roster. Creating teams and join requests are prepared for backend support.</p>
+      <p>Create a team to become its captain, or accept an invitation to join an existing roster.</p>
       <div className="team-mgmt-empty-actions">
-        <button className="button button-primary ops-button-primary" disabled type="button">
+        <button
+          className="button button-primary ops-button-primary"
+          disabled={isMutating}
+          onClick={() => setShowCreateForm((current) => !current)}
+          type="button"
+        >
           Create Team
         </button>
         <button className="button button-secondary" disabled type="button">
@@ -198,6 +246,86 @@ function NoTeamState({
           Retry
         </button>
       </div>
+      {message ? <p className="team-mgmt-message team-mgmt-error">{message}</p> : null}
+      {formError ? <p className="team-mgmt-message team-mgmt-error">{formError}</p> : null}
+      {showCreateForm ? (
+        <form className="team-mgmt-create-form" onSubmit={submitCreateTeam}>
+          <label>
+            <span>Team name</span>
+            <input
+              disabled={isMutating}
+              maxLength={80}
+              minLength={2}
+              onChange={(event) => setTeamInput((current) => ({ ...current, name: event.target.value }))}
+              placeholder="Team Liquid"
+              required
+              type="text"
+              value={teamInput.name}
+            />
+          </label>
+          <label>
+            <span>Team tag</span>
+            <input
+              disabled={isMutating}
+              maxLength={16}
+              onChange={(event) => setTeamInput((current) => ({ ...current, tag: event.target.value }))}
+              placeholder="TL"
+              type="text"
+              value={teamInput.tag}
+            />
+          </label>
+          <label>
+            <span>Slug</span>
+            <input
+              disabled={isMutating}
+              maxLength={80}
+              onChange={(event) => setTeamInput((current) => ({ ...current, slug: event.target.value }))}
+              pattern="[A-Za-z0-9]+(-[A-Za-z0-9]+)*"
+              placeholder="team-liquid"
+              type="text"
+              value={teamInput.slug}
+            />
+          </label>
+          <label>
+            <span>Region</span>
+            <input
+              disabled={isMutating}
+              maxLength={80}
+              onChange={(event) => setTeamInput((current) => ({ ...current, region: event.target.value }))}
+              placeholder="EU West"
+              type="text"
+              value={teamInput.region}
+            />
+          </label>
+          <label className="team-mgmt-create-field-wide">
+            <span>Description</span>
+            <textarea
+              disabled={isMutating}
+              maxLength={500}
+              onChange={(event) => setTeamInput((current) => ({ ...current, description: event.target.value }))}
+              placeholder="Short team profile for tournament operations."
+              rows={4}
+              value={teamInput.description}
+            />
+          </label>
+          <div className="team-mgmt-empty-actions team-mgmt-create-field-wide">
+            <button className="button button-primary ops-button-primary" disabled={isMutating} type="submit">
+              {isMutating ? "Creating..." : "Create Team"}
+            </button>
+            <button
+              className="button button-secondary"
+              disabled={isMutating}
+              onClick={() => {
+                setFormError(null);
+                setShowCreateForm(false);
+              }}
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : null}
       {incomingInvitations.length > 0 ? (
         <div className="team-mgmt-empty-list">
           <span className="ops-label">Incoming invitations</span>
@@ -453,6 +581,23 @@ export function TeamManagementPage() {
     }
   }
 
+  async function createNewTeam(input: CreateTeamInput) {
+    setIsMutating(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      await createTeam(input);
+      setNotice("Team created successfully.");
+      await load();
+      setActiveTab("overview");
+    } catch (caught) {
+      setError(readableError(caught, "Team could not be created."));
+    } finally {
+      setIsMutating(false);
+    }
+  }
+
   if (isLoading) {
     return <div className="team-mgmt-state ops-panel">Loading team command uplink...</div>;
   }
@@ -484,6 +629,8 @@ export function TeamManagementPage() {
       <NoTeamState
         incomingInvitations={incomingInvitations}
         isMutating={isMutating}
+        message={error}
+        onCreateTeam={createNewTeam}
         onInvitationAction={(action, invitationId) => invitationAction(action, invitationId)}
         onRefresh={load}
       />

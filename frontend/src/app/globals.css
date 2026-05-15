@@ -6670,6 +6670,54 @@ textarea:focus {
   gap: 10px;
 }
 
+.team-mgmt-create-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 6px;
+  padding: 18px;
+  border: 1px solid var(--ops-line-soft);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.team-mgmt-create-form label {
+  display: grid;
+  gap: 8px;
+}
+
+.team-mgmt-create-form label > span {
+  color: var(--ops-muted);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.team-mgmt-create-form input,
+.team-mgmt-create-form textarea {
+  width: 100%;
+  border: 1px solid rgba(255, 180, 171, 0.28);
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--ops-text);
+  font: inherit;
+  padding: 12px 13px;
+}
+
+.team-mgmt-create-form textarea {
+  resize: vertical;
+}
+
+.team-mgmt-create-form input:disabled,
+.team-mgmt-create-form textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.team-mgmt-create-field-wide {
+  grid-column: 1 / -1;
+}
+
 .team-mgmt-empty-list {
   display: grid;
   gap: 8px;
