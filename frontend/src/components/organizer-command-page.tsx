@@ -272,7 +272,15 @@ function canAccessOrganizer(role?: ProfileRole | null) {
   return role === "organizer" || role === "admin";
 }
 
-export function OrganizerCommandPage() {
+export function OrganizerCommandPage({
+  initialSlug,
+  initialTournamentId,
+  initialView
+}: {
+  initialSlug?: string;
+  initialTournamentId?: string;
+  initialView?: string;
+}) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<ApiFieldError[]>([]);
   const [form, setForm] = useState<TournamentFormState>(emptyForm);
@@ -293,21 +301,23 @@ export function OrganizerCommandPage() {
       const nextTournaments = await listOrganizerTournaments();
       setTournaments(nextTournaments);
       setLoadState("ready");
+      return nextTournaments;
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 401) {
         setLoadState("login");
         setActionError("Login session expired. Please log in again.");
-        return;
+        return [];
       }
 
       if (error instanceof ApiRequestError && error.status === 403) {
         setLoadState("permission");
         setActionError("Organizer access is required for this tournament interface.");
-        return;
+        return [];
       }
 
       setLoadState("error");
       setActionError(errorMessage(error));
+      return [];
     }
   }, []);
 
@@ -334,13 +344,51 @@ export function OrganizerCommandPage() {
         return;
       }
 
-      await loadTournaments();
+      const nextTournaments = await listOrganizerTournaments();
+      setTournaments(nextTournaments);
+      setLoadState("ready");
+
+      if (initialView === "registrations" && (initialTournamentId || initialSlug)) {
+        const matchedTournament = nextTournaments.find(
+          (tournament) =>
+            (initialTournamentId && tournament.id === initialTournamentId) ||
+            (initialSlug && tournament.slug === initialSlug)
+        );
+
+        if (!matchedTournament) {
+          setActionError("Tournament not found in organizer workspace.");
+          setView("dashboard");
+          return;
+        }
+
+        const [tournament, registrationList] = await Promise.all([
+          getOrganizerTournament(matchedTournament.id),
+          listOrganizerTournamentRegistrations(matchedTournament.id)
+        ]);
+
+        setSelectedTournament(tournament);
+        setRegistrations(registrationList);
+        setView("detail");
+      }
     } catch (error) {
       setTournaments([]);
+
+      if (error instanceof ApiRequestError && error.status === 401) {
+        setLoadState("login");
+        setActionError("Login session expired. Please log in again.");
+        return;
+      }
+
+      if (error instanceof ApiRequestError && error.status === 403) {
+        setLoadState("permission");
+        setActionError("Organizer access is required for this tournament interface.");
+        return;
+      }
+
       setLoadState("error");
       setActionError(errorMessage(error));
     }
-  }, [loadTournaments]);
+  }, [initialSlug, initialTournamentId, initialView]);
 
   async function loadDetail(tournamentId: string) {
     setIsMutating(true);
@@ -929,7 +977,7 @@ function TournamentDetail({
             <MetaCard icon={Trophy} label="Registered Teams" value={String(tournament.registrationsCount)} />
           </section>
 
-          <section className="org-tournament-panel ops-panel">
+          <section className="org-tournament-panel ops-panel" id="registration-review">
             <div className="org-tournament-panel-title">
               <div>
                 <p className="ops-label">Registration Review</p>

@@ -3,6 +3,7 @@
 import {
   deleteApiAuthenticated,
   fetchApi,
+  getApi,
   getApiAuthenticated,
   patchApiAuthenticated,
   postApiAuthenticated
@@ -102,6 +103,14 @@ export interface TeamInvitationInput {
   proposedRole: TeamMemberRole;
 }
 
+export interface CreateTeamInput {
+  description?: string;
+  name: string;
+  region?: string;
+  slug?: string;
+  tag?: string;
+}
+
 interface BackendTeamResponse {
   captainNickname?: string | null;
   captainProfileId?: string | null;
@@ -163,6 +172,12 @@ interface BackendTournamentRegistrationResponse {
   tournamentId: string;
   tournamentSlug?: string | null;
   tournamentTitle?: string | null;
+}
+
+interface BackendTeamPageResponse {
+  content?: BackendTeamResponse[];
+  data?: BackendTeamResponse[] | BackendTeamPageResponse | null;
+  items?: BackendTeamResponse[];
 }
 
 const fallbackRoles: TeamMemberRole[] = ["carry", "mid", "offlane", "support", "support"];
@@ -250,6 +265,51 @@ function asRegistration(response: BackendTournamentRegistrationResponse): Tourna
     tournamentSlug: response.tournamentSlug ?? null,
     tournamentTitle: response.tournamentTitle ?? null
   };
+}
+
+function isBackendTeam(value: unknown): value is BackendTeamResponse {
+  return value !== null && typeof value === "object" && "id" in value && "name" in value && "slug" in value;
+}
+
+function extractTeamList(value: unknown): BackendTeamResponse[] | null {
+  if (Array.isArray(value)) {
+    return value.every(isBackendTeam) ? value : null;
+  }
+
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const payload = value as BackendTeamPageResponse;
+
+  if (Array.isArray(payload.content)) {
+    return payload.content.every(isBackendTeam) ? payload.content : null;
+  }
+
+  if (Array.isArray(payload.items)) {
+    return payload.items.every(isBackendTeam) ? payload.items : null;
+  }
+
+  if (payload.data) {
+    return extractTeamList(payload.data);
+  }
+
+  return null;
+}
+
+async function listTeams() {
+  try {
+    const payload = await getApi<unknown>("/teams");
+    const teams = extractTeamList(payload);
+
+    if (!teams) {
+      throw new Error("Team list response has an unsupported shape.");
+    }
+
+    return { data: teams.map(asTeam), source: "api" as const };
+  } catch {
+    return { data: [] as TeamSummary[], source: "mock" as const };
+  }
 }
 
 function mockTeamData() {
@@ -347,9 +407,9 @@ export async function loadTeamManagementData(): Promise<TeamManagementViewModel 
     protectedDataError = protectedErrorMessage(error);
   }
 
-  const teamsResult = await fetchApi<BackendTeamResponse[]>("/teams", []);
+  const teamsResult = await listTeams();
   let dataSource: "api" | "mock" = teamsResult.source;
-  let teams = teamsResult.data.map(asTeam);
+  let teams = teamsResult.data;
   let membersByTeam = new Map<string, TeamMember[]>();
   const aggregateTeam = currentTeamAggregate?.team ? asTeam(currentTeamAggregate.team) : null;
 
@@ -503,6 +563,24 @@ export async function sendTeamInvitation(teamId: string, input: TeamInvitationIn
         inviteeEmail: uuidPattern.test(invitee) ? null : invitee,
         inviteeProfileId: uuidPattern.test(invitee) ? invitee : null,
         proposedRole: input.proposedRole
+      },
+      accessToken
+    )
+  );
+}
+
+export async function createTeam(input: CreateTeamInput) {
+  const accessToken = await getFreshAccessToken();
+
+  return asTeam(
+    await postApiAuthenticated<BackendTeamResponse>(
+      "/teams",
+      {
+        description: input.description?.trim() || null,
+        name: input.name.trim(),
+        region: input.region?.trim() || null,
+        slug: input.slug?.trim() || null,
+        tag: input.tag?.trim() || null
       },
       accessToken
     )

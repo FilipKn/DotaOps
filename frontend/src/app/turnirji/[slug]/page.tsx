@@ -31,6 +31,8 @@ interface TournamentDetailPageProps {
   }>;
 }
 
+export const dynamic = "force-dynamic";
+
 export async function generateStaticParams() {
   const tournaments = await getTournaments();
 

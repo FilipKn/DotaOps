@@ -16,6 +16,7 @@ import Link from "next/link";
 import { FormEvent, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 
 import { ApiRequestError } from "@/lib/api";
+import { listOrganizerTournaments } from "@/lib/organizer-tournament-data";
 import { isOrganizerRole } from "@/lib/route-access";
 import { loadTeamManagementData, type TeamManagementViewModel } from "@/lib/team-data";
 import {
@@ -82,6 +83,7 @@ export function TournamentRegistrationPanel({ tournament }: TournamentRegistrati
   const [error, setError] = useState<string | null>(null);
   const [isMutating, setIsMutating] = useState(false);
   const [message, setMessage] = useState("");
+  const [manageableTournamentId, setManageableTournamentId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [registration, setRegistration] = useState<TournamentRegistration | null>(null);
   const [state, setState] = useState<LoadState>("loading");
@@ -89,6 +91,7 @@ export function TournamentRegistrationPanel({ tournament }: TournamentRegistrati
   const load = useCallback(async () => {
     setState("loading");
     setError(null);
+    setManageableTournamentId(null);
     setNotice(null);
 
     try {
@@ -108,6 +111,20 @@ export function TournamentRegistrationPanel({ tournament }: TournamentRegistrati
         setRegistration(findTournamentRegistration(registrations, tournament));
       } else {
         setRegistration(null);
+      }
+
+      if (isOrganizerRole(nextData.currentProfile.role)) {
+        try {
+          const organizerTournaments = await listOrganizerTournaments();
+          const matchedTournament = organizerTournaments.find(
+            (organizerTournament) =>
+              organizerTournament.id === tournament.id ||
+              organizerTournament.slug === tournament.slug
+          );
+          setManageableTournamentId(matchedTournament?.id ?? null);
+        } catch {
+          setManageableTournamentId(null);
+        }
       }
 
       setState("ready");
@@ -132,6 +149,7 @@ export function TournamentRegistrationPanel({ tournament }: TournamentRegistrati
   const isCaptain = Boolean(data?.isCaptain && hasBackendTeam);
   const isOrganizer = isOrganizerRole(data?.currentProfile.role);
   const canSubmit = Boolean(isCaptain && !registration && hasRealTournamentId);
+  const organizerHref = `/organizator?tournamentId=${encodeURIComponent(manageableTournamentId ?? tournament.id)}&slug=${encodeURIComponent(tournament.slug)}&view=registrations#registration-review`;
   const validationItems = [
     {
       ok: Boolean(data?.team),
@@ -280,16 +298,27 @@ export function TournamentRegistrationPanel({ tournament }: TournamentRegistrati
           registration={registration}
           tournament={tournament}
         />
-      ) : isOrganizer && !isCaptain ? (
+      ) : isOrganizer && !isCaptain && manageableTournamentId ? (
         <RegistrationInfoCard
           actions={
-            <Link className="ops-button-primary button" href="/organizator">
+            <Link className="ops-button-primary button" href={organizerHref}>
               Open Organizer
             </Link>
           }
           detail="Organizer accounts manage tournament submissions from the protected organizer workspace. Captain-only team submission is hidden here unless this account is also the team's captain."
           eyebrow="Organizer controls"
           title="Manage registrations in Organizer"
+        />
+      ) : isOrganizer && !isCaptain ? (
+        <RegistrationInfoCard
+          actions={
+            <Link className="ops-button-secondary button" href="/turnirji">
+              View Tournaments
+            </Link>
+          }
+          detail="This public tournament is not managed by your organizer account."
+          eyebrow="Read-only public tournament"
+          title="Organizer management unavailable"
         />
       ) : !hasBackendTeam ? (
         <RegistrationInfoCard
