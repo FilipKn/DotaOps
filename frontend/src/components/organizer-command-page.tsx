@@ -350,7 +350,7 @@ export function OrganizerCommandPage() {
     try {
       const [tournament, registrationList] = await Promise.all([
         getOrganizerTournament(tournamentId),
-        listOrganizerTournamentRegistrations(tournamentId).catch(() => [])
+        listOrganizerTournamentRegistrations(tournamentId)
       ]);
 
       setSelectedTournament(tournament);
