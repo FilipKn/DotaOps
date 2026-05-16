@@ -22,10 +22,12 @@ import si.um.feri.dotaops.backend.config.properties.CorsProperties;
 import si.um.feri.dotaops.backend.config.properties.SteamAuthProperties;
 import si.um.feri.dotaops.backend.config.properties.SteamSessionProperties;
 import si.um.feri.dotaops.backend.config.properties.SupabaseAuthProperties;
+import si.um.feri.dotaops.backend.config.properties.SupabaseStorageProperties;
 
 @Configuration
 @EnableConfigurationProperties({
         SupabaseAuthProperties.class,
+        SupabaseStorageProperties.class,
         SteamAuthProperties.class,
         SteamSessionProperties.class,
         CorsProperties.class

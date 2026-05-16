@@ -39,7 +39,6 @@ import si.um.feri.dotaops.backend.profile.service.ProfileService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
@@ -294,8 +293,9 @@ class ProfileControllerTest {
 
     @Test
     void uploadCurrentAvatarReturnsPersistedAvatarUrl() throws Exception {
-        when(profileService.updateCurrentAvatar(any(), anyString())).thenReturn(new AvatarUploadResponse(
-                "http://localhost/api/profiles/avatars/" + PROFILE_ID + ".png",
+        when(profileService.updateCurrentAvatar(any())).thenReturn(new AvatarUploadResponse(
+                "https://project.supabase.co/storage/v1/object/public/dotaops-images/profiles/"
+                        + PROFILE_ID + "/avatars/avatar.png",
                 "Avatar uploaded successfully.",
                 true));
 
@@ -305,7 +305,8 @@ class ProfileControllerTest {
                         .header("Authorization", bearerToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.avatarUrl").value(
-                        "http://localhost/api/profiles/avatars/" + PROFILE_ID + ".png"))
+                        "https://project.supabase.co/storage/v1/object/public/dotaops-images/profiles/"
+                                + PROFILE_ID + "/avatars/avatar.png"))
                 .andExpect(jsonPath("$.data.persisted").value(true));
     }
 
