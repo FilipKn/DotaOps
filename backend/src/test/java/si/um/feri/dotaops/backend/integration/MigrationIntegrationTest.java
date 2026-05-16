@@ -106,6 +106,7 @@ class MigrationIntegrationTest extends PostgresIntegrationTestSupport {
                       ('profile_external_accounts_one_primary_idx'),
                       ('profiles_nickname_ci_unique_idx'),
                       ('profiles_opendota_account_id_unique_idx'),
+                      ('match_slots_team_idx'),
                       ('steam_login_states_expires_idx'),
                       ('matches_tournament_stage_idx')
                 ) as expected(indexname)
