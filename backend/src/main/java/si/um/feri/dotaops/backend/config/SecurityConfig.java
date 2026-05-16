@@ -22,10 +22,12 @@ import si.um.feri.dotaops.backend.config.properties.CorsProperties;
 import si.um.feri.dotaops.backend.config.properties.SteamAuthProperties;
 import si.um.feri.dotaops.backend.config.properties.SteamSessionProperties;
 import si.um.feri.dotaops.backend.config.properties.SupabaseAuthProperties;
+import si.um.feri.dotaops.backend.config.properties.SupabaseStorageProperties;
 
 @Configuration
 @EnableConfigurationProperties({
         SupabaseAuthProperties.class,
+        SupabaseStorageProperties.class,
         SteamAuthProperties.class,
         SteamSessionProperties.class,
         CorsProperties.class
@@ -56,6 +58,10 @@ public class SecurityConfig {
                                 "/api/teams/*/invitations",
                                 "/api/teams/*/tournament-registrations",
                                 "/api/teams/*/invitations/**").authenticated()
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/tournament-groups/*/teams",
+                                "/api/tournament-groups/*/standings",
+                                "/api/public/tournament-groups/*/standings").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/match-imports").hasAnyRole("ORGANIZER", "ADMIN")
                         .requestMatchers(HttpMethod.GET,
                                 "/api/profiles/**",

@@ -26,6 +26,8 @@ import si.um.feri.dotaops.backend.profile.repository.ProfileRepository;
 import si.um.feri.dotaops.backend.profile.repository.UpdateProfileCommand;
 import si.um.feri.dotaops.backend.profile.web.CreateProfileRequest;
 import si.um.feri.dotaops.backend.profile.web.UpdateProfileRequest;
+import si.um.feri.dotaops.backend.storage.service.StoredImage;
+import si.um.feri.dotaops.backend.storage.service.SupabaseImageStorageService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -41,13 +43,13 @@ class ProfileServiceTest {
 
     private final ProfileRepository profileRepository = mock(ProfileRepository.class);
     private final ProfileBootstrapRepository profileBootstrapRepository = mock(ProfileBootstrapRepository.class);
-    private final ProfileAvatarStorageService profileAvatarStorageService = mock(ProfileAvatarStorageService.class);
+    private final SupabaseImageStorageService imageStorageService = mock(SupabaseImageStorageService.class);
     private final OpenDotaClient openDotaClient = mock(OpenDotaClient.class);
     private final CurrentUserProvider currentUserProvider = mock(CurrentUserProvider.class);
     private final ProfileService profileService = new ProfileService(
             profileRepository,
             profileBootstrapRepository,
-            profileAvatarStorageService,
+            imageStorageService,
             openDotaClient,
             currentUserProvider);
 
@@ -273,7 +275,7 @@ class ProfileServiceTest {
     }
 
     @Test
-    void updateCurrentAvatarStoresFileAndPersistsPublicUrl() {
+    void updateCurrentAvatarStoresImageInSupabaseAndPersistsPublicUrl() {
         MockMultipartFile avatar = new MockMultipartFile(
                 "avatar",
                 "avatar.png",
@@ -281,17 +283,22 @@ class ProfileServiceTest {
                 new byte[] {1, 2, 3});
         when(currentUserProvider.requireProfile()).thenReturn(authenticatedProfile());
         when(profileRepository.findById(PROFILE_ID)).thenReturn(Optional.of(profile("CarryOne", "SI")));
-        when(profileAvatarStorageService.store(PROFILE_ID, avatar))
-                .thenReturn(new StoredProfileAvatar(PROFILE_ID + ".png", "image/png"));
+        when(imageStorageService.storeProfileAvatar(PROFILE_ID, avatar))
+                .thenReturn(new StoredImage(
+                        "profiles/" + PROFILE_ID + "/avatars/avatar.png",
+                        "https://project.supabase.co/storage/v1/object/public/dotaops-images/profiles/"
+                                + PROFILE_ID + "/avatars/avatar.png",
+                        "image/png"));
         when(profileRepository.updateById(
                 org.mockito.ArgumentMatchers.eq(PROFILE_ID),
                 org.mockito.ArgumentMatchers.any()))
                 .thenReturn(Optional.of(profile("CarryOne", "SI")));
 
-        var response = profileService.updateCurrentAvatar(avatar, "http://localhost:8080");
+        var response = profileService.updateCurrentAvatar(avatar);
 
         assertThat(response.avatarUrl())
-                .isEqualTo("http://localhost:8080/api/profiles/avatars/" + PROFILE_ID + ".png");
+                .isEqualTo("https://project.supabase.co/storage/v1/object/public/dotaops-images/profiles/"
+                        + PROFILE_ID + "/avatars/avatar.png");
         assertThat(response.persisted()).isTrue();
 
         ArgumentCaptor<UpdateProfileCommand> captor = ArgumentCaptor.forClass(UpdateProfileCommand.class);

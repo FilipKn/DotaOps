@@ -1,6 +1,5 @@
 package si.um.feri.dotaops.backend.profile.service;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -12,7 +11,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.util.UriUtils;
 
 import si.um.feri.dotaops.backend.auth.domain.AuthenticatedProfile;
 import si.um.feri.dotaops.backend.auth.domain.ProfileRole;
@@ -34,26 +32,28 @@ import si.um.feri.dotaops.backend.profile.web.AvatarUploadResponse;
 import si.um.feri.dotaops.backend.profile.web.CreateProfileRequest;
 import si.um.feri.dotaops.backend.profile.web.ProfileResponse;
 import si.um.feri.dotaops.backend.profile.web.UpdateProfileRequest;
+import si.um.feri.dotaops.backend.storage.service.StoredImage;
+import si.um.feri.dotaops.backend.storage.service.SupabaseImageStorageService;
 
 @Service
 public class ProfileService {
 
     private final ProfileRepository profileRepository;
     private final ProfileBootstrapRepository profileBootstrapRepository;
-    private final ProfileAvatarStorageService profileAvatarStorageService;
+    private final SupabaseImageStorageService imageStorageService;
     private final OpenDotaClient openDotaClient;
     private final CurrentUserProvider currentUserProvider;
 
     public ProfileService(
             ProfileRepository profileRepository,
             ProfileBootstrapRepository profileBootstrapRepository,
-            ProfileAvatarStorageService profileAvatarStorageService,
+            SupabaseImageStorageService imageStorageService,
             OpenDotaClient openDotaClient,
             CurrentUserProvider currentUserProvider
     ) {
         this.profileRepository = profileRepository;
         this.profileBootstrapRepository = profileBootstrapRepository;
-        this.profileAvatarStorageService = profileAvatarStorageService;
+        this.imageStorageService = imageStorageService;
         this.openDotaClient = openDotaClient;
         this.currentUserProvider = currentUserProvider;
     }
@@ -155,16 +155,9 @@ public class ProfileService {
         }
     }
 
-    @Transactional
-    public AvatarUploadResponse updateCurrentAvatar(
-            MultipartFile avatar,
-            String publicBaseUrl
-    ) {
+    public AvatarUploadResponse updateCurrentAvatar(MultipartFile avatar) {
         Profile currentProfile = ensureCurrentProfile();
-        StoredProfileAvatar storedAvatar = profileAvatarStorageService.store(currentProfile.id(), avatar);
-        String avatarUrl = publicBaseUrl
-                + "/api/profiles/avatars/"
-                + UriUtils.encodePathSegment(storedAvatar.filename(), StandardCharsets.UTF_8);
+        StoredImage storedAvatar = imageStorageService.storeProfileAvatar(currentProfile.id(), avatar);
 
         try {
             profileRepository.updateById(
@@ -175,7 +168,7 @@ public class ProfileService {
                                     false,
                                     null,
                                     true,
-                                    avatarUrl,
+                                    storedAvatar.publicUrl(),
                                     false,
                                     null,
                                     false,
@@ -185,7 +178,7 @@ public class ProfileService {
             throw profileConstraintException(exception);
         }
 
-        return new AvatarUploadResponse(avatarUrl, "Avatar uploaded successfully.", true);
+        return new AvatarUploadResponse(storedAvatar.publicUrl(), "Avatar uploaded successfully.", true);
     }
 
     public ProfileResponse syncCurrentOpenDotaProfile() {
