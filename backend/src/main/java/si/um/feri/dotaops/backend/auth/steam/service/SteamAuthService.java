@@ -33,6 +33,8 @@ import si.um.feri.dotaops.backend.auth.steam.domain.SteamProfileUpsertResult;
 import si.um.feri.dotaops.backend.auth.steam.repository.SteamLoginStateRepository;
 import si.um.feri.dotaops.backend.auth.steam.repository.SteamProfileRepository;
 import si.um.feri.dotaops.backend.common.error.BadRequestException;
+import si.um.feri.dotaops.backend.common.security.ClientIpAddressResolver;
+import si.um.feri.dotaops.backend.common.security.RequestRateLimiter;
 import si.um.feri.dotaops.backend.config.properties.SteamAuthProperties;
 import si.um.feri.dotaops.backend.profile.service.SteamProfileBootstrapService;
 
@@ -52,6 +54,8 @@ public class SteamAuthService {
     private final SteamOpenIdClient openIdClient;
     private final CurrentUserProvider currentUserProvider;
     private final SteamProfileBootstrapService profileBootstrapService;
+    private final ClientIpAddressResolver clientIpAddressResolver;
+    private final RequestRateLimiter requestRateLimiter;
     private final SecureRandom secureRandom;
     private final Clock clock;
 
@@ -62,7 +66,9 @@ public class SteamAuthService {
             SteamProfileRepository profileRepository,
             SteamOpenIdClient openIdClient,
             CurrentUserProvider currentUserProvider,
-            SteamProfileBootstrapService profileBootstrapService
+            SteamProfileBootstrapService profileBootstrapService,
+            ClientIpAddressResolver clientIpAddressResolver,
+            RequestRateLimiter requestRateLimiter
     ) {
         this(
                 properties,
@@ -71,6 +77,8 @@ public class SteamAuthService {
                 openIdClient,
                 currentUserProvider,
                 profileBootstrapService,
+                clientIpAddressResolver,
+                requestRateLimiter,
                 new SecureRandom(),
                 Clock.systemUTC());
     }
@@ -82,6 +90,8 @@ public class SteamAuthService {
             SteamOpenIdClient openIdClient,
             CurrentUserProvider currentUserProvider,
             SteamProfileBootstrapService profileBootstrapService,
+            ClientIpAddressResolver clientIpAddressResolver,
+            RequestRateLimiter requestRateLimiter,
             SecureRandom secureRandom,
             Clock clock
     ) {
@@ -91,12 +101,17 @@ public class SteamAuthService {
         this.openIdClient = openIdClient;
         this.currentUserProvider = currentUserProvider;
         this.profileBootstrapService = profileBootstrapService;
+        this.clientIpAddressResolver = clientIpAddressResolver;
+        this.requestRateLimiter = requestRateLimiter;
         this.secureRandom = secureRandom;
         this.clock = clock;
     }
 
     @Transactional
     public URI beginLogin(HttpServletRequest request) {
+        String clientIp = clientIpAddressResolver.resolve(request);
+        requestRateLimiter.checkSteamLogin(clientIp);
+
         String rawState = generateState();
         String stateHash = hashState(rawState);
         URI returnTo = returnUrlWithState(rawState);
@@ -111,7 +126,7 @@ public class SteamAuthService {
                 normalizeOptional(properties.frontendRedirectUrl()),
                 profileId,
                 authUserId,
-                clientIp(request),
+                clientIp,
                 normalizeOptional(request.getHeader("User-Agent")),
                 OffsetDateTime.now(clock).plus(properties.stateTtl()));
 
@@ -265,15 +280,6 @@ public class SteamAuthService {
         } catch (Exception exception) {
             throw new IllegalStateException("Could not hash Steam login state.", exception);
         }
-    }
-
-    private String clientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (StringUtils.hasText(forwardedFor)) {
-            return forwardedFor.split(",", 2)[0].trim();
-        }
-
-        return normalizeOptional(request.getRemoteAddr());
     }
 
     private String normalizeOptional(String value) {
