@@ -31,17 +31,20 @@ public class MatchManagementService {
     private final TournamentRepository tournamentRepository;
     private final CurrentUserProvider currentUserProvider;
     private final DatabaseActorContext databaseActorContext;
+    private final MatchAdvancementService matchAdvancementService;
 
     public MatchManagementService(
             MatchRepository matchRepository,
             TournamentRepository tournamentRepository,
             CurrentUserProvider currentUserProvider,
-            DatabaseActorContext databaseActorContext
+            DatabaseActorContext databaseActorContext,
+            MatchAdvancementService matchAdvancementService
     ) {
         this.matchRepository = matchRepository;
         this.tournamentRepository = tournamentRepository;
         this.currentUserProvider = currentUserProvider;
         this.databaseActorContext = databaseActorContext;
+        this.matchAdvancementService = matchAdvancementService;
     }
 
     @Transactional(readOnly = true)
@@ -126,7 +129,7 @@ public class MatchManagementService {
 
         TournamentMatch updated = matchRepository.finish(match.id(), now())
                 .orElseThrow(() -> new ResourceNotFoundException("Match", "id", matchId));
-        matchRepository.propagateWinner(updated.id(), updated.winnerTeamId());
+        matchAdvancementService.advanceAfterResult(match, updated, actor.profileId());
         return MatchResponse.from(updated);
     }
 
@@ -150,7 +153,7 @@ public class MatchManagementService {
                         request.winnerTeamId(),
                         now())
                 .orElseThrow(() -> new ResourceNotFoundException("Match", "id", matchId));
-        matchRepository.propagateWinner(updated.id(), updated.winnerTeamId());
+        matchAdvancementService.advanceAfterResult(match, updated, actor.profileId());
 
         return MatchResponse.from(updated);
     }
@@ -226,10 +229,6 @@ public class MatchManagementService {
     private void ensureCanSubmitResult(TournamentMatch match) {
         if (match.status() == MatchStatus.CANCELLED) {
             throw new ConflictException("Cancelled matches cannot receive results.");
-        }
-
-        if (match.status() == MatchStatus.FINISHED) {
-            throw new ConflictException("Finished match results cannot be changed through this endpoint.");
         }
     }
 

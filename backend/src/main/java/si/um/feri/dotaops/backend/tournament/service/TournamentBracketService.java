@@ -24,7 +24,9 @@ import si.um.feri.dotaops.backend.tournament.domain.BracketMatch;
 import si.um.feri.dotaops.backend.tournament.domain.BracketParticipant;
 import si.um.feri.dotaops.backend.tournament.domain.MatchSlotName;
 import si.um.feri.dotaops.backend.tournament.domain.MatchSlotSourceType;
+import si.um.feri.dotaops.backend.tournament.domain.MatchStatus;
 import si.um.feri.dotaops.backend.tournament.domain.Tournament;
+import si.um.feri.dotaops.backend.tournament.domain.TournamentMatch;
 import si.um.feri.dotaops.backend.tournament.dto.BracketResponse;
 import si.um.feri.dotaops.backend.tournament.dto.GenerateBracketRequest;
 import si.um.feri.dotaops.backend.tournament.repository.CreateBracketMatchCommand;
@@ -43,17 +45,20 @@ public class TournamentBracketService {
     private final TournamentRepository tournamentRepository;
     private final CurrentUserProvider currentUserProvider;
     private final DatabaseActorContext databaseActorContext;
+    private final MatchAdvancementService matchAdvancementService;
 
     public TournamentBracketService(
             TournamentBracketRepository bracketRepository,
             TournamentRepository tournamentRepository,
             CurrentUserProvider currentUserProvider,
-            DatabaseActorContext databaseActorContext
+            DatabaseActorContext databaseActorContext,
+            MatchAdvancementService matchAdvancementService
     ) {
         this.bracketRepository = bracketRepository;
         this.tournamentRepository = tournamentRepository;
         this.currentUserProvider = currentUserProvider;
         this.databaseActorContext = databaseActorContext;
+        this.matchAdvancementService = matchAdvancementService;
     }
 
     @Transactional
@@ -91,6 +96,8 @@ public class TournamentBracketService {
                 bracketSize,
                 participants.size(),
                 participantsBySeed);
+        advanceGeneratedByeMatches(generatedMatches, actor.profileId());
+        generatedMatches = bracketRepository.findBracket(tournament.id(), stageName);
 
         return BracketResponse.from(tournament.id(), stageName, BRACKET_TYPE, bracketSize, generatedMatches);
     }
@@ -331,6 +338,44 @@ public class TournamentBracketService {
                 .count();
 
         return (int) firstRoundMatches * 2;
+    }
+
+    private void advanceGeneratedByeMatches(List<BracketMatch> matches, UUID actorProfileId) {
+        matches.stream()
+                .filter(match -> "finished".equals(match.status()))
+                .filter(match -> match.winnerTeamId() != null)
+                .forEach(match -> {
+                    TournamentMatch sourceMatch = toTournamentMatch(match);
+                    matchAdvancementService.advanceAfterResult(sourceMatch, sourceMatch, actorProfileId);
+                });
+    }
+
+    private TournamentMatch toTournamentMatch(BracketMatch match) {
+        return new TournamentMatch(
+                match.id(),
+                match.tournamentId(),
+                match.groupId(),
+                match.roundNumber(),
+                match.bracketPosition(),
+                match.stageName(),
+                match.roundName(),
+                MatchStatus.fromDatabaseValue(match.status()),
+                match.teamAId(),
+                match.teamAName(),
+                match.teamBId(),
+                match.teamBName(),
+                match.scoreA(),
+                match.scoreB(),
+                match.winnerTeamId(),
+                match.winnerTeamName(),
+                match.bestOf(),
+                match.scheduledAt(),
+                match.startedAt(),
+                match.finishedAt(),
+                match.cancelledAt(),
+                match.cancellationReason(),
+                null,
+                null);
     }
 
     private Tournament findTournament(UUID tournamentId) {
