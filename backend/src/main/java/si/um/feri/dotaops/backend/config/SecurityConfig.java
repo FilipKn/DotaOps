@@ -59,6 +59,7 @@ public class SecurityConfig {
                                 "/api/teams/*/tournament-registrations",
                                 "/api/teams/*/invitations/**").authenticated()
                         .requestMatchers(HttpMethod.GET,
+                                "/api/public/tournaments/**",
                                 "/api/tournament-groups/*/teams",
                                 "/api/tournament-groups/*/standings",
                                 "/api/public/tournament-groups/*/standings").permitAll()

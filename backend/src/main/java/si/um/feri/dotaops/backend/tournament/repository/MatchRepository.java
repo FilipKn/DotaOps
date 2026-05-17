@@ -171,45 +171,6 @@ public class MatchRepository {
                 .findFirst();
     }
 
-    public void propagateWinner(UUID sourceMatchId, UUID winnerTeamId) {
-        jdbcTemplate.update(
-                """
-                update public.match_slots
-                set team_id = ?,
-                    updated_at = now()
-                where source_type = 'winner'
-                  and source_match_id = ?
-                """,
-                winnerTeamId,
-                sourceMatchId);
-        jdbcTemplate.update(
-                """
-                update public.matches m
-                set team_a_id = ?,
-                    updated_at = now()
-                from public.match_slots ms
-                where ms.match_id = m.id
-                  and ms.source_type = 'winner'
-                  and ms.source_match_id = ?
-                  and ms.slot = 'team_a'
-                """,
-                winnerTeamId,
-                sourceMatchId);
-        jdbcTemplate.update(
-                """
-                update public.matches m
-                set team_b_id = ?,
-                    updated_at = now()
-                from public.match_slots ms
-                where ms.match_id = m.id
-                  and ms.source_type = 'winner'
-                  and ms.source_match_id = ?
-                  and ms.slot = 'team_b'
-                """,
-                winnerTeamId,
-                sourceMatchId);
-    }
-
     private String selectMatchSql() {
         return """
                 select

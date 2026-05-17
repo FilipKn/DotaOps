@@ -51,11 +51,13 @@ class MatchManagementServiceTest {
     private final TournamentRepository tournamentRepository = mock(TournamentRepository.class);
     private final CurrentUserProvider currentUserProvider = mock(CurrentUserProvider.class);
     private final DatabaseActorContext databaseActorContext = mock(DatabaseActorContext.class);
+    private final MatchAdvancementService matchAdvancementService = mock(MatchAdvancementService.class);
     private final MatchManagementService service = new MatchManagementService(
             matchRepository,
             tournamentRepository,
             currentUserProvider,
-            databaseActorContext);
+            databaseActorContext,
+            matchAdvancementService);
 
     @BeforeEach
     void setUp() {
@@ -169,7 +171,7 @@ class MatchManagementServiceTest {
         assertThat(response.scoreA()).isEqualTo(scoreA);
         assertThat(response.scoreB()).isEqualTo(scoreB);
         assertThat(response.winnerTeamId()).isEqualTo(TEAM_A_ID);
-        verify(matchRepository).propagateWinner(MATCH_ID, TEAM_A_ID);
+        verify(matchAdvancementService).advanceAfterResult(existing, updated, ORGANIZER_PROFILE_ID);
     }
 
     @Test
@@ -184,7 +186,22 @@ class MatchManagementServiceTest {
         assertThat(response.status()).isEqualTo("finished");
         assertThat(response.scoreA()).isEqualTo(2);
         assertThat(response.winnerTeamId()).isEqualTo(TEAM_A_ID);
-        verify(matchRepository).propagateWinner(MATCH_ID, TEAM_A_ID);
+        verify(matchAdvancementService).advanceAfterResult(existing, updated, ORGANIZER_PROFILE_ID);
+    }
+
+    @Test
+    void finishedMatchResultCanBeCorrectedWhenAdvancementAllowsIt() {
+        TournamentMatch existing = match(MatchStatus.FINISHED, 3, 1, 2, TEAM_B_ID);
+        TournamentMatch updated = match(MatchStatus.FINISHED, 3, 2, 1, TEAM_A_ID, null, NOW, NOW.plusHours(1), null, null);
+        when(matchRepository.findById(MATCH_ID)).thenReturn(Optional.of(existing));
+        when(matchRepository.submitResult(eq(MATCH_ID), eq(2), eq(1), eq(TEAM_A_ID), any(OffsetDateTime.class)))
+                .thenReturn(Optional.of(updated));
+
+        var response = service.submitResult(MATCH_ID, new SubmitMatchResultRequest(2, 1, TEAM_A_ID));
+
+        assertThat(response.status()).isEqualTo("finished");
+        assertThat(response.winnerTeamId()).isEqualTo(TEAM_A_ID);
+        verify(matchAdvancementService).advanceAfterResult(existing, updated, ORGANIZER_PROFILE_ID);
     }
 
     @Test

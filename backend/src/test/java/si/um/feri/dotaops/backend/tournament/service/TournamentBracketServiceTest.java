@@ -21,6 +21,7 @@ import si.um.feri.dotaops.backend.tournament.domain.BracketParticipant;
 import si.um.feri.dotaops.backend.tournament.domain.MatchSlotSourceType;
 import si.um.feri.dotaops.backend.tournament.domain.Tournament;
 import si.um.feri.dotaops.backend.tournament.domain.TournamentFormat;
+import si.um.feri.dotaops.backend.tournament.domain.TournamentMatch;
 import si.um.feri.dotaops.backend.tournament.domain.TournamentSettings;
 import si.um.feri.dotaops.backend.tournament.domain.TournamentStatus;
 import si.um.feri.dotaops.backend.tournament.dto.GenerateBracketRequest;
@@ -36,6 +37,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -51,11 +53,13 @@ class TournamentBracketServiceTest {
     private final TournamentRepository tournamentRepository = mock(TournamentRepository.class);
     private final CurrentUserProvider currentUserProvider = mock(CurrentUserProvider.class);
     private final DatabaseActorContext databaseActorContext = mock(DatabaseActorContext.class);
+    private final MatchAdvancementService matchAdvancementService = mock(MatchAdvancementService.class);
     private final TournamentBracketService service = new TournamentBracketService(
             bracketRepository,
             tournamentRepository,
             currentUserProvider,
-            databaseActorContext);
+            databaseActorContext,
+            matchAdvancementService);
 
     private final List<CreateBracketMatchCommand> createdMatches = new ArrayList<>();
     private final List<CreateMatchSlotCommand> createdSlots = new ArrayList<>();
@@ -152,6 +156,8 @@ class TournamentBracketServiceTest {
         assertThat(createdMatches.get(0).status()).isEqualTo("finished");
         assertThat(createdMatches.get(0).winnerTeamId()).isEqualTo(teamId(1));
         assertThat(createdMatches.get(2).winnerTeamId()).isEqualTo(teamId(2));
+        verify(matchAdvancementService, times(2))
+                .advanceAfterResult(any(TournamentMatch.class), any(TournamentMatch.class), eq(ORGANIZER_PROFILE_ID));
     }
 
     @Test

@@ -1,6 +1,7 @@
 package si.um.feri.dotaops.backend.integration;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +47,7 @@ class MatchManagementIntegrationTest extends PostgresIntegrationTestSupport {
     }
 
     @Test
-    void organizerCanScheduleSubmitResultAndPropagateWinnerToNextRound() throws Exception {
+    void organizerCanScheduleSubmitResultAndPropagateWinnerAndLoserToNextRound() throws Exception {
         String suffix = uniqueSuffix();
         String stageName = "Playoffs " + suffix;
         UUID tournamentId = insertTournament(suffix);
@@ -54,7 +55,9 @@ class MatchManagementIntegrationTest extends PostgresIntegrationTestSupport {
         UUID teamBId = insertTeam("Match Team B " + suffix, "match-team-b-" + suffix);
         UUID semifinalId = insertMatch(tournamentId, stageName, "Semifinal", 1, 1, 3, teamAId, teamBId);
         UUID finalId = insertMatch(tournamentId, stageName, "Final", 2, 1, 3, null, null);
-        insertWinnerSlot(finalId, semifinalId);
+        UUID consolationId = insertMatch(tournamentId, stageName, "Third Place", 2, 2, 3, null, null);
+        insertSourceSlot(finalId, semifinalId, "team_a", "winner", false);
+        insertSourceSlot(consolationId, semifinalId, "team_a", "loser", false);
 
         mockMvc.perform(patch("/api/organizer/matches/" + semifinalId + "/schedule")
                         .header("Authorization", bearerToken())
@@ -100,7 +103,9 @@ class MatchManagementIntegrationTest extends PostgresIntegrationTestSupport {
                 .andExpect(jsonPath("$.data.matches[0].scoreA").value(2))
                 .andExpect(jsonPath("$.data.matches[0].winnerTeamId").value(teamAId.toString()))
                 .andExpect(jsonPath("$.data.matches[1].teamAId").value(teamAId.toString()))
-                .andExpect(jsonPath("$.data.matches[1].slots[0].teamId").value(teamAId.toString()));
+                .andExpect(jsonPath("$.data.matches[1].slots[0].teamId").value(teamAId.toString()))
+                .andExpect(jsonPath("$.data.matches[2].teamAId").value(teamBId.toString()))
+                .andExpect(jsonPath("$.data.matches[2].slots[0].teamId").value(teamBId.toString()));
 
         UUID propagatedSlotTeamId = jdbcTemplate.queryForObject(
                 """
@@ -113,6 +118,17 @@ class MatchManagementIntegrationTest extends PostgresIntegrationTestSupport {
                 UUID.class,
                 finalId,
                 semifinalId);
+        UUID propagatedLoserSlotTeamId = jdbcTemplate.queryForObject(
+                """
+                select team_id
+                from public.match_slots
+                where match_id = ?
+                  and source_type = 'loser'
+                  and source_match_id = ?
+                """,
+                UUID.class,
+                consolationId,
+                semifinalId);
         UUID propagatedMatchTeamId = jdbcTemplate.queryForObject(
                 """
                 select team_a_id
@@ -123,7 +139,74 @@ class MatchManagementIntegrationTest extends PostgresIntegrationTestSupport {
                 finalId);
 
         assertThat(propagatedSlotTeamId).isEqualTo(teamAId);
+        assertThat(propagatedLoserSlotTeamId).isEqualTo(teamBId);
         assertThat(propagatedMatchTeamId).isEqualTo(teamAId);
+        List<String> auditReasons = jdbcTemplate.queryForList(
+                """
+                select reason
+                from public.match_advancement_audit_logs
+                where source_match_id = ?
+                order by target_slot, source_type
+                """,
+                String.class,
+                semifinalId);
+        assertThat(auditReasons).containsExactlyInAnyOrder("AUTO_ADVANCE_WINNER", "AUTO_ADVANCE_LOSER");
+    }
+
+    @Test
+    void lockedSlotConflictRollsBackResultAndDoesNotCreatePartialPropagation() throws Exception {
+        String suffix = uniqueSuffix();
+        String stageName = "Locked Playoffs " + suffix;
+        UUID tournamentId = insertTournament("locked-" + suffix);
+        UUID teamAId = insertTeam("Locked Team A " + suffix, "locked-team-a-" + suffix);
+        UUID teamBId = insertTeam("Locked Team B " + suffix, "locked-team-b-" + suffix);
+        UUID semifinalId = insertMatch(tournamentId, stageName, "Semifinal", 1, 1, 1, teamAId, teamBId);
+        UUID finalId = insertMatch(tournamentId, stageName, "Final", 2, 1, 1, null, null);
+        insertSourceSlot(finalId, semifinalId, "team_a", "winner", true);
+
+        mockMvc.perform(patch("/api/organizer/matches/" + semifinalId + "/result")
+                        .header("Authorization", bearerToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "scoreA": 1,
+                                  "scoreB": 0,
+                                  "winnerTeamId": "%s"
+                                }
+                                """.formatted(teamAId)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONFLICT"));
+
+        String sourceStatus = jdbcTemplate.queryForObject(
+                """
+                select status::text
+                from public.matches
+                where id = ?
+                """,
+                String.class,
+                semifinalId);
+        Integer sourceScoreA = jdbcTemplate.queryForObject(
+                "select score_a from public.matches where id = ?",
+                Integer.class,
+                semifinalId);
+        UUID sourceWinner = jdbcTemplate.queryForObject(
+                "select winner_team_id from public.matches where id = ?",
+                UUID.class,
+                semifinalId);
+        UUID lockedSlotTeamId = jdbcTemplate.queryForObject(
+                "select team_id from public.match_slots where match_id = ?",
+                UUID.class,
+                finalId);
+        Integer auditRows = jdbcTemplate.queryForObject(
+                "select count(*) from public.match_advancement_audit_logs where source_match_id = ?",
+                Integer.class,
+                semifinalId);
+
+        assertThat(sourceStatus).isEqualTo("scheduled");
+        assertThat(sourceScoreA).isZero();
+        assertThat(sourceWinner).isNull();
+        assertThat(lockedSlotTeamId).isNull();
+        assertThat(auditRows).isZero();
     }
 
     private UUID insertTournament(String suffix) {
@@ -208,7 +291,7 @@ class MatchManagementIntegrationTest extends PostgresIntegrationTestSupport {
                 teamBId);
     }
 
-    private void insertWinnerSlot(UUID matchId, UUID sourceMatchId) {
+    private void insertSourceSlot(UUID matchId, UUID sourceMatchId, String slot, String sourceType, boolean locked) {
         jdbcTemplate.update(
                 """
                 insert into public.match_slots (
@@ -216,12 +299,17 @@ class MatchManagementIntegrationTest extends PostgresIntegrationTestSupport {
                   slot,
                   source_type,
                   source_match_id,
-                  display_label
+                  display_label,
+                  is_locked
                 )
-                values (?, 'team_a'::public.dotaops_match_slot, 'winner'::public.dotaops_match_slot_source, ?, 'Winner of semifinal')
+                values (?, ?::public.dotaops_match_slot, ?::public.dotaops_match_slot_source, ?, ?, ?)
                 """,
                 matchId,
-                sourceMatchId);
+                slot,
+                sourceType,
+                sourceMatchId,
+                sourceType + " of semifinal",
+                locked);
     }
 
     private static String bearerToken() throws Exception {
