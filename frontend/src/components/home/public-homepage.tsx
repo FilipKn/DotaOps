@@ -10,6 +10,7 @@ import {
   UsersRound
 } from "lucide-react";
 import Link from "next/link";
+import { AnimatedHomepageBackground } from "@/components/home/animated-homepage-background";
 
 const upcomingOps = [
   { left: "Liquid", regionA: "EUW", right: "Falcons", regionB: "MENA", time: "18:00" },
@@ -33,6 +34,7 @@ const platformStats = [
 export function PublicHomepage() {
   return (
     <div className="public-home">
+      <AnimatedHomepageBackground />
       <header className="public-home-header">
         <Link href="/" className="public-brand">
           DotaOps
