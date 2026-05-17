@@ -9316,3 +9316,426 @@ textarea:focus {
     display: grid;
   }
 }
+
+.org-staff-panel,
+.org-referee-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.org-staff-panel::before,
+.org-referee-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(255, 0, 36, 0.08), transparent 28%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 42px,
+      rgba(255, 255, 255, 0.025) 43px
+    );
+  opacity: 0.45;
+}
+
+.org-staff-panel > *,
+.org-referee-panel > * {
+  position: relative;
+}
+
+.org-staff-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+}
+
+.org-staff-summary-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 2px solid var(--ops-primary-strong);
+  border-radius: var(--ops-radius);
+  background: rgba(10, 10, 10, 0.48);
+  padding: 0.9rem;
+}
+
+.org-staff-summary-card strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1.45rem;
+}
+
+.org-staff-tone-cyan {
+  border-left-color: var(--ops-cyan);
+}
+
+.org-staff-tone-gold {
+  border-left-color: var(--ops-secondary);
+}
+
+.org-staff-tone-green {
+  border-left-color: var(--ops-green);
+}
+
+.org-staff-tone-muted {
+  border-left-color: var(--ops-line);
+}
+
+.org-staff-layout,
+.org-referee-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  gap: 1rem;
+  align-items: start;
+}
+
+.org-staff-table-wrap,
+.org-referee-matrix-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--ops-radius);
+  background: rgba(5, 5, 5, 0.38);
+}
+
+.org-staff-table,
+.org-referee-matrix {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.org-staff-table th,
+.org-staff-table td,
+.org-referee-matrix th,
+.org-referee-matrix td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 0.85rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.org-staff-table th,
+.org-referee-matrix th {
+  color: var(--ops-muted);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.org-staff-table td,
+.org-referee-matrix td {
+  color: var(--ops-text);
+  font-size: 0.86rem;
+}
+
+.org-staff-member {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  min-width: 190px;
+}
+
+.org-staff-member > span {
+  display: grid;
+  width: 2.2rem;
+  height: 2.2rem;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--ops-radius-sm);
+  color: var(--ops-cyan);
+  background: rgba(0, 221, 221, 0.08);
+}
+
+.org-staff-member strong,
+.org-referee-match-card h3 {
+  display: block;
+  color: var(--ops-text);
+}
+
+.org-staff-member small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--ops-muted);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.org-staff-role-badge,
+.org-permission-state,
+.org-staff-status,
+.org-staff-permissions span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: var(--ops-radius-sm);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.org-staff-role-badge {
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  color: var(--ops-secondary);
+  padding: 0.28rem 0.48rem;
+  background: rgba(212, 175, 55, 0.08);
+}
+
+.org-staff-role-badge.is-owner {
+  border-color: rgba(255, 0, 36, 0.45);
+  color: var(--ops-error);
+  background: rgba(255, 0, 36, 0.08);
+}
+
+.org-staff-permissions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 220px;
+}
+
+.org-staff-permissions span {
+  border: 1px solid rgba(0, 221, 221, 0.22);
+  color: var(--ops-cyan);
+  padding: 0.22rem 0.42rem;
+  background: rgba(0, 221, 221, 0.06);
+}
+
+.org-staff-status {
+  color: var(--ops-green);
+}
+
+.org-staff-command-rail,
+.org-referee-command-panel {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.org-staff-command-rail button,
+.org-referee-command-panel button {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.65rem;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--ops-radius);
+  color: var(--ops-text);
+  background: rgba(255, 255, 255, 0.035);
+  padding: 0.8rem;
+  text-align: left;
+}
+
+.org-staff-command-rail button:disabled,
+.org-referee-command-panel button:disabled {
+  cursor: not-allowed;
+  color: var(--ops-muted);
+  opacity: 0.58;
+}
+
+.org-staff-command-rail .org-tournament-secondary {
+  grid-template-columns: auto 1fr;
+  cursor: pointer;
+  color: var(--ops-text);
+  opacity: 1;
+}
+
+.org-panel-warning,
+.org-panel-error,
+.org-referee-empty {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+  margin-top: 1rem;
+  border: 1px solid rgba(212, 175, 55, 0.24);
+  border-left: 2px solid var(--ops-secondary);
+  border-radius: var(--ops-radius);
+  background: rgba(212, 175, 55, 0.07);
+  padding: 0.9rem;
+  color: var(--ops-text);
+}
+
+.org-panel-error {
+  border-color: rgba(255, 0, 36, 0.28);
+  border-left-color: var(--ops-primary-strong);
+  background: rgba(255, 0, 36, 0.08);
+}
+
+.org-panel-warning svg,
+.org-panel-error svg,
+.org-referee-empty svg {
+  flex: 0 0 auto;
+  margin-top: 0.15rem;
+}
+
+.org-panel-warning strong,
+.org-panel-error strong,
+.org-referee-empty strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.org-panel-warning p,
+.org-panel-error p,
+.org-referee-empty p {
+  margin: 0;
+  color: var(--ops-muted);
+  font-size: 0.86rem;
+}
+
+.org-panel-error ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.org-panel-error li {
+  display: flex;
+  gap: 0.5rem;
+  color: var(--ops-muted);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.72rem;
+}
+
+.org-panel-error li span {
+  color: var(--ops-error);
+}
+
+.org-referee-main {
+  display: grid;
+  gap: 1rem;
+}
+
+.org-referee-match-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  border: 1px solid rgba(0, 221, 221, 0.2);
+  border-left: 2px solid var(--ops-cyan);
+  border-radius: var(--ops-radius);
+  background: rgba(0, 221, 221, 0.055);
+  padding: 1rem;
+}
+
+.org-referee-match-card h3 {
+  margin: 0.2rem 0;
+  font-size: 1.1rem;
+}
+
+.org-referee-match-card h3 span {
+  color: var(--ops-muted);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.org-referee-match-card p {
+  margin: 0;
+  color: var(--ops-muted);
+}
+
+.org-referee-match-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.org-referee-match-meta > span,
+.org-referee-match-meta > strong {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--ops-radius-sm);
+  background: rgba(5, 5, 5, 0.42);
+  padding: 0.28rem 0.48rem;
+}
+
+.org-permission-state {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.28rem 0.48rem;
+}
+
+.org-permission-state.is-allowed {
+  border-color: rgba(70, 211, 105, 0.35);
+  color: var(--ops-green);
+  background: rgba(70, 211, 105, 0.08);
+}
+
+.org-permission-state.is-restricted {
+  border-color: rgba(212, 175, 55, 0.35);
+  color: var(--ops-secondary);
+  background: rgba(212, 175, 55, 0.08);
+}
+
+.org-permission-state.is-backend {
+  border-color: rgba(0, 221, 221, 0.28);
+  color: var(--ops-cyan);
+  background: rgba(0, 221, 221, 0.07);
+}
+
+.org-permission-state.is-unavailable {
+  color: var(--ops-muted);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.org-referee-limitations {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.org-referee-limitations article {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--ops-radius);
+  background: rgba(5, 5, 5, 0.35);
+  padding: 0.85rem;
+}
+
+.org-referee-limitations strong {
+  color: var(--ops-text);
+}
+
+.org-referee-limitations p {
+  margin: 0.35rem 0 0;
+  color: var(--ops-muted);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 1100px) {
+  .org-staff-layout,
+  .org-referee-grid,
+  .org-referee-limitations {
+    grid-template-columns: 1fr;
+  }
+
+  .org-staff-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .org-staff-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .org-referee-match-card {
+    display: grid;
+  }
+
+  .org-referee-match-meta {
+    justify-content: flex-start;
+  }
+}

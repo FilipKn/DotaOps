@@ -6,17 +6,23 @@ import {
   ArrowLeft,
   CalendarDays,
   Check,
+  CheckCircle2,
   ClipboardList,
+  DatabaseZap,
   Edit3,
   Eye,
   FileText,
   Globe2,
+  Lock,
   Plus,
   RadioTower,
   Rocket,
   Save,
+  ShieldAlert,
   ShieldCheck,
   Trophy,
+  UserCog,
+  UserRoundCheck,
   UsersRound,
   X
 } from "lucide-react";
@@ -26,7 +32,11 @@ import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
 import { ApiRequestError, type ApiFieldError } from "@/lib/api";
-import { getCurrentUserProfile, type ProfileRole } from "@/lib/auth";
+import { getCurrentUserProfile, type CurrentUserProfile, type ProfileRole } from "@/lib/auth";
+import {
+  listOrganizerTournamentMatches,
+  type OrganizerMatch
+} from "@/lib/organizer-match-data";
 import {
   archiveOrganizerTournament,
   createOrganizerTournament,
@@ -51,6 +61,12 @@ import { classNames } from "@/lib/utils";
 type OrganizerView = "dashboard" | "form" | "detail";
 type FormMode = "create" | "edit";
 type LoadState = "loading" | "ready" | "login" | "permission" | "error";
+
+interface OrganizerPanelError {
+  errors: ApiFieldError[];
+  message: string;
+  status: number | null;
+}
 
 interface TournamentFormState {
   allowSubstitutes: boolean;
@@ -242,6 +258,29 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Request failed.";
 }
 
+function panelError(error: unknown, fallback: string): OrganizerPanelError {
+  if (error instanceof ApiRequestError) {
+    const detail =
+      error.status === 403
+        ? "Permission denied. Your account is not allowed to access this tournament operation."
+        : error.status === 404
+          ? "The requested tournament or match resource was not found."
+          : error.message || fallback;
+
+    return {
+      errors: error.errors,
+      message: detail,
+      status: error.status
+    };
+  }
+
+  return {
+    errors: [],
+    message: errorMessage(error) || fallback,
+    status: null
+  };
+}
+
 function fieldError(errors: ApiFieldError[], field: string) {
   return errors.find((error) => error.field === field || error.field?.endsWith(`.${field}`))?.message ?? null;
 }
@@ -287,7 +326,10 @@ export function OrganizerCommandPage({
   const [formMode, setFormMode] = useState<FormMode>("create");
   const [isMutating, setIsMutating] = useState(false);
   const [loadState, setLoadState] = useState<LoadState>("loading");
+  const [matchFlowError, setMatchFlowError] = useState<OrganizerPanelError | null>(null);
+  const [organizerMatches, setOrganizerMatches] = useState<OrganizerMatch[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const [currentProfile, setCurrentProfile] = useState<CurrentUserProfile | null>(null);
   const [registrations, setRegistrations] = useState<TournamentRegistration[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<OrganizerTournament | null>(null);
   const [tournaments, setTournaments] = useState<OrganizerTournament[]>([]);
@@ -321,6 +363,18 @@ export function OrganizerCommandPage({
     }
   }, []);
 
+  const loadOrganizerMatchFlow = useCallback(async (tournamentId: string) => {
+    setMatchFlowError(null);
+
+    try {
+      const nextMatches = await listOrganizerTournamentMatches(tournamentId);
+      setOrganizerMatches(nextMatches);
+    } catch (error) {
+      setOrganizerMatches([]);
+      setMatchFlowError(panelError(error, "Organizer match control API is unavailable."));
+    }
+  }, []);
+
   const loadOrganizerAccess = useCallback(async () => {
     setLoadState("loading");
     setActionError(null);
@@ -329,9 +383,11 @@ export function OrganizerCommandPage({
 
     try {
       const profile = await getCurrentUserProfile();
+      setCurrentProfile(profile);
 
       if (!profile) {
         setTournaments([]);
+        setOrganizerMatches([]);
         setLoadState("login");
         setActionError("Login is required before opening organizer tournament controls.");
         return;
@@ -339,6 +395,7 @@ export function OrganizerCommandPage({
 
       if (!canAccessOrganizer(profile.role)) {
         setTournaments([]);
+        setOrganizerMatches([]);
         setLoadState("permission");
         setActionError("This section is only available to tournament organizers.");
         return;
@@ -368,10 +425,12 @@ export function OrganizerCommandPage({
 
         setSelectedTournament(tournament);
         setRegistrations(registrationList);
+        await loadOrganizerMatchFlow(tournament.id);
         setView("detail");
       }
     } catch (error) {
       setTournaments([]);
+      setOrganizerMatches([]);
 
       if (error instanceof ApiRequestError && error.status === 401) {
         setLoadState("login");
@@ -388,12 +447,13 @@ export function OrganizerCommandPage({
       setLoadState("error");
       setActionError(errorMessage(error));
     }
-  }, [initialSlug, initialTournamentId, initialView]);
+  }, [initialSlug, initialTournamentId, initialView, loadOrganizerMatchFlow]);
 
   async function loadDetail(tournamentId: string) {
     setIsMutating(true);
     setActionError(null);
     setFieldErrors([]);
+    setMatchFlowError(null);
 
     try {
       const [tournament, registrationList] = await Promise.all([
@@ -403,6 +463,7 @@ export function OrganizerCommandPage({
 
       setSelectedTournament(tournament);
       setRegistrations(registrationList);
+      await loadOrganizerMatchFlow(tournamentId);
       setView("detail");
     } catch (error) {
       setActionError(errorMessage(error));
@@ -618,7 +679,10 @@ export function OrganizerCommandPage({
 
       {view === "detail" && selectedTournament ? (
         <TournamentDetail
+          currentProfile={currentProfile}
           isMutating={isMutating}
+          matchFlowError={matchFlowError}
+          matches={organizerMatches}
           onArchive={() => mutateTournament(selectedTournament, "archive")}
           onBack={() => {
             clearMessages();
@@ -909,7 +973,10 @@ function TournamentForm({
 }
 
 function TournamentDetail({
+  currentProfile,
   isMutating,
+  matchFlowError,
+  matches,
   onArchive,
   onBack,
   onEdit,
@@ -919,7 +986,10 @@ function TournamentDetail({
   registrations,
   tournament
 }: {
+  currentProfile: CurrentUserProfile | null;
   isMutating: boolean;
+  matchFlowError: OrganizerPanelError | null;
+  matches: OrganizerMatch[];
   onArchive: () => void;
   onBack: () => void;
   onEdit: () => void;
@@ -1045,6 +1115,19 @@ function TournamentDetail({
               </div>
             )}
           </section>
+
+          <StaffOfficialsPanel
+            currentProfile={currentProfile}
+            isMutating={isMutating}
+            onRefresh={onRefresh}
+            tournament={tournament}
+          />
+
+          <RefereeMatchControlPanel
+            error={matchFlowError}
+            matches={matches}
+            tournament={tournament}
+          />
         </main>
 
         <aside className="org-tournament-detail-side">
@@ -1097,6 +1180,417 @@ function TournamentDetail({
         </aside>
       </section>
     </>
+  );
+}
+
+interface StaffRow {
+  actions: string;
+  id: string;
+  name: string;
+  permissions: string[];
+  role: "Owner" | "Organizer";
+  scope: string;
+  status: string;
+  subtitle: string;
+}
+
+function staffRowsForTournament(
+  tournament: OrganizerTournament,
+  currentProfile: CurrentUserProfile | null
+): StaffRow[] {
+  const rows: StaffRow[] = [];
+  const ownerName =
+    tournament.organizerNickname ??
+    (currentProfile?.profileId && currentProfile.profileId === tournament.organizerProfileId
+      ? currentProfile.nickname
+      : null) ??
+    "Tournament owner / organizer";
+
+  rows.push({
+    actions: "Locked until staff API is available",
+    id: tournament.organizerProfileId ?? "tournament-owner",
+    name: ownerName,
+    permissions: ["Manage registrations", "Schedule matches", "Enter results", "View only"],
+    role: "Owner",
+    scope: "Tournament-wide",
+    status: "Active",
+    subtitle: tournament.organizerProfileId ? "Primary organizer profile" : "Backend owner fallback"
+  });
+
+  if (
+    currentProfile?.profileId &&
+    currentProfile.profileId !== tournament.organizerProfileId
+  ) {
+    rows.push({
+      actions: "Session-only visibility",
+      id: currentProfile.profileId,
+      name: currentProfile.nickname,
+      permissions: currentProfile.role === "admin"
+        ? ["Manage registrations", "Schedule matches", "Enter results", "View only"]
+        : ["View only"],
+      role: "Organizer",
+      scope: currentProfile.role === "admin" ? "Admin override" : "Current session",
+      status: "Active session",
+      subtitle: currentProfile.role === "admin" ? "Admin account" : "Organizer account"
+    });
+  }
+
+  return rows;
+}
+
+function StaffOfficialsPanel({
+  currentProfile,
+  isMutating,
+  onRefresh,
+  tournament
+}: {
+  currentProfile: CurrentUserProfile | null;
+  isMutating: boolean;
+  onRefresh: () => void;
+  tournament: OrganizerTournament;
+}) {
+  const staffRows = staffRowsForTournament(tournament, currentProfile);
+  const organizers = staffRows.filter((row) => row.role === "Owner" || row.role === "Organizer").length;
+  const summary = [
+    { label: "Total Staff", tone: "red", value: staffRows.length },
+    { label: "Organizers", tone: "cyan", value: organizers },
+    { label: "Referees", tone: "gold", value: 0 },
+    { label: "Analysts", tone: "green", value: 0 },
+    { label: "Pending Invites", tone: "muted", value: 0 }
+  ];
+
+  return (
+    <section className="org-tournament-panel org-staff-panel ops-panel" id="staff-officials">
+      <div className="org-tournament-panel-title">
+        <div>
+          <p className="ops-label">Staff & Officials</p>
+          <h2>Tournament Operators</h2>
+          <p>Tournament operators, officials, and permission scopes for this control room.</p>
+        </div>
+        <span className="ops-badge">
+          <ShieldAlert size={14} />
+          API pending
+        </span>
+      </div>
+
+      <div className="org-staff-summary-grid">
+        {summary.map((item) => (
+          <article className={classNames("org-staff-summary-card", `org-staff-tone-${item.tone}`)} key={item.label}>
+            <span className="ops-label">{item.label}</span>
+            <strong className="ops-data">{String(item.value).padStart(2, "0")}</strong>
+          </article>
+        ))}
+      </div>
+
+      <div className="org-staff-layout">
+        <div className="org-staff-table-wrap">
+          <table className="org-staff-table">
+            <thead>
+              <tr>
+                <th>Staff member</th>
+                <th>Primary role</th>
+                <th>Scope</th>
+                <th>Permissions</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {staffRows.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <div className="org-staff-member">
+                      <span>
+                        <UserRoundCheck size={16} />
+                      </span>
+                      <div>
+                        <strong>{row.name}</strong>
+                        <small>{row.subtitle}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <StaffRoleBadge role={row.role} />
+                  </td>
+                  <td>{row.scope}</td>
+                  <td>
+                    <div className="org-staff-permissions">
+                      {row.permissions.map((permission) => (
+                        <span key={permission}>{permission}</span>
+                      ))}
+                    </div>
+                  </td>
+                  <td>
+                    <span className="org-staff-status">
+                      <CheckCircle2 size={14} />
+                      {row.status}
+                    </span>
+                  </td>
+                  <td>{row.actions}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <aside className="org-staff-command-rail">
+          <button disabled type="button">
+            <Plus size={16} />
+            Add Official
+            <Lock size={14} />
+          </button>
+          <button disabled type="button">
+            <UserCog size={16} />
+            Change Role
+            <Lock size={14} />
+          </button>
+          <button disabled type="button">
+            <X size={16} />
+            Remove Staff
+            <Lock size={14} />
+          </button>
+          <button disabled type="button">
+            <Archive size={16} />
+            Audit History
+            <Lock size={14} />
+          </button>
+          <button disabled type="button">
+            <ShieldCheck size={16} />
+            Permission Rules
+            <Lock size={14} />
+          </button>
+          <button className="org-tournament-secondary" disabled={isMutating} onClick={onRefresh} type="button">
+            <RadioTower size={16} />
+            Refresh Staff
+          </button>
+        </aside>
+      </div>
+
+      <PanelWarning
+        title="Staff management API required"
+        detail="Staff management API is not available yet. Backend endpoint required before add/remove/change role actions can be enabled."
+      />
+    </section>
+  );
+}
+
+function StaffRoleBadge({ role }: { role: StaffRow["role"] }) {
+  return (
+    <span className={classNames("org-staff-role-badge", role === "Owner" ? "is-owner" : "is-organizer")}>
+      {role}
+    </span>
+  );
+}
+
+type PermissionState = "allowed" | "restricted" | "backend" | "unavailable";
+
+interface PermissionRow {
+  action: string;
+  analyst: PermissionState;
+  organizer: PermissionState;
+  referee: PermissionState;
+  reporter: PermissionState;
+}
+
+const permissionRows: PermissionRow[] = [
+  { action: "Schedule match", analyst: "unavailable", organizer: "allowed", referee: "backend", reporter: "unavailable" },
+  { action: "Start match", analyst: "unavailable", organizer: "allowed", referee: "backend", reporter: "unavailable" },
+  { action: "Enter result", analyst: "unavailable", organizer: "allowed", referee: "backend", reporter: "backend" },
+  { action: "Confirm result", analyst: "unavailable", organizer: "backend", referee: "backend", reporter: "restricted" },
+  { action: "Finish match", analyst: "unavailable", organizer: "allowed", referee: "backend", reporter: "unavailable" },
+  { action: "Cancel match", analyst: "unavailable", organizer: "allowed", referee: "backend", reporter: "unavailable" },
+  { action: "Handle dispute", analyst: "unavailable", organizer: "unavailable", referee: "backend", reporter: "restricted" },
+  { action: "Import match data", analyst: "restricted", organizer: "allowed", referee: "backend", reporter: "unavailable" }
+];
+
+function RefereeMatchControlPanel({
+  error,
+  matches,
+  tournament
+}: {
+  error: OrganizerPanelError | null;
+  matches: OrganizerMatch[];
+  tournament: OrganizerTournament;
+}) {
+  const selectedMatch = matches[0] ?? null;
+
+  function scrollToFlow() {
+    document.getElementById("referee-match-flow")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
+
+  return (
+    <section className="org-tournament-panel org-referee-panel ops-panel" id="referee-match-flow">
+      <div className="org-tournament-panel-title">
+        <div>
+          <p className="ops-label">Referee & Match Control Flow</p>
+          <h2>Permission Logic Matrix</h2>
+          <p>Organizer-supported match control with referee limitations shown for future official assignment flows.</p>
+        </div>
+        <span className="ops-badge">
+          <DatabaseZap size={14} />
+          {matches.length} matches
+        </span>
+      </div>
+
+      <div className="org-referee-grid">
+        <div className="org-referee-main">
+          {error ? <PanelError error={error} title="Match control API unavailable" /> : null}
+
+          {selectedMatch ? (
+            <article className="org-referee-match-card">
+              <div>
+                <p className="ops-label">Selected match</p>
+                <h3>
+                  {selectedMatch.teamAName ?? "TBD"} <span>vs</span> {selectedMatch.teamBName ?? "TBD"}
+                </h3>
+                <p className="ops-mono">
+                  Match {selectedMatch.id} / {selectedMatch.stageName ?? tournament.title}
+                </p>
+              </div>
+              <div className="org-referee-match-meta">
+                <StatusBadge status={selectedMatch.status} />
+                <span className="ops-mono">BO{selectedMatch.bestOf}</span>
+                <span className="ops-mono">{selectedMatch.roundName ?? `Round ${selectedMatch.roundNumber || 1}`}</span>
+                <strong className="ops-data">
+                  {selectedMatch.scoreA}:{selectedMatch.scoreB}
+                </strong>
+              </div>
+            </article>
+          ) : !error ? (
+            <div className="org-referee-empty">
+              <ShieldAlert size={18} />
+              <div>
+                <strong>No organizer match records loaded</strong>
+                <p>The match endpoint returned no records for this tournament yet.</p>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="org-referee-matrix-wrap">
+            <table className="org-referee-matrix">
+              <thead>
+                <tr>
+                  <th>Process</th>
+                  <th>Organizer</th>
+                  <th>Referee</th>
+                  <th>Score Reporter</th>
+                  <th>Analyst</th>
+                </tr>
+              </thead>
+              <tbody>
+                {permissionRows.map((row) => (
+                  <tr key={row.action}>
+                    <td>{row.action}</td>
+                    <td><PermissionStateBadge state={row.organizer} /></td>
+                    <td><PermissionStateBadge state={row.referee} /></td>
+                    <td><PermissionStateBadge state={row.reporter} /></td>
+                    <td><PermissionStateBadge state={row.analyst} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="org-referee-limitations">
+            <article>
+              <strong>Referee limitation</strong>
+              <p>Referee can only act on assigned matches. Referee-only write permissions are pending backend support.</p>
+            </article>
+            <article>
+              <strong>Score reporter limitation</strong>
+              <p>Score reporter cannot approve their own submitted result. Confirmation requires referee or organizer workflow support.</p>
+            </article>
+            <article>
+              <strong>Organizer override</strong>
+              <p>Organizer/admin has the current override only where existing backend match endpoints support it.</p>
+            </article>
+          </div>
+        </div>
+
+        <aside className="org-referee-command-panel">
+          <button disabled type="button">
+            <Plus size={16} />
+            Assign Referee
+            <Lock size={14} />
+          </button>
+          <button disabled type="button">
+            <X size={16} />
+            Remove Assignment
+            <Lock size={14} />
+          </button>
+          <button disabled={!selectedMatch} onClick={scrollToFlow} type="button">
+            <Eye size={16} />
+            View Match Flow
+          </button>
+          <button disabled type="button">
+            <Edit3 size={16} />
+            Enter Result
+            <Lock size={14} />
+          </button>
+          <button disabled type="button">
+            <DatabaseZap size={16} />
+            Import Match Data
+            <Lock size={14} />
+          </button>
+
+          <PanelWarning
+            title="Backend status"
+            detail="Referee assignment, score reporter approval, and referee-only write access require backend endpoints before these commands can be enabled."
+          />
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+function PermissionStateBadge({ state }: { state: PermissionState }) {
+  const labels: Record<PermissionState, string> = {
+    allowed: "Allowed",
+    backend: "Backend required",
+    restricted: "Restricted",
+    unavailable: "Not available"
+  };
+
+  return <span className={classNames("org-permission-state", `is-${state}`)}>{labels[state]}</span>;
+}
+
+function PanelWarning({ detail, title }: { detail: string; title: string }) {
+  return (
+    <div className="org-panel-warning">
+      <AlertTriangle size={17} />
+      <div>
+        <strong>{title}</strong>
+        <p>{detail}</p>
+      </div>
+    </div>
+  );
+}
+
+function PanelError({ error, title }: { error: OrganizerPanelError; title: string }) {
+  return (
+    <div className="org-panel-error">
+      <AlertTriangle size={17} />
+      <div>
+        <strong>
+          {error.status ? `${error.status} ` : null}
+          {title}
+        </strong>
+        <p>{error.message}</p>
+        {error.errors.length > 0 ? (
+          <ul>
+            {error.errors.map((fieldErrorItem, index) => (
+              <li key={`${fieldErrorItem.field ?? "request"}-${index}`}>
+                <span>{fieldErrorItem.field ?? "request"}</span>
+                <em>{fieldErrorItem.message ?? "Invalid value"}</em>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
