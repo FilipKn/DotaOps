@@ -1123,7 +1123,7 @@ function TournamentDetail({
             tournament={tournament}
           />
 
-          <RefereeMatchControlPanel
+          <MatchOperationsControlPanel
             error={matchFlowError}
             matches={matches}
             tournament={tournament}
@@ -1254,8 +1254,8 @@ function StaffOfficialsPanel({
   const summary = [
     { label: "Total Staff", tone: "red", value: staffRows.length },
     { label: "Organizers", tone: "cyan", value: organizers },
-    { label: "Referees", tone: "gold", value: 0 },
-    { label: "Analysts", tone: "green", value: 0 },
+    { label: "Match Officials", tone: "gold", value: 0 },
+    { label: "Observers", tone: "green", value: 0 },
     { label: "Pending Invites", tone: "muted", value: 0 }
   ];
 
@@ -1263,9 +1263,13 @@ function StaffOfficialsPanel({
     <section className="org-tournament-panel org-staff-panel ops-panel" id="staff-officials">
       <div className="org-tournament-panel-title">
         <div>
-          <p className="ops-label">Staff & Officials</p>
-          <h2>Tournament Operators</h2>
-          <p>Tournament operators, officials, and permission scopes for this control room.</p>
+          <p className="ops-label">Organizer Staff Controls</p>
+          <h2>Tournament Operations Staff</h2>
+          <p>
+            Organizers can prepare tournament-scoped staff roles here. Dedicated
+            staff or match official account flows are not enabled until backend
+            permissions are available.
+          </p>
         </div>
         <span className="ops-badge">
           <ShieldAlert size={14} />
@@ -1367,8 +1371,8 @@ function StaffOfficialsPanel({
       </div>
 
       <PanelWarning
-        title="Staff management API required"
-        detail="Staff management API is not available yet. Backend endpoint required before add/remove/change role actions can be enabled."
+        title="Organizer-controlled staff API required"
+        detail="Backend staff endpoints are required before organizers can add officials, change tournament-scoped roles, or remove staff. These are not separate login roles."
       />
     </section>
   );
@@ -1386,24 +1390,24 @@ type PermissionState = "allowed" | "restricted" | "backend" | "unavailable";
 
 interface PermissionRow {
   action: string;
-  analyst: PermissionState;
+  matchOfficial: PermissionState;
   organizer: PermissionState;
-  referee: PermissionState;
+  observer: PermissionState;
   reporter: PermissionState;
 }
 
 const permissionRows: PermissionRow[] = [
-  { action: "Schedule match", analyst: "unavailable", organizer: "allowed", referee: "backend", reporter: "unavailable" },
-  { action: "Start match", analyst: "unavailable", organizer: "allowed", referee: "backend", reporter: "unavailable" },
-  { action: "Enter result", analyst: "unavailable", organizer: "allowed", referee: "backend", reporter: "backend" },
-  { action: "Confirm result", analyst: "unavailable", organizer: "backend", referee: "backend", reporter: "restricted" },
-  { action: "Finish match", analyst: "unavailable", organizer: "allowed", referee: "backend", reporter: "unavailable" },
-  { action: "Cancel match", analyst: "unavailable", organizer: "allowed", referee: "backend", reporter: "unavailable" },
-  { action: "Handle dispute", analyst: "unavailable", organizer: "unavailable", referee: "backend", reporter: "restricted" },
-  { action: "Import match data", analyst: "restricted", organizer: "allowed", referee: "backend", reporter: "unavailable" }
+  { action: "Schedule match", matchOfficial: "backend", observer: "unavailable", organizer: "allowed", reporter: "unavailable" },
+  { action: "Start match", matchOfficial: "backend", observer: "unavailable", organizer: "allowed", reporter: "unavailable" },
+  { action: "Enter result", matchOfficial: "backend", observer: "unavailable", organizer: "allowed", reporter: "backend" },
+  { action: "Confirm result", matchOfficial: "backend", observer: "unavailable", organizer: "backend", reporter: "restricted" },
+  { action: "Finish match", matchOfficial: "backend", observer: "unavailable", organizer: "allowed", reporter: "unavailable" },
+  { action: "Cancel match", matchOfficial: "backend", observer: "unavailable", organizer: "allowed", reporter: "unavailable" },
+  { action: "Handle dispute", matchOfficial: "backend", observer: "unavailable", organizer: "unavailable", reporter: "restricted" },
+  { action: "Import match data", matchOfficial: "backend", observer: "restricted", organizer: "allowed", reporter: "unavailable" }
 ];
 
-function RefereeMatchControlPanel({
+function MatchOperationsControlPanel({
   error,
   matches,
   tournament
@@ -1415,19 +1419,23 @@ function RefereeMatchControlPanel({
   const selectedMatch = matches[0] ?? null;
 
   function scrollToFlow() {
-    document.getElementById("referee-match-flow")?.scrollIntoView({
+    document.getElementById("match-operations-flow")?.scrollIntoView({
       behavior: "smooth",
       block: "start"
     });
   }
 
   return (
-    <section className="org-tournament-panel org-referee-panel ops-panel" id="referee-match-flow">
+    <section className="org-tournament-panel org-referee-panel ops-panel" id="match-operations-flow">
       <div className="org-tournament-panel-title">
         <div>
-          <p className="ops-label">Referee & Match Control Flow</p>
-          <h2>Permission Logic Matrix</h2>
-          <p>Organizer-supported match control with referee limitations shown for future official assignment flows.</p>
+          <p className="ops-label">Organizer Match Control Flow</p>
+          <h2>Match Operations & Official Limits</h2>
+          <p>
+            Organizer-supported match control with planned tournament official
+            scopes shown as backend-required limitations, not separate account
+            workflows.
+          </p>
         </div>
         <span className="ops-badge">
           <DatabaseZap size={14} />
@@ -1474,10 +1482,10 @@ function RefereeMatchControlPanel({
               <thead>
                 <tr>
                   <th>Process</th>
-                  <th>Organizer</th>
-                  <th>Referee</th>
+                  <th>Organizer/Admin</th>
+                  <th>Match Official</th>
                   <th>Score Reporter</th>
-                  <th>Analyst</th>
+                  <th>Analyst/Observer</th>
                 </tr>
               </thead>
               <tbody>
@@ -1485,9 +1493,9 @@ function RefereeMatchControlPanel({
                   <tr key={row.action}>
                     <td>{row.action}</td>
                     <td><PermissionStateBadge state={row.organizer} /></td>
-                    <td><PermissionStateBadge state={row.referee} /></td>
+                    <td><PermissionStateBadge state={row.matchOfficial} /></td>
                     <td><PermissionStateBadge state={row.reporter} /></td>
-                    <td><PermissionStateBadge state={row.analyst} /></td>
+                    <td><PermissionStateBadge state={row.observer} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -1496,15 +1504,15 @@ function RefereeMatchControlPanel({
 
           <div className="org-referee-limitations">
             <article>
-              <strong>Referee limitation</strong>
-              <p>Referee can only act on assigned matches. Referee-only write permissions are pending backend support.</p>
+              <strong>Planned match official scope</strong>
+              <p>Future match official scope can only act on assigned matches once organizer-controlled backend permissions exist.</p>
             </article>
             <article>
-              <strong>Score reporter limitation</strong>
-              <p>Score reporter cannot approve their own submitted result. Confirmation requires referee or organizer workflow support.</p>
+              <strong>Planned score reporter scope</strong>
+              <p>Score reporter actions are planned as tournament-scoped operations. They are not active as separate account flows.</p>
             </article>
             <article>
-              <strong>Organizer override</strong>
+              <strong>Organizer-controlled operations</strong>
               <p>Organizer/admin has the current override only where existing backend match endpoints support it.</p>
             </article>
           </div>
@@ -1513,7 +1521,7 @@ function RefereeMatchControlPanel({
         <aside className="org-referee-command-panel">
           <button disabled type="button">
             <Plus size={16} />
-            Assign Referee
+            Assign Match Official
             <Lock size={14} />
           </button>
           <button disabled type="button">
@@ -1538,7 +1546,7 @@ function RefereeMatchControlPanel({
 
           <PanelWarning
             title="Backend status"
-            detail="Referee assignment, score reporter approval, and referee-only write access require backend endpoints before these commands can be enabled."
+            detail="Official assignment and score reporter approval are planned as organizer-controlled functionality. Separate referee or analyst login flows are not enabled."
           />
         </aside>
       </div>
@@ -1548,10 +1556,10 @@ function RefereeMatchControlPanel({
 
 function PermissionStateBadge({ state }: { state: PermissionState }) {
   const labels: Record<PermissionState, string> = {
-    allowed: "Allowed",
+    allowed: "Organizer controlled",
     backend: "Backend required",
-    restricted: "Restricted",
-    unavailable: "Not available"
+    restricted: "Planned limit",
+    unavailable: "Not active"
   };
 
   return <span className={classNames("org-permission-state", `is-${state}`)}>{labels[state]}</span>;
