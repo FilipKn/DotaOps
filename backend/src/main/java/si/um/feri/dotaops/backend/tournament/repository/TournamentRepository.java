@@ -92,6 +92,20 @@ public class TournamentRepository {
                 .findFirst();
     }
 
+    public Optional<Tournament> findPublicById(UUID tournamentId) {
+        return jdbcTemplate.query(
+                        selectTournamentSql() + """
+                        where t.id = ?
+                          and t.is_public = true
+                          and t.status in ('registration', 'published', 'live', 'finished')
+                        limit 1
+                        """,
+                        this::mapTournament,
+                        tournamentId)
+                .stream()
+                .findFirst();
+    }
+
     public List<Tournament> findManageable(UUID profileId, boolean admin, String search, int size, long offset) {
         String normalizedSearch = normalizeSearch(search);
 
