@@ -97,6 +97,17 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.path").value("/contract-test/not-found"));
     }
 
+    @Test
+    void rateLimitErrorUsesSharedErrorContract() throws Exception {
+        mockMvc.perform(get("/contract-test/rate-limited"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.status").value(429))
+                .andExpect(jsonPath("$.error").value("Too Many Requests"))
+                .andExpect(jsonPath("$.code").value("RATE_LIMITED"))
+                .andExpect(jsonPath("$.message").value("Too many requests. Try again later."))
+                .andExpect(jsonPath("$.path").value("/contract-test/rate-limited"));
+    }
+
     @RestController
     @RequestMapping("/contract-test")
     static class ContractTestController {
@@ -118,6 +129,11 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/not-found")
         void notFound() {
             throw new ResourceNotFoundException("Tournament", "slug", "missing");
+        }
+
+        @GetMapping("/rate-limited")
+        void rateLimited() {
+            throw new RateLimitExceededException("Too many requests. Try again later.");
         }
     }
 

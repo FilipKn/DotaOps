@@ -19,6 +19,7 @@ import si.um.feri.dotaops.backend.auth.domain.AuthenticatedActor;
 import si.um.feri.dotaops.backend.auth.service.CurrentUserProvider;
 import si.um.feri.dotaops.backend.common.error.BadRequestException;
 import si.um.feri.dotaops.backend.common.error.ResourceNotFoundException;
+import si.um.feri.dotaops.backend.common.security.RequestRateLimiter;
 import si.um.feri.dotaops.backend.opendota.domain.MatchImport;
 import si.um.feri.dotaops.backend.opendota.domain.MatchImportStatus;
 import si.um.feri.dotaops.backend.opendota.domain.MatchPlayerImport;
@@ -34,19 +35,22 @@ public class MatchImportService {
     private final MatchImportRepository matchImportRepository;
     private final CurrentUserProvider currentUserProvider;
     private final OpenDotaClient openDotaClient;
+    private final RequestRateLimiter requestRateLimiter;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public MatchImportService(
             MatchImportRepository matchImportRepository,
             CurrentUserProvider currentUserProvider,
-            OpenDotaClient openDotaClient
+            OpenDotaClient openDotaClient,
+            RequestRateLimiter requestRateLimiter
     ) {
         this.matchImportRepository = matchImportRepository;
         this.currentUserProvider = currentUserProvider;
         this.openDotaClient = openDotaClient;
+        this.requestRateLimiter = requestRateLimiter;
     }
 
-    public MatchImportResponse importMatch(CreateMatchImportRequest request) {
+    public MatchImportResponse importMatch(CreateMatchImportRequest request, String clientIp) {
         String dotaMatchId = normalizeDotaMatchId(request.dotaMatchId());
         long parsedMatchId = parseDotaMatchId(dotaMatchId);
         AuthenticatedActor actor = currentUserProvider.requireActor();
@@ -61,6 +65,8 @@ public class MatchImportService {
                 || existing.orElseThrow().status() == MatchImportStatus.PROCESSING)) {
             return MatchImportResponse.from(existing.orElseThrow());
         }
+
+        requestRateLimiter.checkMatchImport(requestedBy, clientIp);
 
         MatchImport startedImport = existing
                 .map(matchImport -> matchImportRepository.markProcessing(matchImport.id())

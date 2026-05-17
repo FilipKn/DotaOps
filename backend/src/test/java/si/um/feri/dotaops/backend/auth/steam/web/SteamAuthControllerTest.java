@@ -27,6 +27,7 @@ import si.um.feri.dotaops.backend.auth.steam.domain.SteamAuthResult;
 import si.um.feri.dotaops.backend.auth.steam.service.SteamAuthService;
 import si.um.feri.dotaops.backend.auth.steam.service.SteamSessionCookieService;
 import si.um.feri.dotaops.backend.auth.steam.service.SteamSessionTokenService;
+import si.um.feri.dotaops.backend.common.error.RateLimitExceededException;
 
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -96,6 +97,17 @@ class SteamAuthControllerTest {
         mockMvc.perform(get("/api/auth/steam/login"))
                 .andExpect(status().isFound())
                 .andExpect(header().string("Location", "https://steamcommunity.com/openid/login?openid.mode=checkid_setup"));
+    }
+
+    @Test
+    void loginReturnsRateLimitContract() throws Exception {
+        when(steamAuthService.beginLogin(any()))
+                .thenThrow(new RateLimitExceededException("Too many Steam login attempts from this IP address. Try again later."));
+
+        mockMvc.perform(get("/api/auth/steam/login"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("RATE_LIMITED"))
+                .andExpect(jsonPath("$.path").value("/api/auth/steam/login"));
     }
 
     @Test

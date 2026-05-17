@@ -15,6 +15,8 @@ import si.um.feri.dotaops.backend.auth.domain.AuthenticatedActor;
 import si.um.feri.dotaops.backend.auth.domain.ProfileRole;
 import si.um.feri.dotaops.backend.auth.service.CurrentUserProvider;
 import si.um.feri.dotaops.backend.common.error.BadRequestException;
+import si.um.feri.dotaops.backend.common.error.RateLimitExceededException;
+import si.um.feri.dotaops.backend.common.security.RequestRateLimiter;
 import si.um.feri.dotaops.backend.opendota.domain.MatchImport;
 import si.um.feri.dotaops.backend.opendota.domain.MatchImportStatus;
 import si.um.feri.dotaops.backend.opendota.domain.MatchPlayerImport;
@@ -23,9 +25,11 @@ import si.um.feri.dotaops.backend.opendota.web.CreateMatchImportRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -40,11 +44,13 @@ class MatchImportServiceTest {
     private final MatchImportRepository matchImportRepository = mock(MatchImportRepository.class);
     private final CurrentUserProvider currentUserProvider = mock(CurrentUserProvider.class);
     private final OpenDotaClient openDotaClient = mock(OpenDotaClient.class);
+    private final RequestRateLimiter requestRateLimiter = mock(RequestRateLimiter.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final MatchImportService service = new MatchImportService(
             matchImportRepository,
             currentUserProvider,
-            openDotaClient);
+            openDotaClient,
+            requestRateLimiter);
 
     @Test
     void importMatchCreatesProcessingRecordFetchesOpenDotaAndStoresReadyPayload() throws Exception {
@@ -73,9 +79,10 @@ class MatchImportServiceTest {
         when(matchImportRepository.markReady(eq(IMPORT_ID), anyString(), anyString(), anyList()))
                 .thenReturn(Optional.of(ready));
 
-        var response = service.importMatch(new CreateMatchImportRequest(DOTA_MATCH_ID));
+        var response = service.importMatch(new CreateMatchImportRequest(DOTA_MATCH_ID), "203.0.113.10");
 
         assertThat(response.status()).isEqualTo(MatchImportStatus.READY);
+        verify(requestRateLimiter).checkMatchImport(REQUESTED_BY, "203.0.113.10");
         verify(matchImportRepository).createProcessing(DOTA_MATCH_ID, REQUESTED_BY);
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<MatchPlayerImport>> playersCaptor = ArgumentCaptor.forClass(List.class);
@@ -91,9 +98,10 @@ class MatchImportServiceTest {
         when(currentUserProvider.requireActor()).thenReturn(actor(ProfileRole.ORGANIZER));
         when(matchImportRepository.findByDotaMatchId(DOTA_MATCH_ID)).thenReturn(Optional.of(ready));
 
-        var response = service.importMatch(new CreateMatchImportRequest(DOTA_MATCH_ID));
+        var response = service.importMatch(new CreateMatchImportRequest(DOTA_MATCH_ID), "203.0.113.10");
 
         assertThat(response.status()).isEqualTo(MatchImportStatus.READY);
+        verify(requestRateLimiter, never()).checkMatchImport(eq(REQUESTED_BY), anyString());
         verify(openDotaClient, never()).fetchMatch(Long.parseLong(DOTA_MATCH_ID));
     }
 
@@ -108,7 +116,7 @@ class MatchImportServiceTest {
         when(matchImportRepository.markError(IMPORT_ID, "OpenDota match was not found or could not be fetched."))
                 .thenReturn(Optional.of(error));
 
-        var response = service.importMatch(new CreateMatchImportRequest(DOTA_MATCH_ID));
+        var response = service.importMatch(new CreateMatchImportRequest(DOTA_MATCH_ID), "203.0.113.10");
 
         assertThat(response.status()).isEqualTo(MatchImportStatus.ERROR);
         assertThat(response.errorMessage()).isEqualTo("OpenDota match was not found or could not be fetched.");
@@ -116,7 +124,9 @@ class MatchImportServiceTest {
 
     @Test
     void importMatchRejectsTooLargeMatchId() {
-        assertThatThrownBy(() -> service.importMatch(new CreateMatchImportRequest("99999999999999999999")))
+        assertThatThrownBy(() -> service.importMatch(
+                new CreateMatchImportRequest("99999999999999999999"),
+                "203.0.113.10"))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Dota match id is too large.");
     }
@@ -125,11 +135,30 @@ class MatchImportServiceTest {
     void importMatchRejectsNonOrganizer() {
         when(currentUserProvider.requireActor()).thenReturn(actor(ProfileRole.PLAYER));
 
-        assertThatThrownBy(() -> service.importMatch(new CreateMatchImportRequest(DOTA_MATCH_ID)))
+        assertThatThrownBy(() -> service.importMatch(new CreateMatchImportRequest(DOTA_MATCH_ID), "203.0.113.10"))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessage("Only organizers or admins can import matches.");
 
+        verify(requestRateLimiter, never()).checkMatchImport(eq(REQUESTED_BY), anyString());
         verify(matchImportRepository, never()).findByDotaMatchId(DOTA_MATCH_ID);
+        verify(openDotaClient, never()).fetchMatch(Long.parseLong(DOTA_MATCH_ID));
+    }
+
+    @Test
+    void importMatchRateLimitsBeforeCreatingProcessingRecordOrFetchingOpenDota() {
+        when(currentUserProvider.requireActor()).thenReturn(actor(ProfileRole.ORGANIZER));
+        when(matchImportRepository.findByDotaMatchId(DOTA_MATCH_ID)).thenReturn(Optional.empty());
+        doThrow(new RateLimitExceededException("Too many match import requests for this user. Try again later."))
+                .when(requestRateLimiter)
+                .checkMatchImport(REQUESTED_BY, "203.0.113.10");
+
+        assertThatThrownBy(() -> service.importMatch(
+                new CreateMatchImportRequest(DOTA_MATCH_ID),
+                "203.0.113.10"))
+                .isInstanceOf(RateLimitExceededException.class)
+                .hasMessage("Too many match import requests for this user. Try again later.");
+
+        verify(matchImportRepository, never()).createProcessing(anyString(), any());
         verify(openDotaClient, never()).fetchMatch(Long.parseLong(DOTA_MATCH_ID));
     }
 

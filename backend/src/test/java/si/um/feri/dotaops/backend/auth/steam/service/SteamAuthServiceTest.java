@@ -23,6 +23,9 @@ import si.um.feri.dotaops.backend.auth.steam.domain.SteamProfileUpsertResult;
 import si.um.feri.dotaops.backend.auth.steam.repository.SteamLoginStateRepository;
 import si.um.feri.dotaops.backend.auth.steam.repository.SteamProfileRepository;
 import si.um.feri.dotaops.backend.common.error.BadRequestException;
+import si.um.feri.dotaops.backend.common.error.RateLimitExceededException;
+import si.um.feri.dotaops.backend.common.security.ClientIpAddressResolver;
+import si.um.feri.dotaops.backend.common.security.RequestRateLimiter;
 import si.um.feri.dotaops.backend.config.properties.SteamAuthProperties;
 import si.um.feri.dotaops.backend.profile.service.SteamProfileBootstrapService;
 
@@ -52,6 +55,8 @@ class SteamAuthServiceTest {
     private final SteamOpenIdClient openIdClient = mock(SteamOpenIdClient.class);
     private final CurrentUserProvider currentUserProvider = mock(CurrentUserProvider.class);
     private final SteamProfileBootstrapService profileBootstrapService = mock(SteamProfileBootstrapService.class);
+    private final ClientIpAddressResolver clientIpAddressResolver = new ClientIpAddressResolver();
+    private final RequestRateLimiter requestRateLimiter = mock(RequestRateLimiter.class);
     private final SteamAuthService steamAuthService = new SteamAuthService(
             properties("http://localhost:3000/auth/steam/callback"),
             loginStateRepository,
@@ -59,6 +64,8 @@ class SteamAuthServiceTest {
             openIdClient,
             currentUserProvider,
             profileBootstrapService,
+            clientIpAddressResolver,
+            requestRateLimiter,
             fixedRandom(),
             CLOCK);
 
@@ -72,6 +79,7 @@ class SteamAuthServiceTest {
         var redirectUri = steamAuthService.beginLogin(request);
 
         ArgumentCaptor<String> stateHash = ArgumentCaptor.forClass(String.class);
+        verify(requestRateLimiter).checkSteamLogin("127.0.0.1");
         verify(loginStateRepository).create(
                 stateHash.capture(),
                 eq("http://localhost:3000/auth/steam/callback"),
@@ -87,6 +95,21 @@ class SteamAuthServiceTest {
                 .contains("openid.mode=checkid_setup")
                 .contains("openid.claimed_id=http://specs.openid.net/auth/2.0/identifier_select")
                 .contains("openid.return_to=");
+    }
+
+    @Test
+    void beginLoginRateLimitsBeforeCreatingLoginState() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("127.0.0.1");
+        doThrow(new RateLimitExceededException("Too many Steam login attempts from this IP address. Try again later."))
+                .when(requestRateLimiter)
+                .checkSteamLogin("127.0.0.1");
+
+        assertThatThrownBy(() -> steamAuthService.beginLogin(request))
+                .isInstanceOf(RateLimitExceededException.class)
+                .hasMessage("Too many Steam login attempts from this IP address. Try again later.");
+
+        verify(loginStateRepository, never()).create(anyString(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
