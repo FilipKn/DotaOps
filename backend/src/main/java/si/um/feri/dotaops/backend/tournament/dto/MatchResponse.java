@@ -1,19 +1,14 @@
 package si.um.feri.dotaops.backend.tournament.dto;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.UUID;
 
-import si.um.feri.dotaops.backend.tournament.domain.BracketMatch;
+import si.um.feri.dotaops.backend.tournament.domain.TournamentMatch;
 
-public record BracketMatchResponse(
-        UUID matchId,
+public record MatchResponse(
+        UUID id,
         UUID tournamentId,
         UUID groupId,
-        int roundNumber,
-        int bracketPosition,
-        String stageName,
-        String roundName,
         String status,
         UUID teamAId,
         String teamAName,
@@ -29,19 +24,20 @@ public record BracketMatchResponse(
         OffsetDateTime finishedAt,
         OffsetDateTime cancelledAt,
         String cancellationReason,
-        List<MatchSlotResponse> slots
+        int roundNumber,
+        Integer bracketPosition,
+        String stageName,
+        String roundName,
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt
 ) {
 
-    public static BracketMatchResponse from(BracketMatch match) {
-        return new BracketMatchResponse(
+    public static MatchResponse from(TournamentMatch match) {
+        return new MatchResponse(
                 match.id(),
                 match.tournamentId(),
                 match.groupId(),
-                match.roundNumber(),
-                match.bracketPosition(),
-                match.stageName(),
-                match.roundName(),
-                match.status(),
+                match.status().databaseValue(),
                 match.teamAId(),
                 match.teamAName(),
                 match.teamBId(),
@@ -56,8 +52,11 @@ public record BracketMatchResponse(
                 match.finishedAt(),
                 match.cancelledAt(),
                 match.cancellationReason(),
-                match.slots().stream()
-                        .map(MatchSlotResponse::from)
-                        .toList());
+                match.roundNumber(),
+                match.bracketPosition(),
+                match.stageName(),
+                match.roundName(),
+                match.createdAt(),
+                match.updatedAt());
     }
 }

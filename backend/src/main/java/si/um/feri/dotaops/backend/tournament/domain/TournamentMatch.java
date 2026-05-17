@@ -1,18 +1,17 @@
 package si.um.feri.dotaops.backend.tournament.domain;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.UUID;
 
-public record BracketMatch(
+public record TournamentMatch(
         UUID id,
         UUID tournamentId,
         UUID groupId,
         int roundNumber,
-        int bracketPosition,
+        Integer bracketPosition,
         String stageName,
         String roundName,
-        String status,
+        MatchStatus status,
         UUID teamAId,
         String teamAName,
         UUID teamBId,
@@ -27,6 +26,7 @@ public record BracketMatch(
         OffsetDateTime finishedAt,
         OffsetDateTime cancelledAt,
         String cancellationReason,
-        List<BracketMatchSlot> slots
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt
 ) {
 }

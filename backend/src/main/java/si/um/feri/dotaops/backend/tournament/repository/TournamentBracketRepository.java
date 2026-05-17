@@ -134,11 +134,38 @@ public class TournamentBracketRepository {
                 returning
                   id,
                   tournament_id,
+                  group_id,
                   round_number,
                   bracket_position,
                   stage_name,
                   round_name,
-                  status::text as status
+                  status::text as status,
+                  team_a_id,
+                  (
+                    select ta.name
+                    from public.teams ta
+                    where ta.id = team_a_id
+                  ) as team_a_name,
+                  team_b_id,
+                  (
+                    select tb.name
+                    from public.teams tb
+                    where tb.id = team_b_id
+                  ) as team_b_name,
+                  score_a,
+                  score_b,
+                  winner_team_id,
+                  (
+                    select tw.name
+                    from public.teams tw
+                    where tw.id = winner_team_id
+                  ) as winner_team_name,
+                  best_of,
+                  scheduled_at,
+                  started_at,
+                  finished_at,
+                  cancelled_at,
+                  cancellation_reason
                 """,
                 this::mapMatchWithoutSlots,
                 command.tournamentId(),
@@ -185,12 +212,30 @@ public class TournamentBracketRepository {
                 select
                   m.id,
                   m.tournament_id,
+                  m.group_id,
                   m.round_number,
                   m.bracket_position,
                   m.stage_name,
                   m.round_name,
-                  m.status::text as status
+                  m.status::text as status,
+                  m.team_a_id,
+                  ta.name as team_a_name,
+                  m.team_b_id,
+                  tb.name as team_b_name,
+                  m.score_a,
+                  m.score_b,
+                  m.winner_team_id,
+                  tw.name as winner_team_name,
+                  m.best_of,
+                  m.scheduled_at,
+                  m.started_at,
+                  m.finished_at,
+                  m.cancelled_at,
+                  m.cancellation_reason
                 from public.matches m
+                left join public.teams ta on ta.id = m.team_a_id
+                left join public.teams tb on tb.id = m.team_b_id
+                left join public.teams tw on tw.id = m.winner_team_id
                 where m.tournament_id = ?
                   and m.stage_name = ?
                 order by m.round_number asc, m.bracket_position asc, m.id asc
@@ -207,11 +252,26 @@ public class TournamentBracketRepository {
                 .map(match -> new BracketMatch(
                         match.id(),
                         match.tournamentId(),
+                        match.groupId(),
                         match.roundNumber(),
                         match.bracketPosition(),
                         match.stageName(),
                         match.roundName(),
                         match.status(),
+                        match.teamAId(),
+                        match.teamAName(),
+                        match.teamBId(),
+                        match.teamBName(),
+                        match.scoreA(),
+                        match.scoreB(),
+                        match.winnerTeamId(),
+                        match.winnerTeamName(),
+                        match.bestOf(),
+                        match.scheduledAt(),
+                        match.startedAt(),
+                        match.finishedAt(),
+                        match.cancelledAt(),
+                        match.cancellationReason(),
                         slotsByMatchId.getOrDefault(match.id(), List.of())))
                 .toList();
     }
@@ -253,11 +313,26 @@ public class TournamentBracketRepository {
         return new BracketMatch(
                 resultSet.getObject("id", UUID.class),
                 resultSet.getObject("tournament_id", UUID.class),
+                resultSet.getObject("group_id", UUID.class),
                 resultSet.getInt("round_number"),
                 resultSet.getInt("bracket_position"),
                 resultSet.getString("stage_name"),
                 resultSet.getString("round_name"),
                 resultSet.getString("status"),
+                resultSet.getObject("team_a_id", UUID.class),
+                resultSet.getString("team_a_name"),
+                resultSet.getObject("team_b_id", UUID.class),
+                resultSet.getString("team_b_name"),
+                resultSet.getInt("score_a"),
+                resultSet.getInt("score_b"),
+                resultSet.getObject("winner_team_id", UUID.class),
+                resultSet.getString("winner_team_name"),
+                resultSet.getInt("best_of"),
+                resultSet.getObject("scheduled_at", OffsetDateTime.class),
+                resultSet.getObject("started_at", OffsetDateTime.class),
+                resultSet.getObject("finished_at", OffsetDateTime.class),
+                resultSet.getObject("cancelled_at", OffsetDateTime.class),
+                resultSet.getString("cancellation_reason"),
                 List.of());
     }
 

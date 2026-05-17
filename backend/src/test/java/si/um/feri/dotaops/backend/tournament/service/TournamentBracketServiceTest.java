@@ -75,11 +75,26 @@ class TournamentBracketServiceTest {
             BracketMatch match = new BracketMatch(
                     matchId,
                     command.tournamentId(),
+                    null,
                     command.roundNumber(),
                     command.bracketPosition(),
                     command.stageName(),
                     command.roundName(),
                     command.status(),
+                    command.teamAId(),
+                    null,
+                    command.teamBId(),
+                    null,
+                    0,
+                    0,
+                    command.winnerTeamId(),
+                    null,
+                    command.bestOf(),
+                    null,
+                    null,
+                    command.finishedAt(),
+                    null,
+                    null,
                     List.of());
             returnedMatches.add(match);
             return match;
