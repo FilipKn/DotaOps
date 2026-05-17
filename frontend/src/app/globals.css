@@ -10005,3 +10005,448 @@ textarea:focus {
     justify-content: flex-start;
   }
 }
+
+.groups-standings-panel {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  overflow: hidden;
+}
+
+.groups-standings-summary,
+.org-groups-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.org-groups-summary {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.groups-standings-summary-card,
+.org-groups-summary-card {
+  display: grid;
+  gap: 7px;
+  min-height: 106px;
+  padding: 16px;
+}
+
+.groups-standings-summary-card svg,
+.org-groups-summary-card svg {
+  color: var(--ops-primary);
+}
+
+.groups-standings-summary-card span,
+.org-groups-summary-card span,
+.groups-standings-rule span,
+.org-groups-command-card label span {
+  color: var(--ops-muted-strong);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.groups-standings-summary-card strong,
+.org-groups-summary-card strong {
+  color: var(--ops-text);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 1.45rem;
+}
+
+.org-groups-summary-card.is-cyan svg,
+.org-groups-summary-card.is-cyan strong {
+  color: var(--ops-cyan);
+}
+
+.org-groups-summary-card.is-gold svg,
+.org-groups-summary-card.is-gold strong {
+  color: var(--ops-secondary);
+}
+
+.org-groups-summary-card.is-green svg,
+.org-groups-summary-card.is-green strong {
+  color: var(--ops-green);
+}
+
+.org-groups-summary-card.is-red svg,
+.org-groups-summary-card.is-red strong {
+  color: var(--ops-primary);
+}
+
+.groups-standings-rule {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid rgba(233, 195, 73, 0.25);
+  border-radius: var(--ops-radius);
+  padding: 12px 14px;
+  background: rgba(233, 195, 73, 0.06);
+}
+
+.groups-standings-rule strong {
+  color: var(--ops-secondary);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.groups-standings-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1.28fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.groups-standings-groups,
+.groups-standings-tables,
+.org-groups-board,
+.org-group-team-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.groups-standings-card,
+.groups-standings-table-panel,
+.org-group-card,
+.org-groups-command-card {
+  padding: 16px;
+}
+
+.groups-standings-card-head,
+.groups-standings-table-head,
+.org-group-card-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.groups-standings-card h3,
+.groups-standings-table-head h3,
+.org-group-card h3,
+.org-groups-command-card h3 {
+  color: var(--ops-text);
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.groups-standings-card p,
+.groups-standings-muted,
+.org-groups-command-card p,
+.org-groups-state p {
+  color: var(--ops-muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.groups-standings-team-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.groups-standings-team-chip,
+.groups-standings-empty-chip {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  border: 1px solid var(--ops-line-soft);
+  border-radius: var(--ops-radius-sm);
+  padding: 7px 9px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--ops-text);
+  font-size: 0.82rem;
+}
+
+.groups-standings-team-chip em {
+  color: var(--ops-secondary);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-style: normal;
+}
+
+.groups-standings-team-chip small {
+  color: var(--ops-cyan);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  text-transform: uppercase;
+}
+
+.groups-standings-empty-chip {
+  color: var(--ops-muted);
+}
+
+.groups-standings-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.groups-standings-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.groups-standings-table th,
+.groups-standings-table td {
+  border-bottom: 1px solid var(--ops-line-soft);
+  padding: 10px 9px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.groups-standings-table th {
+  color: var(--ops-muted-strong);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.groups-standings-table td {
+  color: var(--ops-text);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.82rem;
+}
+
+.groups-standings-table td strong {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.9rem;
+}
+
+.groups-standings-state,
+.org-groups-state {
+  display: grid;
+  gap: 8px;
+  border: 1px dashed var(--ops-line);
+  border-radius: var(--ops-radius);
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.groups-standings-state h3,
+.org-groups-state h3 {
+  color: var(--ops-text);
+  text-transform: uppercase;
+}
+
+.groups-standings-management-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--ops-line-soft);
+  margin-top: 8px;
+  padding-top: 12px;
+}
+
+.groups-standings-management-note span {
+  color: var(--ops-muted-strong);
+  font-size: 0.88rem;
+}
+
+.groups-standings-state.is-error,
+.org-groups-error {
+  border-color: rgba(255, 84, 78, 0.42);
+  background: rgba(255, 84, 78, 0.08);
+}
+
+.org-groups-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.org-tournament-section-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+}
+
+.org-tournament-section-shortcuts button {
+  border: 1px solid var(--ops-line-soft);
+  border-radius: var(--ops-radius-sm);
+  padding: 8px 11px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--ops-muted-strong);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.org-tournament-section-shortcuts button:hover {
+  border-color: var(--ops-cyan);
+  color: var(--ops-cyan);
+}
+
+.org-groups-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
+  gap: 16px;
+  align-items: start;
+}
+
+.org-groups-main,
+.org-groups-command-rail {
+  display: grid;
+  gap: 14px;
+}
+
+.org-group-team-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--ops-line-soft);
+  border-radius: var(--ops-radius-sm);
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.org-group-team-row strong {
+  display: block;
+  color: var(--ops-text);
+}
+
+.org-group-team-row span {
+  color: var(--ops-muted);
+  font-family:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+.org-group-team-row button,
+.org-groups-command-card button {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-sm);
+  padding: 9px 11px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ops-text);
+  font-weight: 800;
+}
+
+.org-group-team-row button:not(:disabled):hover,
+.org-groups-command-card button:not(:disabled):hover {
+  border-color: var(--ops-primary);
+  color: var(--ops-primary);
+}
+
+.org-group-team-row button:disabled,
+.org-groups-command-card button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.org-groups-command-card {
+  display: grid;
+  gap: 12px;
+}
+
+.org-groups-command-card label {
+  display: grid;
+  gap: 6px;
+}
+
+.org-groups-command-card input,
+.org-groups-command-card select {
+  width: 100%;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-sm);
+  padding: 10px 11px;
+  background: rgba(7, 7, 7, 0.72);
+  color: var(--ops-text);
+}
+
+.org-groups-command-card input:focus,
+.org-groups-command-card select:focus {
+  border-color: var(--ops-cyan);
+  outline: none;
+  box-shadow: var(--ops-glow-cyan);
+}
+
+.org-groups-notice,
+.org-groups-validation,
+.org-groups-error {
+  border-radius: var(--ops-radius-sm);
+  padding: 11px 12px;
+}
+
+.org-groups-notice {
+  border: 1px solid rgba(110, 231, 168, 0.35);
+  background: rgba(110, 231, 168, 0.08);
+  color: var(--ops-green);
+  font-weight: 800;
+}
+
+.org-groups-error {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: var(--ops-error);
+}
+
+.org-groups-error strong,
+.org-groups-error span,
+.org-groups-validation span {
+  display: block;
+}
+
+.org-groups-validation {
+  display: grid;
+  gap: 6px;
+  border: 1px solid rgba(233, 195, 73, 0.35);
+  background: rgba(233, 195, 73, 0.08);
+  color: var(--ops-secondary);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 1180px) {
+  .groups-standings-summary,
+  .org-groups-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .groups-standings-layout,
+  .org-groups-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .groups-standings-panel,
+  .org-groups-panel {
+    padding: 16px;
+  }
+
+  .groups-standings-summary,
+  .org-groups-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .groups-standings-card-head,
+  .groups-standings-table-head,
+  .org-group-card-head,
+  .org-group-team-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

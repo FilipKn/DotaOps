@@ -31,6 +31,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
+import { OrganizerGroupManagementPanel } from "@/components/organizer-group-management-panel";
 import { ApiRequestError, type ApiFieldError } from "@/lib/api";
 import { getCurrentUserProfile, type CurrentUserProfile, type ProfileRole } from "@/lib/auth";
 import {
@@ -311,6 +312,18 @@ function canAccessOrganizer(role?: ProfileRole | null) {
   return role === "organizer" || role === "admin";
 }
 
+function sectionIdForInitialView(view?: string) {
+  if (view === "registrations") {
+    return "registration-review";
+  }
+
+  if (view === "groups") {
+    return "group-management";
+  }
+
+  return null;
+}
+
 export function OrganizerCommandPage({
   initialSlug,
   initialTournamentId,
@@ -405,7 +418,7 @@ export function OrganizerCommandPage({
       setTournaments(nextTournaments);
       setLoadState("ready");
 
-      if (initialView === "registrations" && (initialTournamentId || initialSlug)) {
+      if (sectionIdForInitialView(initialView) && (initialTournamentId || initialSlug)) {
         const matchedTournament = nextTournaments.find(
           (tournament) =>
             (initialTournamentId && tournament.id === initialTournamentId) ||
@@ -477,6 +490,23 @@ export function OrganizerCommandPage({
 
     return () => window.clearTimeout(timeout);
   }, [loadOrganizerAccess]);
+
+  useEffect(() => {
+    const targetId = sectionIdForInitialView(initialView);
+
+    if (view !== "detail" || !selectedTournament || !targetId) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      document.getElementById(targetId)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }, 180);
+
+    return () => window.clearTimeout(timeout);
+  }, [initialView, selectedTournament, view]);
 
   const counts = useMemo(() => dashboardCounts(tournaments), [tournaments]);
 
@@ -1006,6 +1036,13 @@ function TournamentDetail({
     [filter, registrations]
   );
 
+  function scrollToSection(sectionId: string) {
+    document.getElementById(sectionId)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
+
   return (
     <>
       <section className="org-tournament-detail-hero ops-panel">
@@ -1035,6 +1072,13 @@ function TournamentDetail({
           </div>
         ))}
       </section>
+
+      <nav className="org-tournament-section-shortcuts ops-panel" aria-label="Tournament detail sections">
+        <button onClick={() => scrollToSection("registration-review")} type="button">Registrations</button>
+        <button onClick={() => scrollToSection("group-management")} type="button">Groups</button>
+        <button onClick={() => scrollToSection("staff-officials")} type="button">Staff</button>
+        <button onClick={() => scrollToSection("match-operations-flow")} type="button">Match Controls</button>
+      </nav>
 
       <section className="org-tournament-detail-grid">
         <main className="org-tournament-detail-main">
@@ -1115,6 +1159,12 @@ function TournamentDetail({
               </div>
             )}
           </section>
+
+          <OrganizerGroupManagementPanel
+            matches={matches}
+            registrations={registrations}
+            tournament={tournament}
+          />
 
           <StaffOfficialsPanel
             currentProfile={currentProfile}
@@ -1207,10 +1257,10 @@ function staffRowsForTournament(
     "Tournament owner / organizer";
 
   rows.push({
-    actions: "Locked until staff API is available",
+    actions: "Locked in current role model",
     id: tournament.organizerProfileId ?? "tournament-owner",
     name: ownerName,
-    permissions: ["Manage registrations", "Schedule matches", "Enter results", "View only"],
+    permissions: ["Manage registrations", "Schedule matches", "Enter results"],
     role: "Owner",
     scope: "Tournament-wide",
     status: "Active",
@@ -1227,7 +1277,7 @@ function staffRowsForTournament(
       name: currentProfile.nickname,
       permissions: currentProfile.role === "admin"
         ? ["Manage registrations", "Schedule matches", "Enter results", "View only"]
-        : ["View only"],
+        : ["Organizer workspace"],
       role: "Organizer",
       scope: currentProfile.role === "admin" ? "Admin override" : "Current session",
       status: "Active session",
@@ -1252,23 +1302,22 @@ function StaffOfficialsPanel({
   const staffRows = staffRowsForTournament(tournament, currentProfile);
   const organizers = staffRows.filter((row) => row.role === "Owner" || row.role === "Organizer").length;
   const summary = [
-    { label: "Total Staff", tone: "red", value: staffRows.length },
-    { label: "Organizers", tone: "cyan", value: organizers },
-    { label: "Match Officials", tone: "gold", value: 0 },
-    { label: "Observers", tone: "green", value: 0 },
-    { label: "Pending Invites", tone: "muted", value: 0 }
+    { label: "Operators", tone: "red", value: staffRows.length },
+    { label: "Organizer Controls", tone: "cyan", value: organizers },
+    { label: "Backend Staff API", tone: "gold", value: 0 },
+    { label: "Locked Actions", tone: "muted", value: 5 }
   ];
 
   return (
     <section className="org-tournament-panel org-staff-panel ops-panel" id="staff-officials">
       <div className="org-tournament-panel-title">
         <div>
-          <p className="ops-label">Organizer Staff Controls</p>
-          <h2>Tournament Operations Staff</h2>
+          <p className="ops-label">Organizer Operations</p>
+          <h2>Organizer Operations Staff</h2>
           <p>
-            Organizers can prepare tournament-scoped staff roles here. Dedicated
-            staff or match official account flows are not enabled until backend
-            permissions are available.
+            Organizer/admin currently controls tournament operations. Separate
+            referee, analyst, or score reporter account roles are not enabled in
+            this project scope.
           </p>
         </div>
         <span className="ops-badge">
@@ -1291,10 +1340,10 @@ function StaffOfficialsPanel({
           <table className="org-staff-table">
             <thead>
               <tr>
-                <th>Staff member</th>
-                <th>Primary role</th>
+                <th>Operator</th>
+                <th>Workspace role</th>
                 <th>Scope</th>
-                <th>Permissions</th>
+                <th>Organizer controls</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -1340,7 +1389,7 @@ function StaffOfficialsPanel({
         <aside className="org-staff-command-rail">
           <button disabled type="button">
             <Plus size={16} />
-            Add Official
+            Add Staff
             <Lock size={14} />
           </button>
           <button disabled type="button">
@@ -1371,8 +1420,8 @@ function StaffOfficialsPanel({
       </div>
 
       <PanelWarning
-        title="Organizer-controlled staff API required"
-        detail="Backend staff endpoints are required before organizers can add officials, change tournament-scoped roles, or remove staff. These are not separate login roles."
+        title="Organizer/admin controlled"
+        detail="Dedicated staff management is not part of the current role model. Organizer/admin handles these operations, and disabled controls need backend staff endpoints before they can be enabled."
       />
     </section>
   );
@@ -1390,21 +1439,21 @@ type PermissionState = "allowed" | "restricted" | "backend" | "unavailable";
 
 interface PermissionRow {
   action: string;
-  matchOfficial: PermissionState;
+  backendRequired: PermissionState;
+  currentSupport: PermissionState;
+  note: string;
   organizer: PermissionState;
-  observer: PermissionState;
-  reporter: PermissionState;
 }
 
 const permissionRows: PermissionRow[] = [
-  { action: "Schedule match", matchOfficial: "backend", observer: "unavailable", organizer: "allowed", reporter: "unavailable" },
-  { action: "Start match", matchOfficial: "backend", observer: "unavailable", organizer: "allowed", reporter: "unavailable" },
-  { action: "Enter result", matchOfficial: "backend", observer: "unavailable", organizer: "allowed", reporter: "backend" },
-  { action: "Confirm result", matchOfficial: "backend", observer: "unavailable", organizer: "backend", reporter: "restricted" },
-  { action: "Finish match", matchOfficial: "backend", observer: "unavailable", organizer: "allowed", reporter: "unavailable" },
-  { action: "Cancel match", matchOfficial: "backend", observer: "unavailable", organizer: "allowed", reporter: "unavailable" },
-  { action: "Handle dispute", matchOfficial: "backend", observer: "unavailable", organizer: "unavailable", reporter: "restricted" },
-  { action: "Import match data", matchOfficial: "backend", observer: "restricted", organizer: "allowed", reporter: "unavailable" }
+  { action: "Schedule match", backendRequired: "unavailable", currentSupport: "allowed", note: "Organizer endpoint exists.", organizer: "allowed" },
+  { action: "Start match", backendRequired: "unavailable", currentSupport: "allowed", note: "Organizer endpoint exists.", organizer: "allowed" },
+  { action: "Enter result", backendRequired: "unavailable", currentSupport: "allowed", note: "Organizer result endpoint exists.", organizer: "allowed" },
+  { action: "Confirm result", backendRequired: "backend", currentSupport: "backend", note: "Approval workflow is not active.", organizer: "backend" },
+  { action: "Finish match", backendRequired: "unavailable", currentSupport: "allowed", note: "Organizer endpoint exists.", organizer: "allowed" },
+  { action: "Cancel match", backendRequired: "unavailable", currentSupport: "allowed", note: "Organizer endpoint exists.", organizer: "allowed" },
+  { action: "Handle dispute", backendRequired: "backend", currentSupport: "unavailable", note: "Dispute process is outside current scope.", organizer: "unavailable" },
+  { action: "Import match data", backendRequired: "unavailable", currentSupport: "allowed", note: "Organizer import flow exists where enabled.", organizer: "allowed" }
 ];
 
 function MatchOperationsControlPanel({
@@ -1430,11 +1479,10 @@ function MatchOperationsControlPanel({
       <div className="org-tournament-panel-title">
         <div>
           <p className="ops-label">Organizer Match Control Flow</p>
-          <h2>Match Operations & Official Limits</h2>
+          <h2>Organizer Match Operations</h2>
           <p>
-            Organizer-supported match control with planned tournament official
-            scopes shown as backend-required limitations, not separate account
-            workflows.
+            Only organizer/admin has access to this workspace. Referee or
+            analyst-specific accounts are not used in the current implementation.
           </p>
         </div>
         <span className="ops-badge">
@@ -1483,9 +1531,9 @@ function MatchOperationsControlPanel({
                 <tr>
                   <th>Process</th>
                   <th>Organizer/Admin</th>
-                  <th>Match Official</th>
-                  <th>Score Reporter</th>
-                  <th>Analyst/Observer</th>
+                  <th>Current Support</th>
+                  <th>Backend Required</th>
+                  <th>Notes</th>
                 </tr>
               </thead>
               <tbody>
@@ -1493,9 +1541,9 @@ function MatchOperationsControlPanel({
                   <tr key={row.action}>
                     <td>{row.action}</td>
                     <td><PermissionStateBadge state={row.organizer} /></td>
-                    <td><PermissionStateBadge state={row.matchOfficial} /></td>
-                    <td><PermissionStateBadge state={row.reporter} /></td>
-                    <td><PermissionStateBadge state={row.observer} /></td>
+                    <td><PermissionStateBadge state={row.currentSupport} /></td>
+                    <td><PermissionStateBadge state={row.backendRequired} /></td>
+                    <td>{row.note}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1504,16 +1552,16 @@ function MatchOperationsControlPanel({
 
           <div className="org-referee-limitations">
             <article>
-              <strong>Planned match official scope</strong>
-              <p>Future match official scope can only act on assigned matches once organizer-controlled backend permissions exist.</p>
+              <strong>Organizer/admin workspace</strong>
+              <p>All active tournament operations are controlled by organizer/admin accounts.</p>
             </article>
             <article>
-              <strong>Planned score reporter scope</strong>
-              <p>Score reporter actions are planned as tournament-scoped operations. They are not active as separate account flows.</p>
+              <strong>No separate official login</strong>
+              <p>Referee, analyst, and score reporter account flows are not part of the current project scope.</p>
             </article>
             <article>
-              <strong>Organizer-controlled operations</strong>
-              <p>Organizer/admin has the current override only where existing backend match endpoints support it.</p>
+              <strong>Backend-gated controls</strong>
+              <p>Unsupported operations stay locked until organizer-focused backend endpoints exist.</p>
             </article>
           </div>
         </div>
@@ -1521,7 +1569,7 @@ function MatchOperationsControlPanel({
         <aside className="org-referee-command-panel">
           <button disabled type="button">
             <Plus size={16} />
-            Assign Match Official
+            Assign Operator
             <Lock size={14} />
           </button>
           <button disabled type="button">
@@ -1546,7 +1594,7 @@ function MatchOperationsControlPanel({
 
           <PanelWarning
             title="Backend status"
-            detail="Official assignment and score reporter approval are planned as organizer-controlled functionality. Separate referee or analyst login flows are not enabled."
+            detail="Dedicated official assignment is not part of the current role model. Organizer/admin remains responsible for match operations."
           />
         </aside>
       </div>

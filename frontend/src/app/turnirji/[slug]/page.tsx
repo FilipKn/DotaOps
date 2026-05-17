@@ -11,7 +11,9 @@ import {
 
 import { AnalyticsOverview } from "@/components/analytics-overview";
 import { BracketCommandPanel } from "@/components/bracket-command-panel";
+import { GroupsStandingsPanel } from "@/components/groups-standings-panel";
 import { MatchSchedule } from "@/components/match-schedule";
+import { PublicTournamentManageLink } from "@/components/public-tournament-manage-link";
 import { SectionHeader } from "@/components/section-header";
 import { TournamentCommandHeader } from "@/components/tournament-command-header";
 import { TournamentMetaGrid } from "@/components/tournament-meta-grid";
@@ -23,6 +25,10 @@ import {
   getTournamentBySlug,
   getTournaments
 } from "@/lib/data";
+import {
+  getPublicGroupsStandingsData,
+  type PublicGroupsStandingsData
+} from "@/lib/tournament-group-data";
 import { formatDateTime } from "@/lib/utils";
 
 interface TournamentDetailPageProps {
@@ -53,6 +59,20 @@ export default async function TournamentDetailPage({
     notFound();
   }
 
+  let groupsStandings: PublicGroupsStandingsData = {
+    groups: [],
+    standings: []
+  };
+  let groupsStandingsError: string | null = null;
+
+  try {
+    groupsStandings = await getPublicGroupsStandingsData(tournament.id);
+  } catch (error) {
+    groupsStandingsError = error instanceof Error
+      ? error.message
+      : "Group standings are unavailable.";
+  }
+
   const tournamentMatches = matches.filter((match) => match.tournamentSlug === slug);
   const importedMatches = tournamentMatches.filter((match) => match.dotaMatchId).length;
 
@@ -68,9 +88,11 @@ export default async function TournamentDetailPage({
             <Link className="button ops-button-secondary" href="/turnirji">
               All Tournaments
             </Link>
-            <Link className="button ops-button-primary" href="/organizator">
-              Manage
-            </Link>
+            <PublicTournamentManageLink
+              label="Manage Groups"
+              slug={tournament.slug}
+              tournamentId={tournament.id}
+            />
           </>
         }
       >
@@ -109,6 +131,21 @@ export default async function TournamentDetailPage({
       </TournamentCommandHeader>
 
       <TournamentRegistrationPanel tournament={tournament} />
+
+      <GroupsStandingsPanel
+        error={groupsStandingsError}
+        groups={groupsStandings.groups}
+        managementAction={
+          <PublicTournamentManageLink
+            className="button ops-button-secondary"
+            label="Manage Groups"
+            note
+            slug={tournament.slug}
+            tournamentId={tournament.id}
+          />
+        }
+        standings={groupsStandings.standings}
+      />
 
       <section className="tournament-control-grid">
         <div className="tournament-control-main">
