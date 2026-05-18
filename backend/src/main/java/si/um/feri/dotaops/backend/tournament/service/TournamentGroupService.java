@@ -75,6 +75,18 @@ public class TournamentGroupService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<GroupStandingResponse> listOrganizerStandings(UUID tournamentId) {
+        AuthenticatedActor actor = currentUserProvider.requireActor();
+        ensureTournamentExists(tournamentId);
+        ensureCanManage(actor, tournamentId);
+
+        return groupRepository.findOrganizerStandingsByTournamentId(tournamentId)
+                .stream()
+                .map(GroupStandingResponse::from)
+                .toList();
+    }
+
     @Transactional
     public TournamentGroupResponse createGroup(UUID tournamentId, CreateTournamentGroupRequest request) {
         AuthenticatedActor actor = currentUserProvider.requireActor();

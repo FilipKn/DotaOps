@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public record GroupStanding(
         UUID groupId,
+        String groupName,
         UUID tournamentId,
         UUID teamId,
         String teamName,

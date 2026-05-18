@@ -152,29 +152,45 @@ class TournamentGroupServiceTest {
     @Test
     void publicStandingsExposeGameAndMatchFields() {
         when(groupRepository.publicGroupExists(GROUP_ID)).thenReturn(true);
-        when(groupRepository.findStandingsByGroupId(GROUP_ID)).thenReturn(List.of(new GroupStanding(
-                GROUP_ID,
-                TOURNAMENT_ID,
-                TEAM_ID,
-                "Radiant Five",
-                1,
-                1,
-                0,
-                0,
-                2,
-                1,
-                1,
-                3,
-                1)));
+        when(groupRepository.findStandingsByGroupId(GROUP_ID)).thenReturn(List.of(standing()));
 
         var standings = service.getPublicStandings(GROUP_ID);
 
         assertThat(standings).hasSize(1);
+        assertThat(standings.getFirst().groupName()).isEqualTo("Group A");
         assertThat(standings.getFirst().matchWins()).isOne();
         assertThat(standings.getFirst().gameWins()).isEqualTo(2);
         assertThat(standings.getFirst().gameLosses()).isEqualTo(1);
         assertThat(standings.getFirst().gameDiff()).isOne();
         assertThat(standings.getFirst().points()).isEqualTo(3);
+    }
+
+    @Test
+    void organizerCanListPrivateTournamentStandings() {
+        when(currentUserProvider.requireActor()).thenReturn(actor(ORGANIZER_PROFILE_ID, ProfileRole.ORGANIZER));
+        when(tournamentRepository.findById(TOURNAMENT_ID)).thenReturn(Optional.of(tournament()));
+        when(tournamentRepository.canManage(TOURNAMENT_ID, ORGANIZER_PROFILE_ID, false)).thenReturn(true);
+        when(groupRepository.findOrganizerStandingsByTournamentId(TOURNAMENT_ID)).thenReturn(List.of(standing()));
+
+        var standings = service.listOrganizerStandings(TOURNAMENT_ID);
+
+        assertThat(standings).hasSize(1);
+        assertThat(standings.getFirst().groupId()).isEqualTo(GROUP_ID);
+        assertThat(standings.getFirst().groupName()).isEqualTo("Group A");
+        assertThat(standings.getFirst().points()).isEqualTo(3);
+        verify(groupRepository).findOrganizerStandingsByTournamentId(TOURNAMENT_ID);
+    }
+
+    @Test
+    void nonOrganizerCannotListPrivateTournamentStandings() {
+        when(currentUserProvider.requireActor()).thenReturn(actor(PLAYER_PROFILE_ID, ProfileRole.PLAYER));
+        when(tournamentRepository.findById(TOURNAMENT_ID)).thenReturn(Optional.of(tournament()));
+        when(tournamentRepository.canManage(TOURNAMENT_ID, PLAYER_PROFILE_ID, false)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.listOrganizerStandings(TOURNAMENT_ID))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Only the tournament owner, tournament organizers, or admins can manage tournament groups.");
+        verify(groupRepository, never()).findOrganizerStandingsByTournamentId(any());
     }
 
     private void mockGroupAddPreconditions() {
@@ -262,5 +278,23 @@ class TournamentGroupServiceTest {
                 2,
                 NOW.minusMinutes(10),
                 NOW);
+    }
+
+    private static GroupStanding standing() {
+        return new GroupStanding(
+                GROUP_ID,
+                "Group A",
+                TOURNAMENT_ID,
+                TEAM_ID,
+                "Radiant Five",
+                1,
+                1,
+                0,
+                0,
+                2,
+                1,
+                1,
+                3,
+                1);
     }
 }

@@ -6,9 +6,12 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataAccessException;
 import org.springframework.test.context.ActiveProfiles;
+
+import si.um.feri.dotaops.backend.tournament.repository.TournamentGroupRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -17,6 +20,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @ActiveProfiles("integration")
 @EnabledIfEnvironmentVariable(named = "SUPABASE_DB_URL", matches = ".+")
 class TournamentGroupStandingsIntegrationTest extends PostgresIntegrationTestSupport {
+
+    @Autowired
+    private TournamentGroupRepository groupRepository;
 
     @Test
     void groupStandingsUseFinishedMatchScoresAsDotaGames() {
@@ -89,6 +95,41 @@ class TournamentGroupStandingsIntegrationTest extends PostgresIntegrationTestSup
     }
 
     @Test
+    void organizerRepositoryStandingsIncludePrivateTournaments() {
+        String suffix = uniqueSuffix();
+
+        UUID tournamentId = asServiceRole(() -> insertTournament(suffix, false));
+        UUID groupId = asServiceRole(() -> insertGroup(tournamentId, "Group A " + suffix, 1));
+        UUID teamAId = asServiceRole(() -> insertTeam("Radiant Five " + suffix, "radiant-private-" + suffix));
+        UUID teamBId = asServiceRole(() -> insertTeam("Dire Stack " + suffix, "dire-private-" + suffix));
+        UUID registrationAId = asServiceRole(() -> insertRegistration(tournamentId, teamAId));
+        UUID registrationBId = asServiceRole(() -> insertRegistration(tournamentId, teamBId));
+
+        asServiceRole(() -> {
+            insertGroupTeam(groupId, teamAId, registrationAId, 1);
+            insertGroupTeam(groupId, teamBId, registrationBId, 2);
+            insertMatch(tournamentId, groupId, teamAId, teamBId, "finished", 3, 2, 0, teamAId);
+            return null;
+        });
+
+        List<Map<String, Object>> publicStandings = asServiceRole(() -> jdbcTemplate.queryForList(
+                """
+                select team_id
+                from public.v_group_standings
+                where group_id = ?
+                """,
+                groupId));
+
+        var organizerStandings = asServiceRole(() -> groupRepository.findOrganizerStandingsByTournamentId(tournamentId));
+
+        assertThat(publicStandings).isEmpty();
+        assertThat(organizerStandings).hasSize(2);
+        assertThat(organizerStandings.getFirst().groupName()).startsWith("Group A");
+        assertThat(organizerStandings.getFirst().teamId()).isEqualTo(teamAId);
+        assertThat(organizerStandings.getFirst().points()).isEqualTo(3);
+    }
+
+    @Test
     void databaseRejectsSameTeamInMultipleGroupsForOneTournament() {
         String suffix = uniqueSuffix();
         UUID tournamentId = asServiceRole(() -> insertTournament(suffix));
@@ -109,6 +150,10 @@ class TournamentGroupStandingsIntegrationTest extends PostgresIntegrationTestSup
     }
 
     private UUID insertTournament(String suffix) {
+        return insertTournament(suffix, true);
+    }
+
+    private UUID insertTournament(String suffix, boolean isPublic) {
         return jdbcTemplate.queryForObject(
                 """
                 insert into public.tournaments (
@@ -128,14 +173,15 @@ class TournamentGroupStandingsIntegrationTest extends PostgresIntegrationTestSup
                   'groups_playoff'::public.dotaops_tournament_format,
                   now() + interval '14 days',
                   now() + interval '7 days',
-                  true,
+                  ?,
                   8
                 )
                 returning id
                 """,
                 UUID.class,
                 "group-standings-" + suffix,
-                "Group Standings " + suffix);
+                "Group Standings " + suffix,
+                isPublic);
     }
 
     private UUID insertGroup(UUID tournamentId, String name, int sortOrder) {
