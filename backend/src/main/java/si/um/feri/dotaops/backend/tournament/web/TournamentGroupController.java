@@ -43,6 +43,11 @@ public class TournamentGroupController {
         return ApiResponse.of(groupService.listOrganizerGroups(tournamentId));
     }
 
+    @GetMapping("/organizer/tournaments/{tournamentId}/standings")
+    ApiResponse<List<GroupStandingResponse>> listOrganizerStandings(@PathVariable UUID tournamentId) {
+        return ApiResponse.of(groupService.listOrganizerStandings(tournamentId));
+    }
+
     @PostMapping({
             "/tournaments/{tournamentId}/groups",
             "/organizer/tournaments/{tournamentId}/groups"

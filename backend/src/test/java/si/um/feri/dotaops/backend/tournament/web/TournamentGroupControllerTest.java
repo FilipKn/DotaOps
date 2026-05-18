@@ -34,6 +34,7 @@ import si.um.feri.dotaops.backend.tournament.service.TournamentGroupService;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -145,11 +146,34 @@ class TournamentGroupControllerTest {
 
         mockMvc.perform(get("/api/tournament-groups/" + GROUP_ID + "/standings"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].groupName").value("Group A"))
                 .andExpect(jsonPath("$.data[0].teamId").value(TEAM_ID.toString()))
                 .andExpect(jsonPath("$.data[0].matchWins").value(1))
                 .andExpect(jsonPath("$.data[0].gameWins").value(2))
                 .andExpect(jsonPath("$.data[0].gameLosses").value(1))
                 .andExpect(jsonPath("$.data[0].points").value(3));
+    }
+
+    @Test
+    void organizerStandingsRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/api/organizer/tournaments/" + TOURNAMENT_ID + "/standings"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void organizerStandingsReturnCalculatedRows() throws Exception {
+        when(groupService.listOrganizerStandings(TOURNAMENT_ID)).thenReturn(List.of(standingResponse()));
+
+        mockMvc.perform(get("/api/organizer/tournaments/" + TOURNAMENT_ID + "/standings")
+                        .header("Authorization", bearerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].groupId").value(GROUP_ID.toString()))
+                .andExpect(jsonPath("$.data[0].groupName").value("Group A"))
+                .andExpect(jsonPath("$.data[0].teamId").value(TEAM_ID.toString()))
+                .andExpect(jsonPath("$.data[0].points").value(3));
+
+        verify(groupService).listOrganizerStandings(TOURNAMENT_ID);
     }
 
     private static String bearerToken() throws Exception {
@@ -192,6 +216,7 @@ class TournamentGroupControllerTest {
     private static GroupStandingResponse standingResponse() {
         return new GroupStandingResponse(
                 GROUP_ID,
+                "Group A",
                 TOURNAMENT_ID,
                 TEAM_ID,
                 "Radiant Five",

@@ -6,6 +6,7 @@ import si.um.feri.dotaops.backend.tournament.domain.GroupStanding;
 
 public record GroupStandingResponse(
         UUID groupId,
+        String groupName,
         UUID tournamentId,
         UUID teamId,
         String teamName,
@@ -23,6 +24,7 @@ public record GroupStandingResponse(
     public static GroupStandingResponse from(GroupStanding standing) {
         return new GroupStandingResponse(
                 standing.groupId(),
+                standing.groupName(),
                 standing.tournamentId(),
                 standing.teamId(),
                 standing.teamName(),

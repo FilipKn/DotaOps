@@ -206,27 +206,22 @@ public class TournamentGroupRepository {
 
     public List<GroupStanding> findStandingsByGroupId(UUID groupId) {
         return jdbcTemplate.query(
-                """
-                select
-                  group_id,
-                  tournament_id,
-                  team_id,
-                  team_name,
-                  matches_played,
-                  match_wins,
-                  match_losses,
-                  match_draws,
-                  game_wins,
-                  game_losses,
-                  game_diff,
-                  points,
-                  rank
-                from public.v_group_standings
+                selectCalculatedStandingsSql() + """
                 where group_id = ?
-                order by rank asc
+                order by rank asc, team_name asc
                 """,
                 this::mapStanding,
                 groupId);
+    }
+
+    public List<GroupStanding> findOrganizerStandingsByTournamentId(UUID tournamentId) {
+        return jdbcTemplate.query(
+                selectCalculatedStandingsSql() + """
+                where tournament_id = ?
+                order by group_sort_order asc, group_name asc, rank asc, team_name asc
+                """,
+                this::mapStanding,
+                tournamentId);
     }
 
     private Optional<TournamentGroupTeam> findGroupTeamById(UUID assignmentId) {
@@ -288,6 +283,108 @@ public class TournamentGroupRepository {
                 """;
     }
 
+    private String selectCalculatedStandingsSql() {
+        return """
+                with team_match_results as (
+                  select
+                    tg.id as group_id,
+                    tg.name as group_name,
+                    tg.sort_order as group_sort_order,
+                    tg.tournament_id,
+                    tgt.team_id,
+                    tm.name as team_name,
+                    m.id as match_id,
+                    case
+                      when m.status = 'finished'::public.dotaops_match_status
+                        and (
+                          (m.team_a_id = tgt.team_id and m.winner_team_id = tgt.team_id)
+                          or (m.team_b_id = tgt.team_id and m.winner_team_id = tgt.team_id)
+                          or (
+                            m.winner_team_id is null
+                            and (
+                              (m.team_a_id = tgt.team_id and m.score_a > m.score_b)
+                              or (m.team_b_id = tgt.team_id and m.score_b > m.score_a)
+                            )
+                          )
+                        )
+                        then 'win'
+                      when m.status = 'finished'::public.dotaops_match_status
+                        and m.score_a = m.score_b
+                        and m.winner_team_id is null
+                        then 'draw'
+                      when m.status = 'finished'::public.dotaops_match_status
+                        and (
+                          (m.team_a_id = tgt.team_id and m.team_b_id is not null)
+                          or (m.team_b_id = tgt.team_id and m.team_a_id is not null)
+                        )
+                        then 'loss'
+                      else null
+                    end as match_result,
+                    case
+                      when m.status <> 'finished'::public.dotaops_match_status then 0
+                      when m.team_a_id = tgt.team_id then m.score_a
+                      when m.team_b_id = tgt.team_id then m.score_b
+                      else 0
+                    end as game_wins,
+                    case
+                      when m.status <> 'finished'::public.dotaops_match_status then 0
+                      when m.team_a_id = tgt.team_id then m.score_b
+                      when m.team_b_id = tgt.team_id then m.score_a
+                      else 0
+                    end as game_losses
+                  from public.tournament_groups tg
+                  join public.tournament_group_teams tgt on tgt.group_id = tg.id
+                  join public.teams tm on tm.id = tgt.team_id
+                  left join public.matches m
+                    on m.group_id = tg.id
+                    and m.tournament_id = tg.tournament_id
+                    and (m.team_a_id = tgt.team_id or m.team_b_id = tgt.team_id)
+                ),
+                standings as (
+                  select
+                    group_id,
+                    group_name,
+                    group_sort_order,
+                    tournament_id,
+                    team_id,
+                    team_name,
+                    count(match_id) filter (where match_result is not null)::integer as matches_played,
+                    count(match_id) filter (where match_result = 'win')::integer as match_wins,
+                    count(match_id) filter (where match_result = 'loss')::integer as match_losses,
+                    count(match_id) filter (where match_result = 'draw')::integer as match_draws,
+                    coalesce(sum(game_wins), 0)::integer as game_wins,
+                    coalesce(sum(game_losses), 0)::integer as game_losses
+                  from team_match_results
+                  group by group_id, group_name, group_sort_order, tournament_id, team_id, team_name
+                )
+                select
+                  group_id,
+                  group_name,
+                  group_sort_order,
+                  tournament_id,
+                  team_id,
+                  team_name,
+                  matches_played,
+                  match_wins,
+                  match_losses,
+                  match_draws,
+                  game_wins,
+                  game_losses,
+                  (game_wins - game_losses)::integer as game_diff,
+                  ((match_wins * 3) + match_draws)::integer as points,
+                  (row_number() over (
+                    partition by group_id
+                    order by
+                      ((match_wins * 3) + match_draws) desc,
+                      match_wins desc,
+                      (game_wins - game_losses) desc,
+                      game_wins desc,
+                      team_name asc
+                  ))::integer as rank
+                from standings
+                """;
+    }
+
     private TournamentGroup mapGroup(ResultSet resultSet, int rowNumber) throws SQLException {
         return new TournamentGroup(
                 resultSet.getObject("id", UUID.class),
@@ -316,6 +413,7 @@ public class TournamentGroupRepository {
     private GroupStanding mapStanding(ResultSet resultSet, int rowNumber) throws SQLException {
         return new GroupStanding(
                 resultSet.getObject("group_id", UUID.class),
+                resultSet.getString("group_name"),
                 resultSet.getObject("tournament_id", UUID.class),
                 resultSet.getObject("team_id", UUID.class),
                 resultSet.getString("team_name"),
